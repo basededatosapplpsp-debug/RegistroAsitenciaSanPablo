@@ -268,3 +268,41 @@ h2{font-size:16px; margin:0 0 12px}
 .badge-ontime{ background: rgba(34,197,94,.15); color:#22c55e; border-color: rgba(34,197,94,.35); }
 .badge-late{ background: rgba(239,68,68,.15); color:#ef4444; border-color: rgba(239,68,68,.35); }
 .badge-neutral{ background: rgba(255,255,255,.08); color: var(--text); }
+
+
+/* ======= MODAL LOGIN ======= */
+.modal-backdrop{
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 18px;
+  z-index: 9999;
+}
+.modal-card{
+  width: min(420px, 100%);
+  background: #0b1220;
+  border: 1px solid rgba(255,255,255,.12);
+  border-radius: 16px;
+  padding: 16px;
+  box-shadow: 0 10px 30px rgba(0,0,0,.35);
+}
+.modal-title{ margin: 0 0 6px 0; font-size: 18px; }
+.modal-sub{ margin: 0 0 12px 0; opacity: .85; font-size: 13px; }
+
+.modal-label{ display:block; margin: 10px 0 6px; font-size: 12px; opacity:.9; }
+.modal-input{
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,.14);
+  background: rgba(255,255,255,.06);
+  color: #fff;
+  outline: none;
+}
+.modal-input:focus{ border-color: rgba(99, 179, 237, .8); }
+
+.modal-actions{ margin-top: 14px; display:flex; gap:10px; }
+.modal-hint{ margin-top: 10px; }
