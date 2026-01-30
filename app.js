@@ -119,27 +119,31 @@ async function gsGetList(limit = 50) {
 async function gsRegister(payload) {
   const res = await fetch(GS_WEBAPP_URL, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    // NO headers: evita preflight CORS
     body: JSON.stringify({ ...payload, key: GS_API_KEY })
   });
+
   const data = await res.json();
   if (!data.ok) throw new Error(data.error || "gs_register_failed");
   return data;
 }
 
+
 async function gsClearCurrentMonth() {
   const d = new Date();
-  const month = `${d.getFullYear()}-${pad(d.getMonth()+1)}`; // YYYY-MM
+  const month = `${d.getFullYear()}-${pad(d.getMonth() + 1)}`; // YYYY-MM
 
   const res = await fetch(GS_WEBAPP_URL, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    // NO headers: evita preflight CORS
     body: JSON.stringify({ action: "clear_month", month, key: GS_API_KEY })
   });
+
   const data = await res.json();
   if (!data.ok) throw new Error(data.error || "gs_clear_failed");
   return data;
 }
+
 
 // ======= Render (desde Google Sheets) =======
 let cachedRecords = [];
