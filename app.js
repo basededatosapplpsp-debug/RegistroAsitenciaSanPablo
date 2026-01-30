@@ -204,6 +204,7 @@ async function refreshFromSheet() {
 }
 
 // ======= Registrar =======
+// ======= Registrar =======
 async function register(type) {
   const teacher = teacherNameEl.value.trim();
   if (!teacher) {
@@ -213,8 +214,9 @@ async function register(type) {
   }
 
   let geo;
-  try { geo = await checkLocation(); }
-  catch (e) {
+  try { 
+    geo = await checkLocation(); 
+  } catch (e) {
     setStatus("bad", "No se pudo obtener ubicación", "Activa permisos de ubicación del navegador.");
     return;
   }
@@ -224,6 +226,7 @@ async function register(type) {
 
   try {
     setStatus("warn", "Guardando…", "Enviando registro a Google Sheets.");
+
     await gsRegister({
       action: "register",
       teacher,
@@ -234,12 +237,29 @@ async function register(type) {
       lat: geo.latitude,
       lng: geo.longitude
     });
+
     await refreshFromSheet();
     setStatus("", "Guardado", `${type} registrada para ${teacher}.`);
+
   } catch (e) {
-    setStatus("bad", "No se pudo guardar", "Revisa conexión y Apps Script.");
+    // ✅ NUEVO: si el servidor respondió JSON con msg/error, lo mostramos
+    let msg = "Revisa conexión y Apps Script.";
+
+    try {
+      // Si gsRegister lanzó Error("already_registered") u otro
+      const errText = String(e && e.message ? e.message : e);
+
+      if (errText === "already_registered") {
+        msg = `Ya existe ${type} registrada hoy para ${teacher}.`;
+      } else if (errText === "unauthorized") {
+        msg = "Clave incorrecta o sin permisos en Apps Script.";
+      }
+    } catch (_) {}
+
+    setStatus("bad", "No se pudo guardar", msg);
   }
 }
+
 
 // ======= CSV (desde lo que se ve en la app) =======
 function csvCell(v){
