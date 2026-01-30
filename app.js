@@ -28,6 +28,10 @@ const loginCourseEl = $("loginCourse");
 const btnLoginSave = $("btnLoginSave");
 const loginHint = $("loginHint");
 
+const deviceIdTextEl = $("deviceIdText");
+const btnCopyDevice = $("btnCopyDevice");
+
+
 
 const btnEntrada = $("btnEntrada");
 const btnSalida  = $("btnSalida");
@@ -64,6 +68,26 @@ function setStatus(kind, title, msg) {
 }
 
 
+let __loadingCount = 0;
+
+function setLoading(isLoading, title = "Procesando…", msg = "Por favor espera…") {
+  if (isLoading) __loadingCount++;
+  else __loadingCount = Math.max(0, __loadingCount - 1);
+
+  const on = __loadingCount > 0;
+
+  // Deshabilitar botones principales para evitar dobles registros
+  btnEntrada.disabled = on;
+  btnSalida.disabled = on;
+  btnClear.disabled = on;
+  btnExport.disabled = on;
+
+  // Mensaje visual
+  if (on) setStatus("warn", title, msg);
+}
+
+
+
 // ======= PERFIL + DEVICE ID =======
 const LS_PROFILE_KEY = "asistencia_profile_v1";
 const LS_DEVICE_KEY  = "asistencia_device_id_v1";
@@ -97,10 +121,41 @@ function requireLogin() {
   if (p && p.name && p.email && p.course) return p;
 
   // Mostrar modal y bloquear uso hasta guardar
-  loginModal.hidden = false;
-  loginHint.textContent = "Completa tus datos para continuar.";
-  return null;
+ loginModal.hidden = false;
+updateDeviceIdUI();
+loginHint.textContent = "Completa tus datos para continuar.";
+return null;
+
 }
+
+
+function updateDeviceIdUI() {
+  if (!deviceIdTextEl) return;
+  deviceIdTextEl.textContent = getDeviceId();
+}
+
+if (btnCopyDevice) {
+  btnCopyDevice.addEventListener("click", async () => {
+    try {
+      const id = getDeviceId();
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(id);
+      } else {
+        // fallback antiguo
+        const ta = document.createElement("textarea");
+        ta.value = id;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand("copy");
+        ta.remove();
+      }
+      loginHint.textContent = "ID copiado. Pégalo en la hoja DISPOSITIVOS para autorizar.";
+    } catch (e) {
+      loginHint.textContent = "No se pudo copiar. Copia el ID manualmente.";
+    }
+  });
+}
+
 
 btnLoginSave.addEventListener("click", () => {
   const name = (loginNameEl.value || "").trim();
@@ -273,21 +328,23 @@ function render(records) {
 
 async function refreshFromSheet() {
   try {
-    setStatus("warn", "Cargando…", "Leyendo registros desde Google Sheets.");
+    setLoading(true, "Cargando…", "Leyendo registros desde Google Sheets.");
     const records = await gsGetList(60);
     render(records);
     setStatus("", "Listo", "Datos sincronizados desde Google Sheets.");
   } catch (e) {
-    setStatus("bad", "Error Google Sheets", "Revisa URL/clave del Web App y permisos.");
+    setStatus("bad", "Error Google Sheets", String(e && e.message ? e.message : "Revisa URL/clave del Web App y permisos."));
+  } finally {
+    setLoading(false);
   }
 }
+
 
 // ======= Registrar =======
 // ======= Registrar =======
 async function register(type) {
-
   const profile = requireLogin();
-if (!profile) return;
+  if (!profile) return;
 
   const teacher = (teacherNameEl.value.trim() || profile.name);
   if (!teacher) {
@@ -297,8 +354,8 @@ if (!profile) return;
   }
 
   let geo;
-  try { 
-    geo = await checkLocation(); 
+  try {
+    geo = await checkLocation();
   } catch (e) {
     setStatus("bad", "No se pudo obtener ubicación", "Activa permisos de ubicación del navegador.");
     return;
@@ -308,44 +365,45 @@ if (!profile) return;
   const t = nowParts();
 
   try {
-    setStatus("warn", "Guardando…", "Enviando registro a Google Sheets.");
+    setLoading(true, "Guardando…", "Enviando registro a Google Sheets.");
 
-await gsRegister({
-  action: "register",
-  teacher,
-  type,
-  iso: t.iso,
-  email: profile.email,
-  course: profile.course,
-  device_id: getDeviceId(),
-  distance_m: Math.round(geo.dist),
-  accuracy_m: Math.round(geo.accuracy),
-  lat: geo.latitude,
-  lng: geo.longitude
-});
-
+    await gsRegister({
+      action: "register",
+      teacher,
+      type,
+      iso: t.iso,
+      email: profile.email,
+      course: profile.course,
+      device_id: getDeviceId(),
+      distance_m: Math.round(geo.dist),
+      accuracy_m: Math.round(geo.accuracy),
+      lat: geo.latitude,
+      lng: geo.longitude
+    });
 
     await refreshFromSheet();
     setStatus("", "Guardado", `${type} registrada para ${teacher}.`);
 
   } catch (e) {
-    // ✅ NUEVO: si el servidor respondió JSON con msg/error, lo mostramos
-    let msg = "Revisa conexión y Apps Script.";
+    // ✅ Mostrar el mensaje real (si viene del servidor)
+    const msg = String(e && e.message ? e.message : e);
 
-    try {
-      // Si gsRegister lanzó Error("already_registered") u otro
-      const errText = String(e && e.message ? e.message : e);
+    // Si quieres títulos más bonitos según el caso:
+    if (msg.toLowerCase().includes("no está autorizado") || msg.includes("device_not_authorized")) {
+      setStatus("bad", "Teléfono no autorizado", msg);
+    } else if (msg.toLowerCase().includes("ya existe") || msg.includes("already_registered")) {
+      setStatus("warn", "Registro duplicado", msg);
+    } else if (msg.includes("unauthorized")) {
+      setStatus("bad", "Sin permisos", "Clave incorrecta o permisos del WebApp.");
+    } else {
+      setStatus("bad", "No se pudo guardar", msg || "Revisa conexión y Apps Script.");
+    }
 
-      if (errText === "already_registered") {
-        msg = `Ya existe ${type} registrada hoy para ${teacher}.`;
-      } else if (errText === "unauthorized") {
-        msg = "Clave incorrecta o sin permisos en Apps Script.";
-      }
-    } catch (_) {}
-
-    setStatus("bad", "No se pudo guardar", msg);
+  } finally {
+    setLoading(false);
   }
 }
+
 
 
 // ======= CSV (desde lo que se ve en la app) =======
@@ -459,6 +517,5 @@ const _p = requireLogin();
 if (_p) {
   teacherNameEl.value = _p.name; // autocompletar nombre
 }
-
 
 
