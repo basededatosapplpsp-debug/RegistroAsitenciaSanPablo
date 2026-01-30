@@ -98,13 +98,17 @@ const LS_DEVICE_KEY  = "asistencia_device_id_v1";
 function getDeviceId() {
   let id = localStorage.getItem(LS_DEVICE_KEY);
   if (!id) {
-    // UUID simple y suficiente para "binding" al dispositivo
-    id = (crypto && crypto.randomUUID) ? crypto.randomUUID()
+    // UUID seguro: evita ReferenceError si crypto no existe
+    const c = (typeof window !== "undefined") ? window.crypto : null;
+    id = (c && typeof c.randomUUID === "function")
+      ? c.randomUUID()
       : "dev-" + Math.random().toString(16).slice(2) + Date.now().toString(16);
+
     localStorage.setItem(LS_DEVICE_KEY, id);
   }
   return id;
 }
+
 
 function loadProfile() {
   try {
@@ -176,33 +180,47 @@ btnLoginSave.addEventListener("click", async () => {
 
   try {
     setLoading(true, "Verificando…", "Comprobando si este teléfono ya está autorizado.");
+    loginHint.textContent = "Verificando autorización…";
 
-    // ✅ Verificar autorización antes de cerrar
     const chk = await gsCheckDeviceAuth({
       action: "check_device_auth",
       email,
       device_id: getDeviceId()
     });
 
-    if (!chk.authorized) {
-      loginHint.textContent = chk.msg || "Aún no autorizado. Usa 'Solicitar autorización' y espera aprobación.";
-      return; // 👈 NO cerrar modal
+    // Normaliza por si alguna vez llegara como string (por cambios futuros)
+    const authorized = (chk && (chk.authorized === true || String(chk.authorized).toLowerCase() === "true"));
+
+    if (!authorized) {
+      const msg = (chk && chk.msg) ? chk.msg : "Aún no autorizado. Usa 'Solicitar autorización' y espera aprobación.";
+      loginHint.textContent = msg;
+
+      // ✅ Aviso visible (no solo hint)
+      setStatus("bad", "No autorizado", msg);
+
+      // Mantener modal abierto
+      loginModal.hidden = false;
+      return;
     }
 
-    // ✅ Si está autorizado, guardar perfil y cerrar
+    // ✅ Autorizado: guardar perfil y cerrar modal
     saveProfile({ name, email, course });
     teacherNameEl.value = name;
+
+    loginHint.textContent = "";
     loginModal.hidden = true;
 
     setStatus("", "Sesión iniciada", "Dispositivo autorizado ✅ Ya puedes registrar asistencia.");
-    loginHint.textContent = "";
 
   } catch (e) {
-    loginHint.textContent = String(e && e.message ? e.message : e);
+    const msg = String(e && e.message ? e.message : e);
+    loginHint.textContent = msg;
+    setStatus("bad", "Error de verificación", msg);
   } finally {
     setLoading(false);
   }
 });
+
 
 
 
