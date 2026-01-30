@@ -185,7 +185,9 @@ btnLoginSave.addEventListener("click", () => {
 
 
 
-if (btnRequestAuth) {
+if (!btnRequestAuth) {
+  console.warn("btnRequestAuth NO encontrado en el HTML");
+} else {
   btnRequestAuth.addEventListener("click", async () => {
     const name = (loginNameEl.value || "").trim();
     const email = (loginEmailEl.value || "").trim().toLowerCase();
@@ -202,8 +204,9 @@ if (btnRequestAuth) {
 
     try {
       setLoading(true, "Enviando solicitud…", "Registrando este teléfono para aprobación.");
+      loginHint.textContent = "Enviando solicitud…";
 
-      await gsRequestDeviceAuth({
+      const resp = await gsRequestDeviceAuth({
         action: "request_device_auth",
         name,
         email,
@@ -211,14 +214,17 @@ if (btnRequestAuth) {
         device_id: getDeviceId()
       });
 
-      loginHint.textContent = "Solicitud enviada ✅. Espera aprobación del administrador.";
+      // ✅ Mensaje claro con respuesta del servidor
+      loginHint.textContent = resp.msg || "Solicitud enviada ✅. Espera aprobación del administrador.";
     } catch (e) {
+      // ✅ Mostrar error real
       loginHint.textContent = String(e && e.message ? e.message : e);
     } finally {
       setLoading(false);
     }
   });
 }
+
 
 
 // ======= GEO =======
