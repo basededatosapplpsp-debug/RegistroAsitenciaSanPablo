@@ -49,17 +49,35 @@ function nowParts() {
 
 function render() {
   const records = loadRecords().slice().reverse();
+
+  // ===== Tabla (desktop) =====
   tbody.innerHTML = records.map(r => `
     <tr>
-      <td>${escapeHtml(r.date)}</td>
-      <td>${escapeHtml(r.time)}</td>
-      <td>${escapeHtml(r.teacher)}</td>
-      <td>${escapeHtml(r.type)}</td>
+      <td>${r.date}</td>
+      <td>${r.time}</td>
+      <td>${r.teacher}</td>
+      <td>${r.type}</td>
       <td>${r.distance_m ?? "—"}</td>
       <td>${r.accuracy_m ?? "—"}</td>
     </tr>
   `).join("");
+
+  // ===== Lista (mobile) =====
+  const list = document.getElementById("recordsList");
+  list.innerHTML = records.map(r => `
+    <div class="record-card">
+      <div class="top">
+        <span>${r.teacher}</span>
+        <span class="type ${r.type}">${r.type}</span>
+      </div>
+      <div class="meta">
+        ${r.date} • ${r.time}<br>
+        Dist: ${r.distance_m ?? "—"} m · Prec: ${r.accuracy_m ?? "—"} m
+      </div>
+    </div>
+  `).join("");
 }
+
 
 function escapeHtml(s){
   return String(s).replace(/[&<>"']/g, (c)=>({
@@ -284,4 +302,3 @@ btnRefreshSW.addEventListener("click", hardRefreshPWA);
 // Render inicial
 render();
 setStatus("warn", "Listo", "Para registrar, activa ubicación y escribe el nombre.");
-
