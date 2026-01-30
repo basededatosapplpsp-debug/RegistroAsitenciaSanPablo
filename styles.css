@@ -21,7 +21,6 @@ body{
               var(--bg);
   color:var(--text);
 
-  /* Mobile-first: espacio para footer + safe area */
   min-height:100vh;
   padding-bottom: calc(60px + env(safe-area-inset-bottom));
 }
@@ -31,18 +30,16 @@ body{
   background: rgba(11,18,32,.75);
   backdrop-filter: blur(10px);
   border-bottom:1px solid var(--line);
-
-  /* Mobile-first: padding tipo app + safe area */
   padding: 14px 14px calc(12px + env(safe-area-inset-top));
-
   display:flex; align-items:center; justify-content:space-between;
 }
+
+.header-actions{display:flex; gap:10px; align-items:center}
 
 h1{font-size:18px; margin:0}
 .sub{margin:4px 0 0; color:var(--muted); font-size:12px}
 
 .container{
-  /* Mobile-first: look 9:16 tipo app, adaptable */
   max-width: 520px;
   margin: 12px auto;
   padding: 0 12px 76px;
@@ -117,8 +114,6 @@ h2{font-size:16px; margin:0 0 12px}
   overflow:auto;
   border-radius: 14px;
   border:1px solid var(--line);
-
-  /* Scroll suave en móvil */
   -webkit-overflow-scrolling: touch;
 }
 
@@ -141,15 +136,13 @@ h2{font-size:16px; margin:0 0 12px}
   backdrop-filter: blur(10px);
 }
 
-/* ======== Mobile-first additions (sin afectar lógica) ======== */
-
-/* En móvil: botones grandes y uno debajo del otro */
+/* ===== Mobile: botones full width ===== */
 @media (max-width: 699px){
   .row{flex-direction: column;}
   .row .btn{width:100%;}
 }
 
-/* En pantallas grandes: vuelve a layout ancho y botones en fila */
+/* ===== Desktop ===== */
 @media (min-width: 700px){
   .container{
     max-width: 900px;
@@ -162,32 +155,48 @@ h2{font-size:16px; margin:0 0 12px}
   .row .btn{width:auto;}
 }
 
-/* Panel colapsable de registros (se usa con hidden en HTML) */
 .collapse[hidden]{display:none;}
 
-.header-actions{display:flex; gap:10px; align-items:center}
-
-
-/* ===== App 100% móvil ===== */
-
-/* Tarjeta-botón tipo app */
+/* ===== Tarjeta botón "Registros" estilo app ===== */
 .card-action{padding:0}
+
 .card-button{
-  all:unset;
   width:100%;
-  padding:16px;
   display:flex;
   align-items:center;
   justify-content:space-between;
+  gap:12px;
+
+  padding:16px;
+
+  background: transparent;
+  border: 0;
+  color: inherit;
+  font: inherit;
+  text-align:left;
   cursor:pointer;
 }
-.card-button h2{margin:0}
-.chevron{
-  font-size:26px;
-  opacity:.6;
+
+.card-button:active{transform: translateY(1px);}
+
+.card-title{
+  font-weight: 800;
+  font-size: 16px;
+  margin-bottom: 4px;
 }
 
-/* Lista tipo cards (mobile) */
+.chevron{
+  font-size: 26px;
+  opacity: .7;
+  transition: transform .15s ease;
+}
+
+/* gira la flecha cuando está abierto */
+.card-button.open .chevron{
+  transform: rotate(90deg);
+}
+
+/* ===== Lista tipo cards (mobile) ===== */
 .records-list{
   display:grid;
   gap:12px;
@@ -200,16 +209,28 @@ h2{font-size:16px; margin:0 0 12px}
   border-radius:14px;
   padding:12px;
 }
+
 .record-card .top{
   display:flex;
   justify-content:space-between;
-  font-weight:700;
+  align-items:center;
+  gap:10px;
+  font-weight:800;
 }
+
+.record-card .teacher{
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+
 .record-card .type{
   font-size:12px;
   padding:4px 8px;
   border-radius:999px;
+  border:1px solid var(--line);
 }
+
 .type.ENTRADA{background:rgba(34,197,94,.15); color:#22c55e}
 .type.SALIDA{background:rgba(59,130,246,.15); color:#3b82f6}
 
@@ -219,12 +240,9 @@ h2{font-size:16px; margin:0 0 12px}
   color:var(--muted);
 }
 
-/* Mobile vs Desktop */
+/* mobile vs desktop */
 .desktop-only{display:none}
-
 @media (min-width:700px){
   .records-list{display:none}
   .desktop-only{display:block}
 }
-
-
