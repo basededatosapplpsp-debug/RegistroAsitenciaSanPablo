@@ -20,6 +20,15 @@ const distEl = $("dist");
 const accEl = $("acc");
 const coordsEl = $("coords");
 
+// ======= LOGIN MODAL UI =======
+const loginModal = $("loginModal");
+const loginNameEl = $("loginName");
+const loginEmailEl = $("loginEmail");
+const loginCourseEl = $("loginCourse");
+const btnLoginSave = $("btnLoginSave");
+const loginHint = $("loginHint");
+
+
 const btnEntrada = $("btnEntrada");
 const btnSalida  = $("btnSalida");
 const btnClear   = $("btnClear");
@@ -53,6 +62,69 @@ function setStatus(kind, title, msg) {
   statusMsg.textContent = msg;
   dot.className = "dot" + (kind ? ` ${kind}` : "");
 }
+
+
+// ======= PERFIL + DEVICE ID =======
+const LS_PROFILE_KEY = "asistencia_profile_v1";
+const LS_DEVICE_KEY  = "asistencia_device_id_v1";
+
+function getDeviceId() {
+  let id = localStorage.getItem(LS_DEVICE_KEY);
+  if (!id) {
+    // UUID simple y suficiente para "binding" al dispositivo
+    id = (crypto && crypto.randomUUID) ? crypto.randomUUID()
+      : "dev-" + Math.random().toString(16).slice(2) + Date.now().toString(16);
+    localStorage.setItem(LS_DEVICE_KEY, id);
+  }
+  return id;
+}
+
+function loadProfile() {
+  try {
+    const raw = localStorage.getItem(LS_PROFILE_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
+function saveProfile(profile) {
+  localStorage.setItem(LS_PROFILE_KEY, JSON.stringify(profile));
+}
+
+function requireLogin() {
+  const p = loadProfile();
+  if (p && p.name && p.email && p.course) return p;
+
+  // Mostrar modal y bloquear uso hasta guardar
+  loginModal.hidden = false;
+  loginHint.textContent = "Completa tus datos para continuar.";
+  return null;
+}
+
+btnLoginSave.addEventListener("click", () => {
+  const name = (loginNameEl.value || "").trim();
+  const email = (loginEmailEl.value || "").trim().toLowerCase();
+  const course = (loginCourseEl.value || "").trim();
+
+  if (!name || !email || !course) {
+    loginHint.textContent = "Faltan datos. Nombre, correo y curso son obligatorios.";
+    return;
+  }
+  if (!/^\S+@\S+\.\S+$/.test(email)) {
+    loginHint.textContent = "Correo inválido.";
+    return;
+  }
+
+  saveProfile({ name, email, course });
+  loginModal.hidden = true;
+
+  // Opcional: rellenar automáticamente el input del nombre visible en la app
+  teacherNameEl.value = name;
+
+  setStatus("", "Sesión iniciada", "Ya puedes registrar asistencia.");
+});
+
 
 // ======= GEO =======
 function toRad(x){ return x * Math.PI / 180; }
@@ -206,7 +278,11 @@ async function refreshFromSheet() {
 // ======= Registrar =======
 // ======= Registrar =======
 async function register(type) {
-  const teacher = teacherNameEl.value.trim();
+
+  const profile = requireLogin();
+if (!profile) return;
+
+  const teacher = (teacherNameEl.value.trim() || profile.name);
   if (!teacher) {
     setStatus("bad", "Falta el nombre", "Escribe el nombre del docente.");
     teacherNameEl.focus();
@@ -227,16 +303,20 @@ async function register(type) {
   try {
     setStatus("warn", "Guardando…", "Enviando registro a Google Sheets.");
 
-    await gsRegister({
-      action: "register",
-      teacher,
-      type,
-      iso: t.iso,
-      distance_m: Math.round(geo.dist),
-      accuracy_m: Math.round(geo.accuracy),
-      lat: geo.latitude,
-      lng: geo.longitude
-    });
+await gsRegister({
+  action: "register",
+  teacher,
+  type,
+  iso: t.iso,
+  email: profile.email,
+  course: profile.course,
+  device_id: getDeviceId(),
+  distance_m: Math.round(geo.dist),
+  accuracy_m: Math.round(geo.accuracy),
+  lat: geo.latitude,
+  lng: geo.longitude
+});
+
 
     await refreshFromSheet();
     setStatus("", "Guardado", `${type} registrada para ${teacher}.`);
