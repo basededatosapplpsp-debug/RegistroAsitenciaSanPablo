@@ -1,6 +1,6 @@
 // ======= CONFIG DEL COLEGIO (CAMBIA ESTO) =======
-const SCHOOL_LAT = 4.55605415253316;        // <-- pon la latitud real
-const SCHOOL_LNG = -74.11149320000003;      // <-- pon la longitud real
+const SCHOOL_LAT = 4.556060836866761;        // <-- pon la latitud real
+const SCHOOL_LNG = -74.11145296686925;      // <-- pon la longitud real
 const SCHOOL_RADIUS_METERS = 120;   // radio permitido (ej: 80-200m)
 const REQUIRED_ACCURACY_METERS = 50; // exige precisión GPS <= 50m (ajústalo)
 
@@ -236,4 +236,5 @@ btnExport.addEventListener("click", exportCSV);
 // Render inicial
 render();
 setStatus("warn", "Listo", "Para registrar, activa ubicación y escribe el nombre.");
+
 
