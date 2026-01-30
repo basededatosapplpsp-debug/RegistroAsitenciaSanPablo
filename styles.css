@@ -20,6 +20,10 @@ body{
               radial-gradient(900px 600px at 80% 30%, rgba(59,130,246,.14), transparent 55%),
               var(--bg);
   color:var(--text);
+
+  /* Mobile-first: espacio para footer + safe area */
+  min-height:100vh;
+  padding-bottom: calc(60px + env(safe-area-inset-bottom));
 }
 
 .header{
@@ -27,7 +31,10 @@ body{
   background: rgba(11,18,32,.75);
   backdrop-filter: blur(10px);
   border-bottom:1px solid var(--line);
-  padding: 16px 18px;
+
+  /* Mobile-first: padding tipo app + safe area */
+  padding: 14px 14px calc(12px + env(safe-area-inset-top));
+
   display:flex; align-items:center; justify-content:space-between;
 }
 
@@ -35,11 +42,12 @@ h1{font-size:18px; margin:0}
 .sub{margin:4px 0 0; color:var(--muted); font-size:12px}
 
 .container{
-  max-width: 900px;
-  margin: 18px auto;
-  padding: 0 14px 60px;
+  /* Mobile-first: look 9:16 tipo app, adaptable */
+  max-width: 520px;
+  margin: 12px auto;
+  padding: 0 12px 76px;
   display:grid;
-  gap:14px;
+  gap:12px;
 }
 
 .card{
@@ -105,7 +113,15 @@ h2{font-size:16px; margin:0 0 12px}
 .kv{margin-top:10px; display:grid; gap:6px}
 .k{color:var(--text)}
 
-.table-wrap{overflow:auto; border-radius: 14px; border:1px solid var(--line)}
+.table-wrap{
+  overflow:auto;
+  border-radius: 14px;
+  border:1px solid var(--line);
+
+  /* Scroll suave en móvil */
+  -webkit-overflow-scrolling: touch;
+}
+
 .table{width:100%; border-collapse: collapse; min-width: 760px; background: rgba(0,0,0,.15)}
 .table th,.table td{
   padding: 10px 10px;
@@ -124,3 +140,27 @@ h2{font-size:16px; margin:0 0 12px}
   background: rgba(11,18,32,.75);
   backdrop-filter: blur(10px);
 }
+
+/* ======== Mobile-first additions (sin afectar lógica) ======== */
+
+/* En móvil: botones grandes y uno debajo del otro */
+@media (max-width: 699px){
+  .row{flex-direction: column;}
+  .row .btn{width:100%;}
+}
+
+/* En pantallas grandes: vuelve a layout ancho y botones en fila */
+@media (min-width: 700px){
+  .container{
+    max-width: 900px;
+    margin: 18px auto;
+    padding: 0 14px 60px;
+    gap:14px;
+  }
+  .header{padding: 16px 18px;}
+  .row{flex-direction: row;}
+  .row .btn{width:auto;}
+}
+
+/* Panel colapsable de registros (se usa con hidden en HTML) */
+.collapse[hidden]{display:none;}
