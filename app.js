@@ -233,9 +233,22 @@ btnClear.addEventListener("click", () => {
 
 btnExport.addEventListener("click", exportCSV);
 
+// ======= UI: Mostrar/Ocultar panel de registros (sin tocar lógica) =======
+const btnToggleRecords = document.getElementById("btnToggleRecords");
+const recordsPanel = document.getElementById("recordsPanel");
+
+function setRecordsOpen(open) {
+  recordsPanel.hidden = !open;
+  btnToggleRecords.textContent = open ? "Ocultar registros" : "Ver registros";
+}
+
+setRecordsOpen(false);
+
+btnToggleRecords.addEventListener("click", () => {
+  setRecordsOpen(recordsPanel.hidden); // si está oculto, lo abre; si está abierto, lo oculta
+});
+
+
 // Render inicial
 render();
 setStatus("warn", "Listo", "Para registrar, activa ubicación y escribe el nombre.");
-
-
-
