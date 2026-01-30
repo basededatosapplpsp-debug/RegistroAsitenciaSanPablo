@@ -306,3 +306,25 @@ h2{font-size:16px; margin:0 0 12px}
 
 .modal-actions{ margin-top: 14px; display:flex; gap:10px; }
 .modal-hint{ margin-top: 10px; }
+
+
+.device-box{
+  margin-top: 12px;
+  padding: 10px;
+  border-radius: 12px;
+  border: 1px dashed rgba(255,255,255,.18);
+  background: rgba(255,255,255,.04);
+}
+.device-row{
+  display:flex;
+  align-items:center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+.device-id{
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-size: 12px;
+  word-break: break-all;
+  opacity: .95;
+}
