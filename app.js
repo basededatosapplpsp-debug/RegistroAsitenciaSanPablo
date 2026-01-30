@@ -195,10 +195,17 @@ async function gsRegister(payload) {
     body: JSON.stringify({ ...payload, key: GS_API_KEY })
   });
 
-  const data = await res.json();
-  if (!data.ok) throw new Error(data.error || "gs_register_failed");
+  let data = null;
+  try { data = await res.json(); }
+  catch { throw new Error("Respuesta inválida del servidor"); }
+
+  // ✅ IMPORTANTE: si el servidor envía msg, lo usamos
+  if (!data.ok) {
+    throw new Error(data.msg || data.error || "gs_register_failed");
+  }
   return data;
 }
+
 
 
 async function gsClearCurrentMonth() {
@@ -446,3 +453,12 @@ btnClear.addEventListener("click", async () => {
 // Inicial
 refreshFromSheet();
 setStatus("warn", "Listo", "Para registrar, activa ubicación y escribe el nombre.");
+
+// ✅ Mostrar login al abrir (si no hay perfil guardado)
+const _p = requireLogin();
+if (_p) {
+  teacherNameEl.value = _p.name; // autocompletar nombre
+}
+
+
+
