@@ -160,7 +160,7 @@ if (btnCopyDevice) {
 }
 
 
-btnLoginSave.addEventListener("click", () => {
+btnLoginSave.addEventListener("click", async () => {
   const name = (loginNameEl.value || "").trim();
   const email = (loginEmailEl.value || "").trim().toLowerCase();
   const course = (loginCourseEl.value || "").trim();
@@ -174,14 +174,36 @@ btnLoginSave.addEventListener("click", () => {
     return;
   }
 
-  saveProfile({ name, email, course });
-  loginModal.hidden = true;
+  try {
+    setLoading(true, "Verificando…", "Comprobando si este teléfono ya está autorizado.");
 
-  // Opcional: rellenar automáticamente el input del nombre visible en la app
-  teacherNameEl.value = name;
+    // ✅ Verificar autorización antes de cerrar
+    const chk = await gsCheckDeviceAuth({
+      action: "check_device_auth",
+      email,
+      device_id: getDeviceId()
+    });
 
-  setStatus("", "Sesión iniciada", "Ya puedes registrar asistencia.");
+    if (!chk.authorized) {
+      loginHint.textContent = chk.msg || "Aún no autorizado. Usa 'Solicitar autorización' y espera aprobación.";
+      return; // 👈 NO cerrar modal
+    }
+
+    // ✅ Si está autorizado, guardar perfil y cerrar
+    saveProfile({ name, email, course });
+    teacherNameEl.value = name;
+    loginModal.hidden = true;
+
+    setStatus("", "Sesión iniciada", "Dispositivo autorizado ✅ Ya puedes registrar asistencia.");
+    loginHint.textContent = "";
+
+  } catch (e) {
+    loginHint.textContent = String(e && e.message ? e.message : e);
+  } finally {
+    setLoading(false);
+  }
 });
+
 
 
 
@@ -323,6 +345,19 @@ async function gsRequestDeviceAuth(payload) {
   return data;
 }
 
+async function gsCheckDeviceAuth(payload) {
+  const res = await fetch(GS_WEBAPP_URL, {
+    method: "POST",
+    body: JSON.stringify({ ...payload, key: GS_API_KEY })
+  });
+
+  let data = null;
+  try { data = await res.json(); }
+  catch { throw new Error("Respuesta inválida del servidor"); }
+
+  if (!data.ok) throw new Error(data.msg || data.error || "check_auth_failed");
+  return data;
+}
 
 
 async function gsClearCurrentMonth() {
