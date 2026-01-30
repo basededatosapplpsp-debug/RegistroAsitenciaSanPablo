@@ -4,6 +4,10 @@ const SCHOOL_LNG = -74.11154255367394;
 const SCHOOL_RADIUS_METERS = 120;
 const REQUIRED_ACCURACY_METERS = 50;
 
+// ======= GOOGLE SHEETS (CAMBIA ESTO) =======
+const GS_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbzqLGNfjp0CJi51woGWje8EmKT8rk7uBFhtCHCS-H_R9x4H5NICgYA-S9yu1K6mR7kc/exec"; // ej: https://script.google.com/macros/s/XXXX/exec
+const GS_API_KEY = "deimerDh2191docentesRegistros2026appandoidios";        // igual que en Code.gs
+
 // ======= UI =======
 const $ = (id) => document.getElementById(id);
 
@@ -27,17 +31,7 @@ const btnToggleRecords = $("btnToggleRecords");
 const recordsPanel = $("recordsPanel");
 const recordsList = $("recordsList");
 
-// ======= STORAGE =======
-const KEY = "asistencia_registros_v1";
-
-function loadRecords() {
-  try { return JSON.parse(localStorage.getItem(KEY) || "[]"); }
-  catch { return []; }
-}
-function saveRecords(records) {
-  localStorage.setItem(KEY, JSON.stringify(records));
-}
-
+// ======= Helpers =======
 function pad(n){ return String(n).padStart(2,"0"); }
 function nowParts() {
   const d = new Date();
@@ -49,45 +43,15 @@ function nowParts() {
   const ss = pad(d.getSeconds());
   return { date:`${yyyy}-${mm}-${dd}`, time:`${hh}:${mi}:${ss}`, iso:d.toISOString() };
 }
-
 function escapeHtml(s){
   return String(s).replace(/[&<>"']/g, (c)=>({
     "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
   }[c]));
 }
-
-function render() {
-  const records = loadRecords().slice().reverse();
-
-  // ===== Tabla (desktop) =====
-  tbody.innerHTML = records.map(r => `
-    <tr>
-      <td>${escapeHtml(r.date)}</td>
-      <td>${escapeHtml(r.time)}</td>
-      <td>${escapeHtml(r.teacher)}</td>
-      <td>${escapeHtml(r.type)}</td>
-      <td>${r.distance_m ?? "—"}</td>
-      <td>${r.accuracy_m ?? "—"}</td>
-    </tr>
-  `).join("");
-
-  // ===== Lista (mobile) =====
-  recordsList.innerHTML = records.map(r => `
-    <div class="record-card">
-      <div class="top">
-        <span class="teacher">${escapeHtml(r.teacher)}</span>
-        <span class="type ${escapeHtml(r.type)}">${escapeHtml(r.type)}</span>
-      </div>
-      <div class="meta">
-        ${escapeHtml(r.date)} • ${escapeHtml(r.time)}<br>
-        Dist: ${r.distance_m ?? "—"} m · Prec: ${r.accuracy_m ?? "—"} m
-      </div>
-    </div>
-  `).join("");
-
-  if (!records.length) {
-    recordsList.innerHTML = `<div class="muted small">No hay registros todavía.</div>`;
-  }
+function setStatus(kind, title, msg) {
+  statusTitle.textContent = title;
+  statusMsg.textContent = msg;
+  dot.className = "dot" + (kind ? ` ${kind}` : "");
 }
 
 // ======= GEO =======
@@ -100,12 +64,6 @@ function distanceMeters(lat1, lon1, lat2, lon2) {
     Math.sin(dLat/2)**2 +
     Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon/2)**2;
   return 2 * R * Math.asin(Math.sqrt(a));
-}
-
-function setStatus(kind, title, msg) {
-  statusTitle.textContent = title;
-  statusMsg.textContent = msg;
-  dot.className = "dot" + (kind ? ` ${kind}` : "");
 }
 
 async function getPosition() {
@@ -136,7 +94,6 @@ async function checkLocation() {
     setStatus("warn", "Ubicación con baja precisión", `Precisión actual ${Math.round(accuracy)} m. Necesito ≤ ${REQUIRED_ACCURACY_METERS} m.`);
     return { ok:false, reason:"accuracy", dist, accuracy, latitude, longitude };
   }
-
   if (!inside) {
     setStatus("bad", "Fuera del colegio", `Estás a ~${Math.round(dist)} m. Debes estar dentro de ${SCHOOL_RADIUS_METERS} m.`);
     return { ok:false, reason:"outside", dist, accuracy, latitude, longitude };
@@ -146,7 +103,103 @@ async function checkLocation() {
   return { ok:true, dist, accuracy, latitude, longitude };
 }
 
-// ======= REGISTRO =======
+// ======= Google Sheets API (Apps Script Web App) =======
+async function gsGetList(limit = 50) {
+  const url = new URL(GS_WEBAPP_URL);
+  url.searchParams.set("action", "list");
+  url.searchParams.set("limit", String(limit));
+  url.searchParams.set("key", GS_API_KEY);
+
+  const res = await fetch(url.toString(), { method: "GET" });
+  const data = await res.json();
+  if (!data.ok) throw new Error(data.error || "gs_list_failed");
+  return data.records || [];
+}
+
+async function gsRegister(payload) {
+  const res = await fetch(GS_WEBAPP_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ ...payload, key: GS_API_KEY })
+  });
+  const data = await res.json();
+  if (!data.ok) throw new Error(data.error || "gs_register_failed");
+  return data;
+}
+
+async function gsClearCurrentMonth() {
+  const d = new Date();
+  const month = `${d.getFullYear()}-${pad(d.getMonth()+1)}`; // YYYY-MM
+
+  const res = await fetch(GS_WEBAPP_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ action: "clear_month", month, key: GS_API_KEY })
+  });
+  const data = await res.json();
+  if (!data.ok) throw new Error(data.error || "gs_clear_failed");
+  return data;
+}
+
+// ======= Render (desde Google Sheets) =======
+let cachedRecords = [];
+
+function render(records) {
+  cachedRecords = records;
+
+  // Tabla (desktop)
+  tbody.innerHTML = records.map(r => `
+    <tr class="${r.type === "ENTRADA" ? (r.late ? "late" : "ontime") : ""}">
+      <td>${escapeHtml(r.date)}</td>
+      <td>${escapeHtml(r.time)}</td>
+      <td>${escapeHtml(r.teacher)}</td>
+      <td>${escapeHtml(r.type)}</td>
+      <td>—</td>
+      <td>—</td>
+    </tr>
+  `).join("");
+
+  // Cards (mobile)
+  if (!records.length) {
+    recordsList.innerHTML = `<div class="muted small">No hay registros todavía.</div>`;
+    return;
+  }
+
+  recordsList.innerHTML = records.map(r => {
+    const badgeClass = (r.type === "ENTRADA")
+      ? (r.late ? "badge badge-late" : "badge badge-ontime")
+      : "badge badge-neutral";
+
+    const rowClass = (r.type === "ENTRADA")
+      ? (r.late ? "record-card late" : "record-card ontime")
+      : "record-card";
+
+    return `
+      <div class="${rowClass}">
+        <div class="top">
+          <span class="teacher">${escapeHtml(r.teacher)}</span>
+          <span class="${badgeClass}">${escapeHtml(r.type)}${r.type==="ENTRADA" ? (r.late ? " • TARDE" : " • A TIEMPO") : ""}</span>
+        </div>
+        <div class="meta">
+          ${escapeHtml(r.date)} • ${escapeHtml(r.time)}
+        </div>
+      </div>
+    `;
+  }).join("");
+}
+
+async function refreshFromSheet() {
+  try {
+    setStatus("warn", "Cargando…", "Leyendo registros desde Google Sheets.");
+    const records = await gsGetList(60);
+    render(records);
+    setStatus("", "Listo", "Datos sincronizados desde Google Sheets.");
+  } catch (e) {
+    setStatus("bad", "Error Google Sheets", "Revisa URL/clave del Web App y permisos.");
+  }
+}
+
+// ======= Registrar =======
 async function register(type) {
   const teacher = teacherNameEl.value.trim();
   if (!teacher) {
@@ -156,37 +209,35 @@ async function register(type) {
   }
 
   let geo;
-  try {
-    geo = await checkLocation();
-  } catch (e) {
+  try { geo = await checkLocation(); }
+  catch (e) {
     setStatus("bad", "No se pudo obtener ubicación", "Activa permisos de ubicación del navegador.");
     return;
   }
-
   if (!geo.ok) return;
 
   const t = nowParts();
-  const record = {
-    id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now()),
-    type,
-    teacher,
-    date: t.date,
-    time: t.time,
-    iso: t.iso,
-    distance_m: Math.round(geo.dist),
-    accuracy_m: Math.round(geo.accuracy),
-    lat: geo.latitude,
-    lng: geo.longitude
-  };
 
-  const records = loadRecords();
-  records.push(record);
-  saveRecords(records);
-  render();
-  setStatus("", "Guardado", `${type} registrada para ${teacher}.`);
+  try {
+    setStatus("warn", "Guardando…", "Enviando registro a Google Sheets.");
+    await gsRegister({
+      action: "register",
+      teacher,
+      type,
+      iso: t.iso,
+      distance_m: Math.round(geo.dist),
+      accuracy_m: Math.round(geo.accuracy),
+      lat: geo.latitude,
+      lng: geo.longitude
+    });
+    await refreshFromSheet();
+    setStatus("", "Guardado", `${type} registrada para ${teacher}.`);
+  } catch (e) {
+    setStatus("bad", "No se pudo guardar", "Revisa conexión y Apps Script.");
+  }
 }
 
-// ======= CSV =======
+// ======= CSV (desde lo que se ve en la app) =======
 function csvCell(v){
   if (v === null || v === undefined) return "";
   const s = String(v);
@@ -195,16 +246,15 @@ function csvCell(v){
 }
 
 function exportCSV() {
-  const rows = loadRecords();
-  if (!rows.length) {
+  if (!cachedRecords.length) {
     setStatus("warn", "Sin datos", "No hay registros para exportar.");
     return;
   }
-
-  const header = ["id","type","teacher","date","time","iso","distance_m","accuracy_m","lat","lng"];
+  const header = ["teacher","type","date","time","late","iso"];
   const lines = [header.join(",")].concat(
-    rows.map(r => header.map(k => csvCell(r[k])).join(","))
+    cachedRecords.map(r => header.map(k => csvCell(r[k])).join(","))
   );
+
   const blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8" });
   const url = URL.createObjectURL(blob);
 
@@ -226,7 +276,6 @@ window.addEventListener("beforeinstallprompt", (e) => {
   deferredPrompt = e;
   btnInstall.hidden = false;
 });
-
 btnInstall.addEventListener("click", async () => {
   if (!deferredPrompt) return;
   deferredPrompt.prompt();
@@ -235,24 +284,14 @@ btnInstall.addEventListener("click", async () => {
   btnInstall.hidden = true;
 });
 
-// ======= SW =======
-if ("serviceWorker" in navigator) {
-  window.addEventListener("load", async () => {
-    try { await navigator.serviceWorker.register("./sw.js"); } catch {}
-  });
-}
-
-// ======= UI: Mostrar/Ocultar registros =======
+// ======= UI: Toggle registros =======
 function setRecordsOpen(open) {
   recordsPanel.hidden = !open;
   btnToggleRecords.setAttribute("aria-expanded", String(open));
   btnToggleRecords.classList.toggle("open", open);
 }
 setRecordsOpen(false);
-
-btnToggleRecords.addEventListener("click", () => {
-  setRecordsOpen(recordsPanel.hidden); // abre si está cerrado
-});
+btnToggleRecords.addEventListener("click", () => setRecordsOpen(recordsPanel.hidden));
 
 // ======= Reset / Refresh Service Worker + Cache =======
 async function hardRefreshPWA() {
@@ -263,12 +302,10 @@ async function hardRefreshPWA() {
       const keys = await caches.keys();
       await Promise.all(keys.map(k => caches.delete(k)));
     }
-
     if ("serviceWorker" in navigator) {
       const regs = await navigator.serviceWorker.getRegistrations();
       await Promise.all(regs.map(r => r.unregister()));
     }
-
     const url = new URL(location.href);
     url.searchParams.set("v", String(Date.now()));
     location.replace(url.toString());
@@ -278,18 +315,30 @@ async function hardRefreshPWA() {
 }
 btnRefreshSW.addEventListener("click", hardRefreshPWA);
 
+// ======= SW register =======
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", async () => {
+    try { await navigator.serviceWorker.register("./sw.js"); } catch {}
+  });
+}
+
 // ======= EVENTOS =======
 btnEntrada.addEventListener("click", () => register("ENTRADA"));
 btnSalida.addEventListener("click",  () => register("SALIDA"));
 
-btnClear.addEventListener("click", () => {
-  localStorage.removeItem(KEY);
-  render();
-  setStatus("warn", "Borrado", "Se eliminaron todos los registros del dispositivo.");
-});
-
 btnExport.addEventListener("click", exportCSV);
 
-// Render inicial
-render();
+btnClear.addEventListener("click", async () => {
+  try {
+    setStatus("warn", "Borrando…", "Limpiando el mes actual en Google Sheets.");
+    await gsClearCurrentMonth();
+    await refreshFromSheet();
+    setStatus("warn", "Borrado", "Se borraron los registros del mes actual.");
+  } catch (e) {
+    setStatus("bad", "No se pudo borrar", "Revisa Apps Script.");
+  }
+});
+
+// Inicial
+refreshFromSheet();
 setStatus("warn", "Listo", "Para registrar, activa ubicación y escribe el nombre.");
