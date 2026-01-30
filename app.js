@@ -1,11 +1,12 @@
 // ======= CONFIG DEL COLEGIO (CAMBIA ESTO) =======
-const SCHOOL_LAT = 4.556189026908756;        // <-- pon la latitud real
-const SCHOOL_LNG = -74.11154255367394;      // <-- pon la longitud real
-const SCHOOL_RADIUS_METERS = 120;   // radio permitido (ej: 80-200m)
-const REQUIRED_ACCURACY_METERS = 50; // exige precisión GPS <= 50m (ajústalo)
+const SCHOOL_LAT = 4.556189026908756;
+const SCHOOL_LNG = -74.11154255367394;
+const SCHOOL_RADIUS_METERS = 120;
+const REQUIRED_ACCURACY_METERS = 50;
 
 // ======= UI =======
 const $ = (id) => document.getElementById(id);
+
 const teacherNameEl = $("teacherName");
 const tbody = $("tbody");
 const statusTitle = $("statusTitle");
@@ -22,7 +23,9 @@ const btnExport  = $("btnExport");
 const btnInstall = $("btnInstall");
 const btnRefreshSW = $("btnRefreshSW");
 
-
+const btnToggleRecords = $("btnToggleRecords");
+const recordsPanel = $("recordsPanel");
+const recordsList = $("recordsList");
 
 // ======= STORAGE =======
 const KEY = "asistencia_registros_v1";
@@ -47,48 +50,49 @@ function nowParts() {
   return { date:`${yyyy}-${mm}-${dd}`, time:`${hh}:${mi}:${ss}`, iso:d.toISOString() };
 }
 
-function render() {
-  const records = loadRecords().slice().reverse();
-
-  // ===== Tabla (desktop) =====
-  tbody.innerHTML = records.map(r => `
-    <tr>
-      <td>${r.date}</td>
-      <td>${r.time}</td>
-      <td>${r.teacher}</td>
-      <td>${r.type}</td>
-      <td>${r.distance_m ?? "—"}</td>
-      <td>${r.accuracy_m ?? "—"}</td>
-    </tr>
-  `).join("");
-
-  // ===== Lista (mobile) =====
-  const list = document.getElementById("recordsList");
-  list.innerHTML = records.map(r => `
-    <div class="record-card">
-      <div class="top">
-        <span>${r.teacher}</span>
-        <span class="type ${r.type}">${r.type}</span>
-      </div>
-      <div class="meta">
-        ${r.date} • ${r.time}<br>
-        Dist: ${r.distance_m ?? "—"} m · Prec: ${r.accuracy_m ?? "—"} m
-      </div>
-    </div>
-  `).join("");
-}
-
-
 function escapeHtml(s){
   return String(s).replace(/[&<>"']/g, (c)=>({
     "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
   }[c]));
 }
 
+function render() {
+  const records = loadRecords().slice().reverse();
+
+  // ===== Tabla (desktop) =====
+  tbody.innerHTML = records.map(r => `
+    <tr>
+      <td>${escapeHtml(r.date)}</td>
+      <td>${escapeHtml(r.time)}</td>
+      <td>${escapeHtml(r.teacher)}</td>
+      <td>${escapeHtml(r.type)}</td>
+      <td>${r.distance_m ?? "—"}</td>
+      <td>${r.accuracy_m ?? "—"}</td>
+    </tr>
+  `).join("");
+
+  // ===== Lista (mobile) =====
+  recordsList.innerHTML = records.map(r => `
+    <div class="record-card">
+      <div class="top">
+        <span class="teacher">${escapeHtml(r.teacher)}</span>
+        <span class="type ${escapeHtml(r.type)}">${escapeHtml(r.type)}</span>
+      </div>
+      <div class="meta">
+        ${escapeHtml(r.date)} • ${escapeHtml(r.time)}<br>
+        Dist: ${r.distance_m ?? "—"} m · Prec: ${r.accuracy_m ?? "—"} m
+      </div>
+    </div>
+  `).join("");
+
+  if (!records.length) {
+    recordsList.innerHTML = `<div class="muted small">No hay registros todavía.</div>`;
+  }
+}
+
 // ======= GEO =======
 function toRad(x){ return x * Math.PI / 180; }
 function distanceMeters(lat1, lon1, lat2, lon2) {
-  // Haversine
   const R = 6371000;
   const dLat = toRad(lat2-lat1);
   const dLon = toRad(lon2-lon1);
@@ -155,7 +159,7 @@ async function register(type) {
   try {
     geo = await checkLocation();
   } catch (e) {
-    setStatus("bad", "No se pudo obtener ubicación", "En iPhone: Ajustes > Privacidad > Localización > Safari: Mientras se usa.");
+    setStatus("bad", "No se pudo obtener ubicación", "Activa permisos de ubicación del navegador.");
     return;
   }
 
@@ -164,7 +168,7 @@ async function register(type) {
   const t = nowParts();
   const record = {
     id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now()),
-    type, // "ENTRADA" o "SALIDA"
+    type,
     teacher,
     date: t.date,
     time: t.time,
@@ -183,6 +187,13 @@ async function register(type) {
 }
 
 // ======= CSV =======
+function csvCell(v){
+  if (v === null || v === undefined) return "";
+  const s = String(v);
+  if (/[",\n]/.test(s)) return `"${s.replace(/"/g,'""')}"`;
+  return s;
+}
+
 function exportCSV() {
   const rows = loadRecords();
   if (!rows.length) {
@@ -208,13 +219,6 @@ function exportCSV() {
   setStatus("", "Exportado", "CSV descargado.");
 }
 
-function csvCell(v){
-  if (v === null || v === undefined) return "";
-  const s = String(v);
-  if (/[",\n]/.test(s)) return `"${s.replace(/"/g,'""')}"`;
-  return s;
-}
-
 // ======= INSTALL (A2HS) =======
 let deferredPrompt = null;
 window.addEventListener("beforeinstallprompt", (e) => {
@@ -231,16 +235,48 @@ btnInstall.addEventListener("click", async () => {
   btnInstall.hidden = true;
 });
 
-// iOS no dispara beforeinstallprompt, se instala desde "Compartir > Añadir a pantalla de inicio"
-
 // ======= SW =======
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", async () => {
-    try {
-      await navigator.serviceWorker.register("./sw.js");
-    } catch {}
+    try { await navigator.serviceWorker.register("./sw.js"); } catch {}
   });
 }
+
+// ======= UI: Mostrar/Ocultar registros =======
+function setRecordsOpen(open) {
+  recordsPanel.hidden = !open;
+  btnToggleRecords.setAttribute("aria-expanded", String(open));
+  btnToggleRecords.classList.toggle("open", open);
+}
+setRecordsOpen(false);
+
+btnToggleRecords.addEventListener("click", () => {
+  setRecordsOpen(recordsPanel.hidden); // abre si está cerrado
+});
+
+// ======= Reset / Refresh Service Worker + Cache =======
+async function hardRefreshPWA() {
+  try {
+    setStatus("warn", "Actualizando…", "Borrando caché y recargando (puede tardar unos segundos).");
+
+    if ("caches" in window) {
+      const keys = await caches.keys();
+      await Promise.all(keys.map(k => caches.delete(k)));
+    }
+
+    if ("serviceWorker" in navigator) {
+      const regs = await navigator.serviceWorker.getRegistrations();
+      await Promise.all(regs.map(r => r.unregister()));
+    }
+
+    const url = new URL(location.href);
+    url.searchParams.set("v", String(Date.now()));
+    location.replace(url.toString());
+  } catch (e) {
+    setStatus("bad", "No se pudo actualizar", "Cierra la app y ábrela de nuevo.");
+  }
+}
+btnRefreshSW.addEventListener("click", hardRefreshPWA);
 
 // ======= EVENTOS =======
 btnEntrada.addEventListener("click", () => register("ENTRADA"));
@@ -253,51 +289,6 @@ btnClear.addEventListener("click", () => {
 });
 
 btnExport.addEventListener("click", exportCSV);
-
-// ======= UI: Mostrar/Ocultar panel de registros (sin tocar lógica) =======
-const btnToggleRecords = document.getElementById("btnToggleRecords");
-const recordsPanel = document.getElementById("recordsPanel");
-
-function setRecordsOpen(open) {
-  recordsPanel.hidden = !open;
-  btnToggleRecords.textContent = open ? "Ocultar registros" : "Ver registros";
-}
-
-setRecordsOpen(false);
-
-btnToggleRecords.addEventListener("click", () => {
-  setRecordsOpen(recordsPanel.hidden); // si está oculto, lo abre; si está abierto, lo oculta
-});
-
-// ======= Reset / Refresh Service Worker + Cache (solo UI/mantenimiento) =======
-async function hardRefreshPWA() {
-  try {
-    setStatus("warn", "Actualizando…", "Borrando caché y recargando (puede tardar unos segundos).");
-
-    // 1) borrar caches
-    if ("caches" in window) {
-      const keys = await caches.keys();
-      await Promise.all(keys.map(k => caches.delete(k)));
-    }
-
-    // 2) desregistrar service workers
-    if ("serviceWorker" in navigator) {
-      const regs = await navigator.serviceWorker.getRegistrations();
-      await Promise.all(regs.map(r => r.unregister()));
-    }
-
-    // 3) recargar con cache-bust
-    const url = new URL(location.href);
-    url.searchParams.set("v", String(Date.now()));
-    location.replace(url.toString());
-  } catch (e) {
-    setStatus("bad", "No se pudo actualizar", "Intenta cerrar la app y abrirla de nuevo.");
-  }
-}
-
-btnRefreshSW.addEventListener("click", hardRefreshPWA);
-
-
 
 // Render inicial
 render();
