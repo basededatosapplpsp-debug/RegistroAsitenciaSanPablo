@@ -31,6 +31,9 @@ const loginHint = $("loginHint");
 const deviceIdTextEl = $("deviceIdText");
 const btnCopyDevice = $("btnCopyDevice");
 
+const btnRequestAuth = $("btnRequestAuth");
+
+
 
 
 const btnEntrada = $("btnEntrada");
@@ -181,6 +184,43 @@ btnLoginSave.addEventListener("click", () => {
 });
 
 
+
+if (btnRequestAuth) {
+  btnRequestAuth.addEventListener("click", async () => {
+    const name = (loginNameEl.value || "").trim();
+    const email = (loginEmailEl.value || "").trim().toLowerCase();
+    const course = (loginCourseEl.value || "").trim();
+
+    if (!name || !email || !course) {
+      loginHint.textContent = "Primero completa Nombre, Correo y Curso, luego solicita autorización.";
+      return;
+    }
+    if (!/^\S+@\S+\.\S+$/.test(email)) {
+      loginHint.textContent = "Correo inválido.";
+      return;
+    }
+
+    try {
+      setLoading(true, "Enviando solicitud…", "Registrando este teléfono para aprobación.");
+
+      await gsRequestDeviceAuth({
+        action: "request_device_auth",
+        name,
+        email,
+        course,
+        device_id: getDeviceId()
+      });
+
+      loginHint.textContent = "Solicitud enviada ✅. Espera aprobación del administrador.";
+    } catch (e) {
+      loginHint.textContent = String(e && e.message ? e.message : e);
+    } finally {
+      setLoading(false);
+    }
+  });
+}
+
+
 // ======= GEO =======
 function toRad(x){ return x * Math.PI / 180; }
 function distanceMeters(lat1, lon1, lat2, lon2) {
@@ -258,6 +298,22 @@ async function gsRegister(payload) {
   if (!data.ok) {
     throw new Error(data.msg || data.error || "gs_register_failed");
   }
+  return data;
+}
+
+
+async function gsRequestDeviceAuth(payload) {
+  const res = await fetch(GS_WEBAPP_URL, {
+    method: "POST",
+    // NO headers: evita preflight CORS
+    body: JSON.stringify({ ...payload, key: GS_API_KEY })
+  });
+
+  let data = null;
+  try { data = await res.json(); }
+  catch { throw new Error("Respuesta inválida del servidor"); }
+
+  if (!data.ok) throw new Error(data.msg || data.error || "request_auth_failed");
   return data;
 }
 
