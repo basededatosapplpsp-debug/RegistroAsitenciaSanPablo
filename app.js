@@ -20,6 +20,9 @@ const btnSalida  = $("btnSalida");
 const btnClear   = $("btnClear");
 const btnExport  = $("btnExport");
 const btnInstall = $("btnInstall");
+const btnRefreshSW = $("btnRefreshSW");
+
+
 
 // ======= STORAGE =======
 const KEY = "asistencia_registros_v1";
@@ -248,7 +251,37 @@ btnToggleRecords.addEventListener("click", () => {
   setRecordsOpen(recordsPanel.hidden); // si está oculto, lo abre; si está abierto, lo oculta
 });
 
+// ======= Reset / Refresh Service Worker + Cache (solo UI/mantenimiento) =======
+async function hardRefreshPWA() {
+  try {
+    setStatus("warn", "Actualizando…", "Borrando caché y recargando (puede tardar unos segundos).");
+
+    // 1) borrar caches
+    if ("caches" in window) {
+      const keys = await caches.keys();
+      await Promise.all(keys.map(k => caches.delete(k)));
+    }
+
+    // 2) desregistrar service workers
+    if ("serviceWorker" in navigator) {
+      const regs = await navigator.serviceWorker.getRegistrations();
+      await Promise.all(regs.map(r => r.unregister()));
+    }
+
+    // 3) recargar con cache-bust
+    const url = new URL(location.href);
+    url.searchParams.set("v", String(Date.now()));
+    location.replace(url.toString());
+  } catch (e) {
+    setStatus("bad", "No se pudo actualizar", "Intenta cerrar la app y abrirla de nuevo.");
+  }
+}
+
+btnRefreshSW.addEventListener("click", hardRefreshPWA);
+
+
 
 // Render inicial
 render();
 setStatus("warn", "Listo", "Para registrar, activa ubicación y escribe el nombre.");
+
