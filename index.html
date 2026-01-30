@@ -108,5 +108,30 @@
   </footer>
 
   <script src="app.js" defer></script>
+
+<!-- ======= MODAL LOGIN ======= -->
+<div id="loginModal" class="modal-backdrop" hidden>
+  <div class="modal-card">
+    <h2 class="modal-title">Iniciar sesión</h2>
+    <p class="modal-sub">Registra tus datos una sola vez en este teléfono.</p>
+
+    <label class="modal-label">Nombre</label>
+    <input id="loginName" class="modal-input" type="text" placeholder="Ej: Deimer Herrera" />
+
+    <label class="modal-label">Correo</label>
+    <input id="loginEmail" class="modal-input" type="email" placeholder="Ej: profesor@colegio.edu.co" />
+
+    <label class="modal-label">Curso (Director de grupo)</label>
+    <input id="loginCourse" class="modal-input" type="text" placeholder="Ej: 7A" />
+
+    <div class="modal-actions">
+      <button id="btnLoginSave" class="btn primary">Guardar</button>
+    </div>
+
+    <div id="loginHint" class="modal-hint muted small"></div>
+  </div>
+</div>
+
+
 </body>
 </html>
