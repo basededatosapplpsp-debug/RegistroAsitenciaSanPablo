@@ -164,3 +164,7 @@ h2{font-size:16px; margin:0 0 12px}
 
 /* Panel colapsable de registros (se usa con hidden en HTML) */
 .collapse[hidden]{display:none;}
+
+.header-actions{display:flex; gap:10px; align-items:center}
+
+
