@@ -26,34 +26,43 @@
   </header>
 
   <main class="container">
-    <section class="card">
-      <h2>Registrar</h2>
+<section class="card">
+  <div class="row row-between">
+    <h2>Registros</h2>
+    <button id="btnToggleRecords" class="btn btn-ghost">Ver registros</button>
+  </div>
 
-      <label class="label" for="teacherName">Nombre del docente</label>
-      <input id="teacherName" class="input" type="text" placeholder="Ej: Ana Pérez" autocomplete="name" />
-
+  <!-- Todo lo de registros va dentro de este contenedor ocultable -->
+  <div id="recordsPanel" class="collapse" hidden>
+    <div class="row row-between">
       <div class="row">
-        <button id="btnEntrada" class="btn btn-primary">Registrar ENTRADA</button>
-        <button id="btnSalida" class="btn btn-secondary">Registrar SALIDA</button>
+        <button id="btnExport" class="btn btn-ghost">Exportar CSV</button>
+        <button id="btnClear" class="btn btn-danger">Borrar todo</button>
       </div>
+    </div>
 
-      <div class="status" id="status">
-        <span class="dot" id="dot"></span>
-        <div>
-          <div id="statusTitle">Listo</div>
-          <div class="muted" id="statusMsg">Activa ubicación para registrar en el colegio.</div>
-        </div>
-      </div>
+    <div class="table-wrap">
+      <table class="table" aria-label="Registros de asistencia">
+        <thead>
+          <tr>
+            <th>Fecha</th>
+            <th>Hora</th>
+            <th>Docente</th>
+            <th>Tipo</th>
+            <th>Dist (m)</th>
+            <th>Prec (m)</th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
 
-      <details class="details">
-        <summary>Verificación de ubicación</summary>
-        <div class="kv">
-          <div><span class="k">Distancia:</span> <span id="dist">—</span></div>
-          <div><span class="k">Precisión:</span> <span id="acc">—</span></div>
-          <div><span class="k">Coordenadas:</span> <span id="coords">—</span></div>
-        </div>
-      </details>
-    </section>
+    <p class="muted small">
+      Nota: Los registros se guardan localmente en el celular (LocalStorage).
+    </p>
+  </div>
+</section>
+
 
     <section class="card">
       <div class="row row-between">
