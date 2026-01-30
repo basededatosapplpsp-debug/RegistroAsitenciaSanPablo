@@ -30,77 +30,76 @@
 
   <main class="container">
     <!-- ===== Registrar ===== -->
- <section class="card card-action">
-  <button id="btnToggleRecords" class="card-button">
-    <div>
-      <h2>Registros</h2>
-      <p class="muted small">Ver historial de entradas y salidas</p>
-    </div>
-    <span class="chevron">›</span>
-  </button>
-</section>
-
-<section class="card collapse" id="recordsPanel" hidden>
-  <div class="row">
-    <button id="btnExport" class="btn btn-ghost">Exportar CSV</button>
-    <button id="btnClear" class="btn btn-danger">Borrar todo</button>
-  </div>
-
-  <!-- LISTA MOBILE -->
-  <div id="recordsList" class="records-list"></div>
-
-  <!-- TABLA DESKTOP -->
-  <div class="table-wrap desktop-only">
-    <table class="table">
-      <thead>
-        <tr>
-          <th>Fecha</th>
-          <th>Hora</th>
-          <th>Docente</th>
-          <th>Tipo</th>
-          <th>Dist</th>
-          <th>Prec</th>
-        </tr>
-      </thead>
-      <tbody id="tbody"></tbody>
-    </table>
-  </div>
-</section>
-
-
-    <!-- ===== Registros (colapsable) ===== -->
     <section class="card">
-      <div class="row row-between">
-        <h2>Registros</h2>
-        <button id="btnToggleRecords" class="btn btn-ghost">Ver registros</button>
+      <h2>Registrar</h2>
+
+      <label class="label" for="teacherName">Nombre del docente</label>
+      <input id="teacherName" class="input" type="text" placeholder="Ej: Ana Pérez" autocomplete="name" />
+
+      <div class="row">
+        <button id="btnEntrada" class="btn btn-primary">Registrar ENTRADA</button>
+        <button id="btnSalida" class="btn btn-secondary">Registrar SALIDA</button>
       </div>
 
-      <div id="recordsPanel" class="collapse" hidden>
-        <div class="row">
-          <button id="btnExport" class="btn btn-ghost">Exportar CSV</button>
-          <button id="btnClear" class="btn btn-danger">Borrar todo</button>
+      <div class="status" id="status">
+        <span class="dot" id="dot"></span>
+        <div>
+          <div id="statusTitle">Listo</div>
+          <div class="muted" id="statusMsg">Activa ubicación para registrar en el colegio.</div>
         </div>
-
-        <div class="table-wrap">
-          <table class="table" aria-label="Registros de asistencia">
-            <thead>
-              <tr>
-                <th>Fecha</th>
-                <th>Hora</th>
-                <th>Docente</th>
-                <th>Tipo</th>
-                <th>Dist (m)</th>
-                <th>Prec (m)</th>
-              </tr>
-            </thead>
-            <tbody id="tbody"></tbody>
-          </table>
-        </div>
-
-        <p class="muted small">
-          Nota: Los registros se guardan localmente en el celular (LocalStorage).
-        </p>
       </div>
+
+      <details class="details">
+        <summary>Verificación de ubicación</summary>
+        <div class="kv">
+          <div><span class="k">Distancia:</span> <span id="dist">—</span></div>
+          <div><span class="k">Precisión:</span> <span id="acc">—</span></div>
+          <div><span class="k">Coordenadas:</span> <span id="coords">—</span></div>
+        </div>
+      </details>
+    </section>
+
+    <!-- ===== Registros: tarjeta grande (botón) ===== -->
+    <section class="card card-action">
+      <button id="btnToggleRecords" class="card-button" type="button" aria-expanded="false" aria-controls="recordsPanel">
+        <div class="card-button-text">
+          <div class="card-title">Registros</div>
+          <div class="muted small">Ver historial de entradas y salidas</div>
+        </div>
+        <span class="chevron" aria-hidden="true">›</span>
+      </button>
+    </section>
+
+    <!-- ===== Panel de registros (colapsable) ===== -->
+    <section class="card collapse" id="recordsPanel" hidden>
+      <div class="row">
+        <button id="btnExport" class="btn btn-ghost">Exportar CSV</button>
+        <button id="btnClear" class="btn btn-danger">Borrar todo</button>
+      </div>
+
+      <!-- LISTA MOBILE -->
+      <div id="recordsList" class="records-list"></div>
+
+      <!-- TABLA DESKTOP -->
+      <div class="table-wrap desktop-only">
+        <table class="table" aria-label="Registros de asistencia">
+          <thead>
+            <tr>
+              <th>Fecha</th>
+              <th>Hora</th>
+              <th>Docente</th>
+              <th>Tipo</th>
+              <th>Dist</th>
+              <th>Prec</th>
+            </tr>
+          </thead>
+          <tbody id="tbody"></tbody>
+        </table>
+      </div>
+
+      <p class="muted small">
+        Nota: Los registros se guardan localmente en el celular (LocalStorage).
+      </p>
     </section>
   </main>
 
