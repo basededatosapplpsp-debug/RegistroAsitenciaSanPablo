@@ -493,3 +493,21 @@ h2{font-size:16px; margin:0 0 12px}
   filter: grayscale(.3);
 }
 
+
+/* ===== SALIDA inactiva hasta ENTRADA ===== */
+#btnSalida.is-inactive{
+  background: linear-gradient(
+    180deg,
+    #f1f5f9,
+    #e5e7eb
+  );
+  color: #9ca3af;
+  border-color: rgba(0,0,0,.08);
+  box-shadow: none;
+  cursor: not-allowed;
+}
+
+#btnSalida.is-inactive::before{
+  opacity: .35;
+}
+
