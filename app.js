@@ -648,16 +648,21 @@ updateSalidaState(filtered);
 
 async function refreshFromSheet() {
   try {
-    setLoading(true, "Cargando…", "Leyendo registros desde Google Sheets.");
+    setStatus("warn", "Cargando…", "Leyendo registros de asistencia.");
+
     const records = await gsGetList(60);
     render(records);
-    setStatus("", "Listo", "Datos sincronizados desde Google Sheets.");
+
+    setStatus("", "Listo", "Datos de asistencia sincronizados.");
   } catch (e) {
-    setStatus("bad", "Error Google Sheets", String(e && e.message ? e.message : "Revisa URL/clave del Web App y permisos."));
-  } finally {
-    setLoading(false);
+    setStatus(
+      "bad",
+      "Error Google Sheets",
+      String(e && e.message ? e.message : "Revisa URL/clave del Web App y permisos.")
+    );
   }
 }
+
 
 
 // ======= Registrar =======
@@ -695,7 +700,7 @@ async function register(type) {
   const t = nowParts();
 
   try {
-    setLoading(true, "Guardando…", "Enviando registro a Google Sheets.");
+    setLoading(true, "Guardando…", "Enviando registro de asitencia.");
 
     await gsRegister({
       action: "register",
