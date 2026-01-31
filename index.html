@@ -1023,18 +1023,7 @@ function escapeHtml(s){
 }
 
 
-// ======= ADMIN SESSION =======
-const LS_ADMIN_KEY = "asistencia_admin_session_v1";
-let isAdminSession = (localStorage.getItem(LS_ADMIN_KEY) === "1");
 
-function setAdminSession(on) {
-  isAdminSession = !!on;
-  localStorage.setItem(LS_ADMIN_KEY, on ? "1" : "0");
-  if (btnAdminViewAssist) btnAdminViewAssist.hidden = !on;
-}
-
-// default: oculto si no es admin
-if (btnAdminViewAssist) btnAdminViewAssist.hidden = !isAdminSession;
 
 // ======= Admin API =======
 async function gsAdminCheckPin(pin) {
@@ -1447,6 +1436,12 @@ function closeAdminModal() {
   if (!adminModal) return;
   adminModal.hidden = true;
   adminHint.textContent = "";
+
+  // ✅ reset modo del botón
+  if (btnAdminEnter) {
+    delete btnAdminEnter.dataset.mode;
+    delete btnAdminEnter.dataset.oldpin;
+  }
 }
 
 async function adminEnterFlow() {
@@ -1469,22 +1464,21 @@ async function adminEnterFlow() {
       adminHint.textContent = "Define un nuevo PIN (4 a 8 dígitos).";
       adminNewPinEl.focus();
 
-      // al volver a presionar Entrar, intentará cambiar
       btnAdminEnter.dataset.mode = "change";
       btnAdminEnter.dataset.oldpin = pin;
       return;
     }
 
-   // ✅ sesión admin “principal” (sin correo / sin autorización)
-setAdminMode(true);
+    // ✅ ENTRAR COMO ADMIN (CIERRA LOGIN SIEMPRE)
+    setAdminMode(true);
 
-// cerrar modales
-closeAdminModal();
-loginModal.hidden = true;
+    // cerrar modales
+    closeAdminModal();
+    if (loginModal) loginModal.hidden = true;
+    if (loginHint) loginHint.textContent = "";
 
-// UI
-setStatus("", "Administrador", "Sesión iniciada como administrador ✅");
-
+    // UI
+    setStatus("", "Administrador", "Sesión iniciada como administrador ✅");
 
   } catch (e) {
     adminHint.textContent = String(e && e.message ? e.message : e);
@@ -1492,6 +1486,7 @@ setStatus("", "Administrador", "Sesión iniciada como administrador ✅");
     setLoading(false);
   }
 }
+
 
 async function adminChangePinFlow(oldPin) {
   const newPin = String(adminNewPinEl.value || "").trim();
@@ -1618,7 +1613,7 @@ async function adminLoadTeachersAndBind() {
 
 if (btnAdminViewAssist) {
   btnAdminViewAssist.addEventListener("click", async () => {
-    if (!isAdminSession) {
+    if (!isAdminMode()) {
       setStatus("warn", "Requiere admin", "Ingresa como administrador primero.");
       openAdminModal();
       return;
@@ -1634,6 +1629,7 @@ if (btnAdminViewAssist) {
     }
   });
 }
+
 
 if (adminTeacherSelect) {
   adminTeacherSelect.addEventListener("change", async () => {
