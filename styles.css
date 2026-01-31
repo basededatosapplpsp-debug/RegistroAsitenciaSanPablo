@@ -331,3 +331,38 @@ h2{font-size:16px; margin:0 0 12px}
 .modal-backdrop[hidden]{ 
   display: none !important; 
 }
+
+/* ===== Docente logueado: input grande y bloqueado ===== */
+.input.is-locked{
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: .2px;
+  opacity: 1;
+}
+
+.input.is-locked:disabled{
+  cursor: not-allowed;
+  opacity: 1; /* que NO se vea gris apagado */
+}
+
+/* ===== Docente logueado: estilo etiqueta/título ===== */
+.input.is-locked{
+  font-size: 22px;
+  font-weight: 900;
+  text-align: center;
+  letter-spacing: .3px;
+  background: linear-gradient(
+    180deg,
+    rgba(11,95,255,.20),
+    rgba(11,95,255,.10)
+  );
+  border-color: rgba(11,95,255,.55);
+  box-shadow: 0 0 0 4px rgba(11,95,255,.15);
+  cursor: default;
+}
+
+/* Mantener color normal aunque esté disabled */
+.input.is-locked:disabled{
+  opacity: 1;
+  -webkit-text-fill-color: var(--text);
+}
