@@ -1145,29 +1145,11 @@ function escapeHtml(s){
 function isNTCRecord(r) {
   if (!r) return false;
 
-  // Caso ideal: el servidor ya envía boolean ntc
+  // SOLO si el servidor lo envía explícito
   if (r.ntc === true) return true;
 
-  // Por si llega como string "true"/"TRUE"/"1"
-  const ntcStr = String(r.ntc || "").trim().toLowerCase();
-  if (ntcStr === "true" || ntcStr === "1" || ntcStr === "si" || ntcStr === "sí") return true;
-
-  // Compatibilidad: algunos backends guardan "NTC" en campos como distancia/precisión/notas
-  const dist = String(r.distance_m ?? r.dist ?? r.distance ?? "").trim().toUpperCase();
-  const acc  = String(r.accuracy_m ?? r.acc ?? r.accuracy ?? "").trim().toUpperCase();
-  const notes = String(r.notes ?? r.nota ?? "").trim().toUpperCase();
-
-  if (dist === "NTC" || acc === "NTC") return true;
-  if (notes.includes("NTC")) return true;
-
-  // Si el registro manual no tiene device_id (a veces queda vacío)
-  const device = String(r.device_id ?? "").trim();
-  if (device === "" && (dist === "" || acc === "")) {
-    // condición suave: sin device y sin datos geo => probablemente NTC
-    return true;
-  }
-
-  return false;
+  const ntcStr = String(r.ntc ?? "").trim().toLowerCase();
+  return (ntcStr === "true" || ntcStr === "1");
 }
 
 
