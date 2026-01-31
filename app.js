@@ -580,23 +580,32 @@ btnToggleRecords.addEventListener("click", () => setRecordsOpen(recordsPanel.hid
 // ======= Reset / Refresh Service Worker + Cache =======
 async function hardRefreshPWA() {
   try {
-    setStatus("warn", "Actualizando…", "Borrando caché y recargando (puede tardar unos segundos).");
+    setStatus("warn", "Actualizando…", "Borrando caché y reiniciando la app.");
 
+    // 🔥 orden de suicidio al SW activo
+    if ("serviceWorker" in navigator) {
+      const reg = await navigator.serviceWorker.getRegistration();
+      if (reg && reg.active) {
+        reg.active.postMessage("KILL_SW");
+      }
+    }
+
+    // 🧹 borrar caches desde la app
     if ("caches" in window) {
       const keys = await caches.keys();
       await Promise.all(keys.map(k => caches.delete(k)));
     }
-    if ("serviceWorker" in navigator) {
-      const regs = await navigator.serviceWorker.getRegistrations();
-      await Promise.all(regs.map(r => r.unregister()));
-    }
+
+    // 🔄 romper caché del navegador
     const url = new URL(location.href);
-    url.searchParams.set("v", String(Date.now()));
+    url.searchParams.set("v", Date.now().toString());
     location.replace(url.toString());
+
   } catch (e) {
     setStatus("bad", "No se pudo actualizar", "Cierra la app y ábrela de nuevo.");
   }
 }
+
 btnRefreshSW.addEventListener("click", hardRefreshPWA);
 
 // ======= SW register =======
