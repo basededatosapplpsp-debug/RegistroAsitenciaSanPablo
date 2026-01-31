@@ -41,6 +41,8 @@ const btnSalida  = $("btnSalida");
 const btnExport  = $("btnExport");
 const btnInstall = $("btnInstall");
 const btnRefreshSW = $("btnRefreshSW");
+const btnLogout = $("btnLogout");
+
 
 const btnToggleRecords = $("btnToggleRecords");
 const recordsPanel = $("recordsPanel");
@@ -134,6 +136,43 @@ function saveProfile(profile) {
   localStorage.setItem(LS_PROFILE_KEY, JSON.stringify(profile));
 }
 
+function applySessionUI(profile) {
+  if (profile && profile.name) {
+    teacherNameEl.value = profile.name;
+
+    // ✅ input bloqueado y más grande
+    teacherNameEl.disabled = true;
+    teacherNameEl.classList.add("is-locked");
+
+    // ✅ mostrar botón cerrar sesión
+    if (btnLogout) btnLogout.hidden = false;
+  } else {
+    // ✅ input editable (por si haces logout)
+    teacherNameEl.disabled = false;
+    teacherNameEl.classList.remove("is-locked");
+
+    // ocultar botón cerrar sesión
+    if (btnLogout) btnLogout.hidden = true;
+  }
+}
+
+function logout() {
+  // borrar perfil
+  localStorage.removeItem(LS_PROFILE_KEY);
+
+  // limpiar UI
+  applySessionUI(null);
+
+  // abrir modal de login
+  loginModal.hidden = false;
+  updateDeviceIdUI();
+  loginHint.textContent = "Sesión cerrada. Inicia sesión para continuar.";
+
+  // opcional: mensaje en status
+  setStatus("warn", "Sesión cerrada", "Vuelve a iniciar sesión para registrar.");
+}
+
+
 function requireLogin() {
   const p = loadProfile();
   if (p && p.name && p.email && p.course) return p;
@@ -215,11 +254,15 @@ btnLoginSave.addEventListener("click", async () => {
     }
 
     // ✅ Autorizado: guardar perfil y cerrar modal
-    saveProfile({ name, email, course });
-    teacherNameEl.value = name;
+    const profile = { name, email, course };
+saveProfile(profile);
+
+applySessionUI(profile);
+loginModal.hidden = true;
+
 
     loginHint.textContent = "";
-    loginModal.hidden = true;
+    
 
     setStatus("", "Sesión iniciada", "Dispositivo autorizado ✅ Ya puedes registrar asistencia.");
 
@@ -635,6 +678,10 @@ async function hardRefreshPWA() {
 }
 
 btnRefreshSW.addEventListener("click", hardRefreshPWA);
+if (btnLogout) {
+  btnLogout.addEventListener("click", logout);
+}
+
 
 // ======= SW register =======
 if ("serviceWorker" in navigator) {
@@ -658,7 +705,10 @@ setStatus("warn", "Listo", "Para registrar, activa ubicación y escribe el nombr
 // ✅ Mostrar login al abrir (si no hay perfil guardado)
 const _p = requireLogin();
 if (_p) {
-  teacherNameEl.value = _p.name; // autocompletar nombre
+  applySessionUI(_p);
+} else {
+  applySessionUI(null);
 }
+
 
 
