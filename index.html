@@ -36,11 +36,15 @@ body{
               var(--bg);
   color:var(--text);
 
-  min-height:100vh;
-  padding-bottom: calc(60px + env(safe-area-inset-bottom));
-    overflow: hidden;          /* ✅ evita scroll en toda la app */
-  overscroll-behavior: none; /* ✅ evita “rebote” */
+  /* ✅ Layout tipo app (sin scroll global) */
+  height: 100dvh;            /* mejor que 100vh en móviles */
+  overflow: hidden;          /* NO scroll en la app completa */
+  overscroll-behavior: none;
+
+  display: flex;
+  flex-direction: column;
 }
+
 
 .header{
   position:sticky; top:0; z-index:10;
@@ -57,12 +61,19 @@ h1{font-size:18px; margin:0}
 .sub{margin:4px 0 0; color:var(--muted); font-size:12px}
 
 .container{
+  flex: 1 1 auto;      /* ocupa el espacio entre header y footer */
+  min-height: 0;       /* ✅ CLAVE: permite scroll interno */
+  overflow: hidden;    /* NO scroll del main */
+  
   max-width: 520px;
   margin: 12px auto;
-  padding: 0 12px 76px;
-  display:grid;
-  gap:12px;
+  padding: 0 12px 12px;
+
+  display: flex;       /* ✅ en columna para controlar alturas */
+  flex-direction: column;
+  gap: 12px;
 }
+
 
 .card{
   background: rgba(18,26,43,.92);
@@ -146,20 +157,16 @@ h2{font-size:16px; margin:0 0 12px}
 .table tr:hover td{background: rgba(255,255,255,.03)}
 
 .footer{
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-
-  padding: 10px 16px;
+  flex: 0 0 auto;
+  padding: 10px 16px calc(10px + env(safe-area-inset-bottom));
   border-top: 1px solid var(--line);
   background: rgba(11,18,32,.75);
   backdrop-filter: blur(10px);
 
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  text-align: center;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  text-align:center;
 }
 
 
@@ -613,6 +620,20 @@ body.is-loading{
 }
 
 /* cuando registros está oculto, nada scrollea */
+#recordsPanel[hidden]{
+  overflow: hidden;
+}
+
+
+/* ✅ Scroll solo en el panel de registros */
+#recordsPanel{
+  flex: 1 1 auto;         /* toma el espacio restante cuando está abierto */
+  min-height: 0;          /* ✅ CLAVE para overflow */
+  overflow: auto;         /* ✅ aquí sí hay scroll */
+  -webkit-overflow-scrolling: touch;
+}
+
+/* si está oculto, no ocupa espacio */
 #recordsPanel[hidden]{
   overflow: hidden;
 }
