@@ -12,7 +12,578 @@
   <link rel="apple-touch-icon" href="apple-touch-icon.png" />
 
   <title>Asistencia Docentes</title>
- <link rel="stylesheet" href="styles.css?v=20260201">
+ <style>
+:root{
+  --bg:#0b1220;
+  --card:#121a2b;
+  --text:#e9eefc;
+  --muted:#9bb0d0;
+  --primary:#0b5fff;
+  --secondary:#3b82f6;
+  --danger:#ef4444;
+  --line:rgba(255,255,255,.10);
+  --shadow: 0 8px 30px rgba(0,0,0,.35);
+  --radius:18px;
+}
+
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+  background: radial-gradient(1200px 800px at 20% 0%, rgba(11,95,255,.18), transparent 60%),
+              radial-gradient(900px 600px at 80% 30%, rgba(59,130,246,.14), transparent 55%),
+              var(--bg);
+  color:var(--text);
+
+  min-height:100vh;
+  padding-bottom: calc(60px + env(safe-area-inset-bottom));
+}
+
+.header{
+  position:sticky; top:0; z-index:10;
+  background: rgba(11,18,32,.75);
+  backdrop-filter: blur(10px);
+  border-bottom:1px solid var(--line);
+  padding: 14px 14px calc(12px + env(safe-area-inset-top));
+  display:flex; align-items:center; justify-content:space-between;
+}
+
+.header-actions{display:flex; gap:10px; align-items:center}
+
+h1{font-size:18px; margin:0}
+.sub{margin:4px 0 0; color:var(--muted); font-size:12px}
+
+.container{
+  max-width: 520px;
+  margin: 12px auto;
+  padding: 0 12px 76px;
+  display:grid;
+  gap:12px;
+}
+
+.card{
+  background: rgba(18,26,43,.92);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 16px;
+  box-shadow: var(--shadow);
+}
+
+h2{font-size:16px; margin:0 0 12px}
+
+.label{display:block; color:var(--muted); font-size:12px; margin-bottom:6px}
+.input{
+  width:100%;
+  padding: 14px 12px;
+  border-radius: 14px;
+  border:1px solid var(--line);
+  background: rgba(255,255,255,.04);
+  color: var(--text);
+  outline:none;
+}
+.input:focus{border-color: rgba(11,95,255,.55); box-shadow: 0 0 0 4px rgba(11,95,255,.15)}
+
+.row{display:flex; gap:10px; margin-top:12px; flex-wrap:wrap}
+.row-between{align-items:center; justify-content:space-between}
+
+.btn{
+  border:0;
+  border-radius: 14px;
+  padding: 12px 14px;
+  font-weight: 700;
+  cursor:pointer;
+  color: var(--text);
+  background: rgba(255,255,255,.06);
+  border:1px solid var(--line);
+}
+.btn:active{transform: translateY(1px)}
+.btn-primary{background: linear-gradient(180deg, rgba(11,95,255,.95), rgba(11,95,255,.75)); border-color: rgba(11,95,255,.55)}
+.btn-secondary{background: linear-gradient(180deg, rgba(59,130,246,.95), rgba(59,130,246,.70)); border-color: rgba(59,130,246,.55)}
+.btn-danger{background: linear-gradient(180deg, rgba(239,68,68,.95), rgba(239,68,68,.70)); border-color: rgba(239,68,68,.55)}
+.btn-ghost{background: transparent}
+
+.status{
+  display:flex; gap:10px; align-items:center;
+  margin-top: 14px;
+  padding: 12px;
+  border: 1px dashed var(--line);
+  border-radius: 14px;
+}
+.dot{
+  width:10px; height:10px; border-radius:50%;
+  background: #22c55e;
+  box-shadow: 0 0 0 6px rgba(34,197,94,.12);
+}
+.dot.warn{background:#f59e0b; box-shadow:0 0 0 6px rgba(245,158,11,.12)}
+.dot.bad{background:#ef4444; box-shadow:0 0 0 6px rgba(239,68,68,.12)}
+.muted{color:var(--muted)}
+.small{font-size:12px}
+
+.details{margin-top:12px; color:var(--muted)}
+.details summary{cursor:pointer}
+.kv{margin-top:10px; display:grid; gap:6px}
+.k{color:var(--text)}
+
+.table-wrap{
+  overflow:auto;
+  border-radius: 14px;
+  border:1px solid var(--line);
+  -webkit-overflow-scrolling: touch;
+}
+
+.table{width:100%; border-collapse: collapse; min-width: 760px; background: rgba(0,0,0,.15)}
+.table th,.table td{
+  padding: 10px 10px;
+  border-bottom:1px solid var(--line);
+  font-size:13px;
+  text-align:left;
+  white-space:nowrap;
+}
+.table th{color: var(--muted); font-weight:700}
+.table tr:hover td{background: rgba(255,255,255,.03)}
+
+.footer{
+  position:fixed; bottom:0; left:0; right:0;
+  padding: 10px 16px;
+  border-top:1px solid var(--line);
+  background: rgba(11,18,32,.75);
+  backdrop-filter: blur(10px);
+}
+
+/* ===== Mobile: botones full width ===== */
+@media (max-width: 699px){
+  .row{flex-direction: column;}
+  .row .btn{width:100%;}
+}
+
+/* ===== Desktop ===== */
+@media (min-width: 700px){
+  .container{
+    max-width: 900px;
+    margin: 18px auto;
+    padding: 0 14px 60px;
+    gap:14px;
+  }
+  .header{padding: 16px 18px;}
+  .row{flex-direction: row;}
+  .row .btn{width:auto;}
+}
+
+.collapse[hidden]{display:none;}
+
+/* ===== Tarjeta botón "Registros" estilo app ===== */
+.card-action{padding:0}
+
+.card-button{
+  width:100%;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+
+  padding:16px;
+
+  background: transparent;
+  border: 0;
+  color: inherit;
+  font: inherit;
+  text-align:left;
+  cursor:pointer;
+}
+
+.card-button:active{transform: translateY(1px);}
+
+.card-title{
+  font-weight: 800;
+  font-size: 16px;
+  margin-bottom: 4px;
+}
+
+.chevron{
+  font-size: 26px;
+  opacity: .7;
+  transition: transform .15s ease;
+}
+
+/* gira la flecha cuando está abierto */
+.card-button.open .chevron{
+  transform: rotate(90deg);
+}
+
+/* ===== Lista tipo cards (mobile) ===== */
+.records-list{
+  display:grid;
+  gap:12px;
+  margin-top:12px;
+}
+
+.record-card{
+  background: rgba(255,255,255,.04);
+  border:1px solid var(--line);
+  border-radius:14px;
+  padding:12px;
+}
+
+.record-card .top{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:10px;
+  font-weight:800;
+}
+
+.record-card .teacher{
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+
+.record-card .type{
+  font-size:12px;
+  padding:4px 8px;
+  border-radius:999px;
+  border:1px solid var(--line);
+}
+
+.type.ENTRADA{background:rgba(34,197,94,.15); color:#22c55e}
+.type.SALIDA{background:rgba(59,130,246,.15); color:#3b82f6}
+
+.record-card .meta{
+  margin-top:6px;
+  font-size:12px;
+  color:var(--muted);
+}
+
+/* mobile vs desktop */
+.desktop-only{display:none}
+@media (min-width:700px){
+  .records-list{display:none}
+  .desktop-only{display:block}
+}
+
+
+/* ===== Colores A TIEMPO / TARDE ===== */
+.record-card.ontime{
+  border-color: rgba(34,197,94,.45);
+  background: rgba(34,197,94,.10);
+}
+.record-card.late{
+  border-color: rgba(239,68,68,.45);
+  background: rgba(239,68,68,.10);
+}
+
+.badge{
+  font-size:12px;
+  padding:4px 8px;
+  border-radius:999px;
+  border:1px solid var(--line);
+  font-weight:800;
+}
+.badge-ontime{ background: rgba(34,197,94,.15); color:#22c55e; border-color: rgba(34,197,94,.35); }
+.badge-late{ background: rgba(239,68,68,.15); color:#ef4444; border-color: rgba(239,68,68,.35); }
+.badge-neutral{ background: rgba(255,255,255,.08); color: var(--text); }
+
+
+/* ======= MODAL LOGIN ======= */
+.modal-backdrop{
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 18px;
+  z-index: 9999;
+}
+.modal-card{
+  width: min(420px, 100%);
+  background: #0b1220;
+  border: 1px solid rgba(255,255,255,.12);
+  border-radius: 16px;
+  padding: 16px;
+  box-shadow: 0 10px 30px rgba(0,0,0,.35);
+}
+.modal-title{ margin: 0 0 6px 0; font-size: 18px; }
+.modal-sub{ margin: 0 0 12px 0; opacity: .85; font-size: 13px; }
+
+.modal-label{ display:block; margin: 10px 0 6px; font-size: 12px; opacity:.9; }
+.modal-input{
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,.14);
+  background: rgba(255,255,255,.06);
+  color: #fff;
+  outline: none;
+}
+.modal-input:focus{ border-color: rgba(99, 179, 237, .8); }
+
+.modal-actions{ margin-top: 14px; display:flex; gap:10px; }
+.modal-hint{ margin-top: 10px; }
+
+
+.device-box{
+  margin-top: 12px;
+  padding: 10px;
+  border-radius: 12px;
+  border: 1px dashed rgba(255,255,255,.18);
+  background: rgba(255,255,255,.04);
+}
+.device-row{
+  display:flex;
+  align-items:center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+.device-id{
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-size: 12px;
+  word-break: break-all;
+  opacity: .95;
+}
+.modal-backdrop[hidden]{ 
+  display: none !important; 
+}
+
+/* ===== Docente logueado: input grande y bloqueado ===== */
+.input.is-locked{
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: .2px;
+  opacity: 1;
+}
+
+.input.is-locked:disabled{
+  cursor: not-allowed;
+  opacity: 1; /* que NO se vea gris apagado */
+}
+
+/* ===== Docente logueado: estilo etiqueta/título ===== */
+.input.is-locked{
+  font-size: 22px;
+  font-weight: 900;
+  text-align: center;
+  letter-spacing: .3px;
+  background: linear-gradient(
+    180deg,
+    rgba(11,95,255,.20),
+    rgba(11,95,255,.10)
+  );
+  border-color: rgba(11,95,255,.55);
+  box-shadow: 0 0 0 4px rgba(11,95,255,.15);
+  cursor: default;
+}
+
+/* Mantener color normal aunque esté disabled */
+.input.is-locked:disabled{
+  opacity: 1;
+  -webkit-text-fill-color: var(--text);
+}
+
+
+/* ===== Menú circular con iniciales ===== */
+.menu{ position: relative; }
+
+.menu-btn{
+  width: 44px;
+  height: 44px;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,.14);
+  background: rgba(255,255,255,.06);
+  color: var(--text);
+  font-weight: 900;
+  letter-spacing: .5px;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  box-shadow: 0 8px 20px rgba(0,0,0,.25);
+}
+.menu-btn:active{ transform: translateY(1px); }
+
+.menu-panel{
+  position: absolute;
+  right: 0;
+  top: calc(100% + 10px);
+  min-width: 180px;
+  background: rgba(18,26,43,.98);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  box-shadow: var(--shadow);
+  padding: 6px;
+  z-index: 10000;
+}
+
+.menu-item{
+  width: 100%;
+  text-align: left;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text);
+  font-weight: 800;
+  cursor: pointer;
+}
+.menu-item:hover{ background: rgba(255,255,255,.06); border-color: rgba(255,255,255,.10); }
+.menu-item.danger{ color: #ffb4b4; }
+.menu-item.danger:hover{ background: rgba(239,68,68,.12); border-color: rgba(239,68,68,.25); }
+
+
+/* ===== Botones ENTRADA / SALIDA PRO ===== */
+
+/* ===== Botones ENTRADA / SALIDA (pastel, profesional) ===== */
+
+#btnEntrada,
+#btnSalida{
+  position: relative;
+  overflow: hidden;
+  font-size: 14.5px;
+  font-weight: 800;
+  letter-spacing: .35px;
+  padding: 14px 16px;
+  border-radius: 16px;
+  transition: transform .12s ease, box-shadow .12s ease, filter .12s ease;
+}
+
+/* Hover / active sutil */
+#btnEntrada:hover,
+#btnSalida:hover{
+  filter: brightness(1.02);
+}
+#btnEntrada:active,
+#btnSalida:active{
+  transform: translateY(1px);
+}
+
+/* ================= ENTRADA ================= */
+#btnEntrada{
+  background: linear-gradient(
+    180deg,
+    #d1fae5,   /* verde pastel */
+    #ecfdf5
+  );
+  color: #065f46;
+  border: 1px solid rgba(6,95,70,.25);
+  box-shadow:
+    0 6px 14px rgba(6,95,70,.15),
+    inset 0 1px 0 rgba(255,255,255,.6);
+}
+
+/* icono sutil */
+#btnEntrada::before{
+  content: "↘";
+  margin-right: 8px;
+  font-size: 13px;
+  opacity: .7;
+}
+
+/* ================= SALIDA ================= */
+#btnSalida{
+  background: linear-gradient(
+    180deg,
+    #ede9fe,   /* violeta pastel */
+    #f5f3ff
+  );
+  color: #4c1d95;
+  border: 1px solid rgba(76,29,149,.25);
+  box-shadow:
+    0 6px 14px rgba(76,29,149,.15),
+    inset 0 1px 0 rgba(255,255,255,.6);
+}
+
+#btnSalida::before{
+  content: "↗";
+  margin-right: 8px;
+  font-size: 13px;
+  opacity: .7;
+}
+
+/* ================= Disabled ================= */
+#btnEntrada:disabled,
+#btnSalida:disabled{
+  opacity: .6;
+  box-shadow: none;
+  filter: grayscale(.3);
+}
+
+
+/* ===== SALIDA inactiva hasta ENTRADA ===== */
+#btnSalida.is-inactive{
+  background: linear-gradient(
+    180deg,
+    #f1f5f9,
+    #e5e7eb
+  );
+  color: #9ca3af;
+  border-color: rgba(0,0,0,.08);
+  box-shadow: none;
+  cursor: not-allowed;
+}
+
+#btnSalida.is-inactive::before{
+  opacity: .35;
+}
+
+
+/* ======= LOADER GLOBAL (overlay moderno) ======= */
+.app-loader{
+  position: fixed;
+  inset: 0;
+  z-index: 100000;
+  display: grid;
+  place-items: center;
+  padding: 18px;
+  background: rgba(0,0,0,.45);
+  backdrop-filter: blur(10px);
+}
+
+.app-loader[hidden]{ display:none !important; }
+
+.loader-card{
+  width: min(420px, 100%);
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  padding: 14px 14px;
+  border-radius: 18px;
+  background: rgba(18,26,43,.96);
+  border: 1px solid rgba(255,255,255,.12);
+  box-shadow: 0 18px 45px rgba(0,0,0,.45);
+}
+
+.spinner{
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  border: 3px solid rgba(255,255,255,.14);
+  border-top-color: rgba(209,250,229,.95);  /* pastel suave */
+  border-right-color: rgba(237,233,254,.95);/* pastel suave */
+  animation: spin 0.85s linear infinite;
+  flex: 0 0 auto;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.loader-title{
+  font-weight: 900;
+  letter-spacing: .2px;
+}
+
+.loader-msg{
+  margin-top: 2px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+/* opcional: evitar que el usuario toque cosas detrás */
+body.is-loading{
+  overflow: hidden;
+  touch-action: none;
+}
+
+</style>
 </head>
 
 <body>
@@ -119,9 +690,6 @@
     <span class="muted small">PWA • funciona offline (cache) • requiere HTTPS</span>
   </footer>
 
-<script src="app.js?v=20260201" defer></script>
-
-
 <!-- ======= MODAL LOGIN ======= -->
 <div id="loginModal" class="modal-backdrop" hidden>
   <div class="modal-card">
@@ -168,6 +736,903 @@
   </div>
 </div>
 
+
+<script>
+// ======= CONFIG DEL COLEGIO (CAMBIA ESTO) =======
+const SCHOOL_LAT = 4.556189026908756;
+const SCHOOL_LNG = -74.11154255367394;
+const SCHOOL_RADIUS_METERS = 120;
+const REQUIRED_ACCURACY_METERS = 50;
+
+// ======= GOOGLE SHEETS (CAMBIA ESTO) =======
+const GS_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbzqLGNfjp0CJi51woGWje8EmKT8rk7uBFhtCHCS-H_R9x4H5NICgYA-S9yu1K6mR7kc/exec"; // ej: https://script.google.com/macros/s/XXXX/exec
+const GS_API_KEY = "deimerDh2191docentesRegistros2026appandoidios";        // igual que en Code.gs
+
+// ======= UI =======
+const $ = (id) => document.getElementById(id);
+
+const teacherNameEl = $("teacherName");
+const tbody = $("tbody");
+const statusTitle = $("statusTitle");
+const statusMsg = $("statusMsg");
+const dot = $("dot");
+const distEl = $("dist");
+const accEl = $("acc");
+const coordsEl = $("coords");
+
+// ======= LOADER UI =======
+const appLoader = $("appLoader");
+const loaderTitleEl = $("loaderTitle");
+const loaderMsgEl = $("loaderMsg");
+
+
+// ======= LOGIN MODAL UI =======
+const loginModal = $("loginModal");
+const loginNameEl = $("loginName");
+const loginEmailEl = $("loginEmail");
+const loginCourseEl = $("loginCourse");
+const btnLoginSave = $("btnLoginSave");
+const loginHint = $("loginHint");
+
+const deviceIdTextEl = $("deviceIdText");
+const btnCopyDevice = $("btnCopyDevice");
+
+const btnRequestAuth = $("btnRequestAuth");
+
+
+
+
+const btnEntrada = $("btnEntrada");
+const btnSalida  = $("btnSalida");
+const btnExport  = $("btnExport");
+const btnInstall = $("btnInstall");
+const btnRefreshSW = $("btnRefreshSW");
+const btnLogout = $("btnLogout");
+
+const btnUserMenu = $("btnUserMenu");
+const userMenu = $("userMenu");
+const userInitialsEl = $("userInitials");
+
+
+
+const btnToggleRecords = $("btnToggleRecords");
+const recordsPanel = $("recordsPanel");
+const recordsList = $("recordsList");
+
+
+let hasEntradaToday = false;
+
+function todayStr() {
+  const d = new Date();
+  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+}
+
+function normalizeDateYYYYMMDD(v) {
+  const s = String(v || "").trim();
+
+  // ya viene como 2026-02-01
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+
+  // viene como 01/02/2026 (dd/MM/yyyy)
+  if (/^\d{2}\/\d{2}\/\d{4}$/.test(s)) {
+    const [dd, mm, yyyy] = s.split("/");
+    return `${yyyy}-${mm}-${dd}`;
+  }
+
+  // intentar parsear
+  const d = new Date(s);
+  if (!isNaN(d.getTime())) {
+    return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+  }
+
+  return "";
+}
+
+function updateSalidaState(records) {
+  const p = loadProfile();
+  if (!p) return;
+
+  const today = todayStr();
+
+  hasEntradaToday = (records || []).some(r =>
+    String(r.type || "").toUpperCase() === "ENTRADA" &&
+    normalizeDateYYYYMMDD(r.date) === today
+  );
+
+  if (hasEntradaToday) {
+    btnSalida.disabled = false;
+    btnSalida.classList.remove("is-inactive");
+  } else {
+    btnSalida.disabled = true;
+    btnSalida.classList.add("is-inactive");
+  }
+}
+
+
+
+// ======= Helpers =======
+function pad(n){ return String(n).padStart(2,"0"); }
+function nowParts() {
+  const d = new Date();
+  const yyyy = d.getFullYear();
+  const mm = pad(d.getMonth()+1);
+  const dd = pad(d.getDate());
+  const hh = pad(d.getHours());
+  const mi = pad(d.getMinutes());
+  const ss = pad(d.getSeconds());
+  return { date:`${yyyy}-${mm}-${dd}`, time:`${hh}:${mi}:${ss}`, iso:d.toISOString() };
+}
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g, (c)=>({
+    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
+  }[c]));
+}
+
+function normalizeKey(s) {
+  return String(s || "")
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")                 // separa tildes
+    .replace(/[\u0300-\u036f]/g, "")  // quita tildes
+    .replace(/\s+/g, " ");            // colapsa espacios
+}
+
+function samePersonName(a, b) {
+  return normalizeKey(a) === normalizeKey(b);
+}
+
+
+
+
+
+function setStatus(kind, title, msg) {
+  statusTitle.textContent = title;
+  statusMsg.textContent = msg;
+  dot.className = "dot" + (kind ? ` ${kind}` : "");
+}
+
+
+let __loadingCount = 0;
+
+function setLoading(isLoading, title = "Procesando…", msg = "Por favor espera…") {
+  if (isLoading) __loadingCount++;
+  else __loadingCount = Math.max(0, __loadingCount - 1);
+
+  const on = __loadingCount > 0;
+
+  // Deshabilitar botones principales para evitar dobles registros
+  btnEntrada.disabled = on;
+  btnSalida.disabled = on;
+  btnExport.disabled = on;
+
+  // Mostrar overlay loader
+  if (appLoader) {
+    appLoader.hidden = !on;
+    if (loaderTitleEl) loaderTitleEl.textContent = title;
+    if (loaderMsgEl) loaderMsgEl.textContent = msg;
+  }
+
+  // Evitar scroll/taps detrás
+  document.body.classList.toggle("is-loading", on);
+
+  // Mensaje visual (tu status bar)
+  if (on) setStatus("warn", title, msg);
+}
+
+
+
+
+// ======= PERFIL + DEVICE ID =======
+const LS_PROFILE_KEY = "asistencia_profile_v1";
+const LS_DEVICE_KEY  = "asistencia_device_id_v1";
+
+function getDeviceId() {
+  let id = localStorage.getItem(LS_DEVICE_KEY);
+  if (!id) {
+    // UUID seguro: evita ReferenceError si crypto no existe
+    const c = (typeof window !== "undefined") ? window.crypto : null;
+    id = (c && typeof c.randomUUID === "function")
+      ? c.randomUUID()
+      : "dev-" + Math.random().toString(16).slice(2) + Date.now().toString(16);
+
+    localStorage.setItem(LS_DEVICE_KEY, id);
+  }
+  return id;
+}
+
+
+function loadProfile() {
+  try {
+    const raw = localStorage.getItem(LS_PROFILE_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
+function saveProfile(profile) {
+  localStorage.setItem(LS_PROFILE_KEY, JSON.stringify(profile));
+}
+
+function getInitials(name) {
+  const parts = String(name || "").trim().split(/\s+/).filter(Boolean);
+  if (!parts.length) return "?";
+  const first = parts[0][0] || "";
+  const last = (parts.length > 1 ? parts[parts.length - 1][0] : "") || "";
+  return (first + last).toUpperCase();
+}
+
+function setMenuOpen(open) {
+  if (!btnUserMenu || !userMenu) return;
+  userMenu.hidden = !open;
+  btnUserMenu.setAttribute("aria-expanded", String(open));
+}
+
+function updateUserInitials(profile) {
+  if (!userInitialsEl) return;
+  if (profile && profile.name) userInitialsEl.textContent = getInitials(profile.name);
+  else userInitialsEl.textContent = "?";
+}
+
+
+
+function applySessionUI(profile) {
+  if (profile && profile.name) {
+    teacherNameEl.value = profile.name;
+
+    // input bloqueado y grande
+    teacherNameEl.disabled = true;
+    teacherNameEl.classList.add("is-locked");
+
+    // iniciales en el botón circular
+    updateUserInitials(profile);
+
+    // mostrar botón/menu solo si hay sesión
+    if (btnUserMenu) btnUserMenu.hidden = false;
+  } else {
+    teacherNameEl.disabled = false;
+    teacherNameEl.classList.remove("is-locked");
+
+    updateUserInitials(null);
+
+    if (btnUserMenu) btnUserMenu.hidden = true;
+    setMenuOpen(false);
+  }
+}
+
+
+function logout() {
+  // borrar perfil
+  localStorage.removeItem(LS_PROFILE_KEY);
+
+  // limpiar UI
+  applySessionUI(null);
+
+  // abrir modal de login
+  loginModal.hidden = false;
+  updateDeviceIdUI();
+  loginHint.textContent = "Sesión cerrada. Inicia sesión para continuar.";
+
+  // opcional: mensaje en status
+  setStatus("warn", "Sesión cerrada", "Vuelve a iniciar sesión para registrar.");
+}
+
+
+function requireLogin() {
+  const p = loadProfile();
+  if (p && p.name && p.email && p.course) return p;
+
+  // Mostrar modal y bloquear uso hasta guardar
+ loginModal.hidden = false;
+updateDeviceIdUI();
+loginHint.textContent = "Completa tus datos para continuar.";
+return null;
+
+}
+
+
+function updateDeviceIdUI() {
+  if (!deviceIdTextEl) return;
+  deviceIdTextEl.textContent = getDeviceId();
+}
+
+if (btnCopyDevice) {
+  btnCopyDevice.addEventListener("click", async () => {
+    try {
+      const id = getDeviceId();
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(id);
+      } else {
+        // fallback antiguo
+        const ta = document.createElement("textarea");
+        ta.value = id;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand("copy");
+        ta.remove();
+      }
+      loginHint.textContent = "ID copiado. Pégalo en la hoja DISPOSITIVOS para autorizar.";
+    } catch (e) {
+      loginHint.textContent = "No se pudo copiar. Copia el ID manualmente.";
+    }
+  });
+}
+
+// Toggle del menú al tocar el botón circular
+if (btnUserMenu) {
+  btnUserMenu.addEventListener("click", (e) => {
+    e.stopPropagation();
+    const isOpen = userMenu && !userMenu.hidden;
+    setMenuOpen(!isOpen);
+  });
+}
+
+// Cerrar menú al tocar fuera
+document.addEventListener("click", () => setMenuOpen(false));
+
+// Cerrar menú al tocar una opción
+if (userMenu) {
+  userMenu.addEventListener("click", () => setMenuOpen(false));
+}
+
+
+
+btnLoginSave.addEventListener("click", async () => {
+  const name = (loginNameEl.value || "").trim();
+  const email = (loginEmailEl.value || "").trim().toLowerCase();
+  const course = (loginCourseEl.value || "").trim();
+
+  if (!name || !email || !course) {
+    loginHint.textContent = "Faltan datos. Nombre, correo y curso son obligatorios.";
+    return;
+  }
+  if (!/^\S+@\S+\.\S+$/.test(email)) {
+    loginHint.textContent = "Correo inválido.";
+    return;
+  }
+
+  try {
+    setLoading(true, "Verificando…", "Comprobando si este teléfono ya está autorizado.");
+    loginHint.textContent = "Verificando autorización…";
+
+    const chk = await gsCheckDeviceAuth({
+      action: "check_device_auth",
+      email,
+      device_id: getDeviceId()
+    });
+
+    // Normaliza por si alguna vez llegara como string (por cambios futuros)
+    const authorized = (chk && (chk.authorized === true || String(chk.authorized).toLowerCase() === "true"));
+
+    if (!authorized) {
+      const msg = (chk && chk.msg) ? chk.msg : "Aún no autorizado. Usa 'Solicitar autorización' y espera aprobación.";
+      loginHint.textContent = msg;
+
+      // ✅ Aviso visible (no solo hint)
+      setStatus("bad", "No autorizado", msg);
+
+      // Mantener modal abierto
+      loginModal.hidden = false;
+      return;
+    }
+
+
+    // ✅ Si está autorizado, validar que el nombre corresponda al dispositivo
+const allowedName = (chk && chk.allowed_name) ? String(chk.allowed_name).trim() : "";
+if (allowedName && !samePersonName(name, allowedName)) {
+  const msg = `El nombre no corresponde a este dispositivo.\nAutorizado para: ${allowedName}`;
+  loginHint.textContent = msg;
+  setStatus("bad", "Nombre no válido", msg);
+  loginModal.hidden = false;
+  return;
+}
+
+
+    // ✅ Autorizado: guardar perfil y cerrar modal
+    const profile = { name, email, course };
+saveProfile(profile);
+
+applySessionUI(profile);
+loginModal.hidden = true;
+
+
+    loginHint.textContent = "";
+    
+
+    setStatus("", "Sesión iniciada", "Dispositivo autorizado ✅ Ya puedes registrar asistencia.");
+
+    await refreshFromSheet();
+
+
+  } catch (e) {
+    const msg = String(e && e.message ? e.message : e);
+    loginHint.textContent = msg;
+    setStatus("bad", "Error de verificación", msg);
+  } finally {
+    setLoading(false);
+  }
+});
+
+
+
+
+
+if (!btnRequestAuth) {
+  console.warn("btnRequestAuth NO encontrado en el HTML");
+} else {
+  btnRequestAuth.addEventListener("click", async () => {
+    const name = (loginNameEl.value || "").trim();
+    const email = (loginEmailEl.value || "").trim().toLowerCase();
+    const course = (loginCourseEl.value || "").trim();
+
+    if (!name || !email || !course) {
+      loginHint.textContent = "Primero completa Nombre, Correo y Curso, luego solicita autorización.";
+      return;
+    }
+    if (!/^\S+@\S+\.\S+$/.test(email)) {
+      loginHint.textContent = "Correo inválido.";
+      return;
+    }
+
+    try {
+      setLoading(true, "Enviando solicitud…", "Registrando este teléfono para aprobación.");
+      loginHint.textContent = "Enviando solicitud…";
+
+      const resp = await gsRequestDeviceAuth({
+        action: "request_device_auth",
+        name,
+        email,
+        course,
+        device_id: getDeviceId()
+      });
+
+      // ✅ Mensaje claro con respuesta del servidor
+      loginHint.textContent = resp.msg || "Solicitud enviada ✅. Espera aprobación del administrador.";
+    } catch (e) {
+      // ✅ Mostrar error real
+      loginHint.textContent = String(e && e.message ? e.message : e);
+    } finally {
+      setLoading(false);
+    }
+  });
+}
+
+
+
+// ======= GEO =======
+function toRad(x){ return x * Math.PI / 180; }
+function distanceMeters(lat1, lon1, lat2, lon2) {
+  const R = 6371000;
+  const dLat = toRad(lat2-lat1);
+  const dLon = toRad(lon2-lon1);
+  const a =
+    Math.sin(dLat/2)**2 +
+    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon/2)**2;
+  return 2 * R * Math.asin(Math.sqrt(a));
+}
+
+async function getPosition() {
+  if (!("geolocation" in navigator)) throw new Error("Geolocalización no disponible.");
+  return new Promise((resolve, reject) => {
+    navigator.geolocation.getCurrentPosition(resolve, reject, {
+      enableHighAccuracy: true,
+      timeout: 12000,
+      maximumAge: 0
+    });
+  });
+}
+
+async function checkLocation() {
+  setStatus("warn", "Verificando ubicación…", "Asegúrate de tener GPS/Ubicación activada.");
+  const pos = await getPosition();
+  const { latitude, longitude, accuracy } = pos.coords;
+  const dist = distanceMeters(latitude, longitude, SCHOOL_LAT, SCHOOL_LNG);
+
+  distEl.textContent = `${Math.round(dist)} m`;
+  accEl.textContent = `${Math.round(accuracy)} m`;
+  coordsEl.textContent = `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`;
+
+  const accurateEnough = accuracy <= REQUIRED_ACCURACY_METERS;
+  const inside = dist <= SCHOOL_RADIUS_METERS;
+
+  if (!accurateEnough) {
+    setStatus("warn", "Ubicación con baja precisión", `Precisión actual ${Math.round(accuracy)} m. Necesito ≤ ${REQUIRED_ACCURACY_METERS} m.`);
+    return { ok:false, reason:"accuracy", dist, accuracy, latitude, longitude };
+  }
+  if (!inside) {
+    setStatus("bad", "Fuera del colegio", `Estás a ~${Math.round(dist)} m. Debes estar dentro de ${SCHOOL_RADIUS_METERS} m.`);
+    return { ok:false, reason:"outside", dist, accuracy, latitude, longitude };
+  }
+
+  setStatus("", "Ubicación validada", `Dentro del radio (${SCHOOL_RADIUS_METERS} m) y precisión OK.`);
+  return { ok:true, dist, accuracy, latitude, longitude };
+}
+
+// ======= Google Sheets API (Apps Script Web App) =======
+async function gsGetList(limit = 50) {
+  const url = new URL(GS_WEBAPP_URL);
+  url.searchParams.set("action", "list");
+  url.searchParams.set("limit", String(limit));
+  url.searchParams.set("key", GS_API_KEY);
+
+  const res = await fetch(url.toString(), { method: "GET" });
+  const data = await res.json();
+  if (!data.ok) throw new Error(data.error || "gs_list_failed");
+  return data.records || [];
+}
+
+async function gsRegister(payload) {
+  const res = await fetch(GS_WEBAPP_URL, {
+    method: "POST",
+    // NO headers: evita preflight CORS
+    body: JSON.stringify({ ...payload, key: GS_API_KEY })
+  });
+
+  let data = null;
+  try { data = await res.json(); }
+  catch { throw new Error("Respuesta inválida del servidor"); }
+
+  // ✅ IMPORTANTE: si el servidor envía msg, lo usamos
+  if (!data.ok) {
+    throw new Error(data.msg || data.error || "gs_register_failed");
+  }
+  return data;
+}
+
+
+async function gsRequestDeviceAuth(payload) {
+  const res = await fetch(GS_WEBAPP_URL, {
+    method: "POST",
+    // NO headers: evita preflight CORS
+    body: JSON.stringify({ ...payload, key: GS_API_KEY })
+  });
+
+  let data = null;
+  try { data = await res.json(); }
+  catch { throw new Error("Respuesta inválida del servidor"); }
+
+  if (!data.ok) throw new Error(data.msg || data.error || "request_auth_failed");
+  return data;
+}
+
+async function gsCheckDeviceAuth(payload) {
+  const res = await fetch(GS_WEBAPP_URL, {
+    method: "POST",
+    body: JSON.stringify({ ...payload, key: GS_API_KEY })
+  });
+
+  let data = null;
+  try { data = await res.json(); }
+  catch { throw new Error("Respuesta inválida del servidor"); }
+
+  if (!data.ok) throw new Error(data.msg || data.error || "check_auth_failed");
+  return data;
+}
+
+
+async function gsClearCurrentMonth() {
+  const d = new Date();
+  const month = `${d.getFullYear()}-${pad(d.getMonth() + 1)}`; // YYYY-MM
+
+  const res = await fetch(GS_WEBAPP_URL, {
+    method: "POST",
+    // NO headers: evita preflight CORS
+    body: JSON.stringify({ action: "clear_month", month, key: GS_API_KEY })
+  });
+
+  const data = await res.json();
+  if (!data.ok) throw new Error(data.error || "gs_clear_failed");
+  return data;
+}
+
+
+// ======= Render (desde Google Sheets) =======
+let cachedRecords = [];
+
+function render(records) {
+  const p = loadProfile();
+  const myNameKey = normalizeKey(p && p.name ? p.name : "");
+
+  const filtered = myNameKey
+    ? (records || []).filter(r => normalizeKey(r.teacher) === myNameKey)
+    : (records || []);
+
+  cachedRecords = filtered;
+
+  // Tabla (desktop)
+  tbody.innerHTML = filtered.map(r => `
+    <tr class="${r.type === "ENTRADA" ? (r.late ? "late" : "ontime") : ""}">
+      <td>${escapeHtml(r.date)}</td>
+      <td>${escapeHtml(r.time)}</td>
+      <td>${escapeHtml(r.teacher)}</td>
+      <td>${escapeHtml(r.type)}</td>
+      <td>—</td>
+      <td>—</td>
+    </tr>
+  `).join("");
+
+  // Cards (mobile)
+ if (!filtered.length) {
+  recordsList.innerHTML = `<div class="muted small">No hay registros para este docente.</div>`;
+  updateSalidaState(filtered); // ✅ fuerza SALIDA inactiva
+  return;
+}
+
+
+  recordsList.innerHTML = filtered.map(r => {
+    const badgeClass = (r.type === "ENTRADA")
+      ? (r.late ? "badge badge-late" : "badge badge-ontime")
+      : "badge badge-neutral";
+
+    const rowClass = (r.type === "ENTRADA")
+      ? (r.late ? "record-card late" : "record-card ontime")
+      : "record-card";
+
+    return `
+      <div class="${rowClass}">
+        <div class="top">
+          <span class="teacher">${escapeHtml(r.teacher)}</span>
+          <span class="${badgeClass}">${escapeHtml(r.type)}${r.type==="ENTRADA" ? (r.late ? " • TARDE" : " • A TIEMPO") : ""}</span>
+        </div>
+        <div class="meta">
+          ${escapeHtml(r.date)} • ${escapeHtml(r.time)}
+        </div>
+      </div>
+    `;
+  }).join("");
+updateSalidaState(filtered);
+
+}
+
+
+
+async function refreshFromSheet() {
+  try {
+    setStatus("warn", "Cargando…", "Leyendo registros de asistencia.");
+
+    const records = await gsGetList(60);
+    render(records);
+
+    setStatus("", "Listo", "Datos de asistencia sincronizados.");
+  } catch (e) {
+    setStatus(
+      "bad",
+      "Error Google Sheets",
+      String(e && e.message ? e.message : "Revisa URL/clave del Web App y permisos.")
+    );
+  }
+}
+
+
+
+// ======= Registrar =======
+// ======= Registrar =======
+async function register(type) {
+
+  if (type === "SALIDA" && !hasEntradaToday) {
+  setStatus(
+    "warn",
+    "Primero registra ENTRADA",
+    "No puedes registrar la salida sin haber registrado la entrada hoy."
+  );
+  return;
+}
+
+  const profile = requireLogin();
+  if (!profile) return;
+
+  const teacher = (teacherNameEl.value.trim() || profile.name);
+  if (!teacher) {
+    setStatus("bad", "Falta el nombre", "Escribe el nombre del docente.");
+    teacherNameEl.focus();
+    return;
+  }
+
+  let geo;
+  try {
+    geo = await checkLocation();
+  } catch (e) {
+    setStatus("bad", "No se pudo obtener ubicación", "Activa permisos de ubicación del navegador.");
+    return;
+  }
+  if (!geo.ok) return;
+
+  const t = nowParts();
+
+  try {
+    setLoading(true, "Guardando…", "Enviando registro de asistencia.");
+
+    await gsRegister({
+      action: "register",
+      teacher,
+      type,
+      iso: t.iso,
+      email: profile.email,
+      course: profile.course,
+      device_id: getDeviceId(),
+      distance_m: Math.round(geo.dist),
+      accuracy_m: Math.round(geo.accuracy),
+      lat: geo.latitude,
+      lng: geo.longitude
+    });
+
+       await refreshFromSheet();
+
+       if (type === "ENTRADA") {
+  hasEntradaToday = true;
+  btnSalida.disabled = false;
+  btnSalida.classList.remove("is-inactive");
+}
+
+
+    // ✅ abrir panel para que el usuario vea el registro de inmediato
+    setRecordsOpen(true);
+
+    setStatus("", "Guardado", `${type} registrada para ${teacher}.`);
+
+
+  } catch (e) {
+    // ✅ Mensaje real (si viene del servidor)
+    const msg = String(e && e.message ? e.message : e).toLowerCase();
+
+    // ✅ Caso típico sin internet / red caída
+    const isOffline =
+      (typeof navigator !== "undefined" && navigator.onLine === false) ||
+      msg.includes("failed to fetch") ||
+      msg.includes("networkerror") ||
+      msg.includes("load failed") ||
+      msg.includes("err_internet_disconnected") ||
+      msg.includes("err_network_changed");
+
+    if (isOffline) {
+      setStatus(
+        "bad",
+        "Sin conexión",
+        "Revisa tu conexión a internet e intenta de nuevo."
+      );
+      return;
+    }
+
+    // Si quieres títulos más bonitos según el caso:
+    if (msg.includes("no está autorizado") || msg.includes("device_not_authorized")) {
+      setStatus("bad", "Teléfono no autorizado", String(e && e.message ? e.message : e));
+    } else if (msg.includes("ya existe") || msg.includes("already_registered")) {
+      setStatus("warn", "Registro duplicado", String(e && e.message ? e.message : e));
+    } else if (msg.includes("unauthorized")) {
+      setStatus("bad", "Sin permisos", "Clave incorrecta o permisos del WebApp.");
+    } else {
+      setStatus("bad", "No se pudo guardar", String(e && e.message ? e.message : e) || "Revisa conexión y Apps Script.");
+    }
+
+  } finally {
+
+    setLoading(false);
+  }
+}
+
+
+
+// ======= CSV (desde lo que se ve en la app) =======
+function csvCell(v){
+  if (v === null || v === undefined) return "";
+  const s = String(v);
+  if (/[",\n]/.test(s)) return `"${s.replace(/"/g,'""')}"`;
+  return s;
+}
+
+function exportCSV() {
+  if (!cachedRecords.length) {
+    setStatus("warn", "Sin datos", "No hay registros para exportar.");
+    return;
+  }
+  const header = ["teacher","type","date","time","late","iso"];
+  const lines = [header.join(",")].concat(
+    cachedRecords.map(r => header.map(k => csvCell(r[k])).join(","))
+  );
+
+  const blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `asistencia_${new Date().toISOString().slice(0,10)}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+
+  setStatus("", "Exportado", "CSV descargado.");
+}
+
+// ======= INSTALL (A2HS) =======
+let deferredPrompt = null;
+window.addEventListener("beforeinstallprompt", (e) => {
+  e.preventDefault();
+  deferredPrompt = e;
+  btnInstall.hidden = false;
+});
+btnInstall.addEventListener("click", async () => {
+  if (!deferredPrompt) return;
+  deferredPrompt.prompt();
+  await deferredPrompt.userChoice;
+  deferredPrompt = null;
+  btnInstall.hidden = true;
+});
+
+// ======= UI: Toggle registros =======
+function setRecordsOpen(open) {
+  recordsPanel.hidden = !open;
+  btnToggleRecords.setAttribute("aria-expanded", String(open));
+  btnToggleRecords.classList.toggle("open", open);
+}
+setRecordsOpen(false);
+btnToggleRecords.addEventListener("click", () => setRecordsOpen(recordsPanel.hidden));
+
+// ======= Reset / Refresh Service Worker + Cache =======
+async function hardRefreshPWA() {
+  try {
+    setStatus("warn", "Actualizando…", "Borrando caché y reiniciando la app.");
+
+    // 🔥 orden de suicidio al SW activo
+    if ("serviceWorker" in navigator) {
+      const reg = await navigator.serviceWorker.getRegistration();
+      if (reg && reg.active) {
+        reg.active.postMessage("KILL_SW");
+      }
+    }
+
+    // 🧹 borrar caches desde la app
+    if ("caches" in window) {
+      const keys = await caches.keys();
+      await Promise.all(keys.map(k => caches.delete(k)));
+    }
+
+    // 🔄 romper caché del navegador
+    const url = new URL(location.href);
+    url.searchParams.set("v", Date.now().toString());
+    location.replace(url.toString());
+
+  } catch (e) {
+    setStatus("bad", "No se pudo actualizar", "Cierra la app y ábrela de nuevo.");
+  }
+}
+
+btnRefreshSW.addEventListener("click", hardRefreshPWA);
+if (btnLogout) {
+  btnLogout.addEventListener("click", logout);
+}
+
+
+// ======= SW register =======
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", async () => {
+    try { await navigator.serviceWorker.register("./sw.js"); } catch {}
+  });
+}
+
+// ======= EVENTOS =======
+btnEntrada.addEventListener("click", () => register("ENTRADA"));
+btnSalida.addEventListener("click",  () => register("SALIDA"));
+
+btnExport.addEventListener("click", exportCSV);
+
+
+
+// Inicial
+refreshFromSheet();
+setStatus("warn", "Listo", "Para registrar, activa ubicación y escribe el nombre.");
+
+// ✅ Mostrar login al abrir (si no hay perfil guardado)
+const _p = requireLogin();
+if (_p) {
+  applySessionUI(_p);
+} else {
+  applySessionUI(null);
+}
+
+
+
+</script>
 
 </body>
 </html>
