@@ -1181,9 +1181,49 @@ function loadProfile() {
   }
 }
 
+
+
 function saveProfile(profile) {
   localStorage.setItem(LS_PROFILE_KEY, JSON.stringify(profile));
 }
+
+const LS_ADMIN_KEY = "asistencia_admin_session_v1";
+
+function isAdminMode() {
+  return localStorage.getItem(LS_ADMIN_KEY) === "1";
+}
+
+function setAdminMode(on) {
+  localStorage.setItem(LS_ADMIN_KEY, on ? "1" : "0");
+  if (btnAdminViewAssist) btnAdminViewAssist.hidden = !on;
+
+  // Si entro como admin: cerrar login modal y bloquear “docente”
+  if (on) {
+    loginModal.hidden = true;
+    teacherNameEl.value = "ADMINISTRADOR";
+    teacherNameEl.disabled = true;
+    teacherNameEl.classList.add("is-locked");
+    updateUserInitials({ name: "Administrador" });
+    if (btnUserMenu) btnUserMenu.hidden = false;
+    setMenuOpen(false);
+  } else {
+    // Si salgo de admin: vuelve a comportamiento normal
+    if (!loadProfile()) {
+      teacherNameEl.disabled = false;
+      teacherNameEl.classList.remove("is-locked");
+      teacherNameEl.value = "";
+      updateUserInitials(null);
+      if (btnUserMenu) btnUserMenu.hidden = true;
+      setMenuOpen(false);
+    }
+  }
+}
+
+// Estado inicial
+if (btnAdminViewAssist) btnAdminViewAssist.hidden = !isAdminMode();
+
+
+
 
 function getInitials(name) {
   const parts = String(name || "").trim().split(/\s+/).filter(Boolean);
@@ -1233,35 +1273,40 @@ function applySessionUI(profile) {
 
 
 function logout() {
-  // borrar perfil
+  // borrar perfil docente
   localStorage.removeItem(LS_PROFILE_KEY);
-  setAdminSession(false); // ✅ apaga modo admin
 
+  // apagar admin
+  setAdminMode(false);
 
   // limpiar UI
   applySessionUI(null);
 
-  // abrir modal de login
+  // abrir modal login
   loginModal.hidden = false;
   updateDeviceIdUI();
   loginHint.textContent = "Sesión cerrada. Inicia sesión para continuar.";
 
-  // opcional: mensaje en status
   setStatus("warn", "Sesión cerrada", "Vuelve a iniciar sesión para registrar.");
 }
 
 
 function requireLogin() {
+  // ✅ Si está en modo admin, NO pedir perfil docente
+  if (isAdminMode()) {
+    return { name: "ADMINISTRADOR", email: "admin@local", course: "ADMIN" };
+  }
+
   const p = loadProfile();
   if (p && p.name && p.email && p.course) return p;
 
   // Mostrar modal y bloquear uso hasta guardar
- loginModal.hidden = false;
-updateDeviceIdUI();
-loginHint.textContent = "Completa tus datos para continuar.";
-return null;
-
+  loginModal.hidden = false;
+  updateDeviceIdUI();
+  loginHint.textContent = "Completa tus datos para continuar.";
+  return null;
 }
+
 
 
 function updateDeviceIdUI() {
@@ -1430,11 +1475,16 @@ async function adminEnterFlow() {
       return;
     }
 
-    // ok: abre sesión admin
-    setAdminSession(true);
-    adminHint.textContent = "Modo administrador activado ✅";
-    closeAdminModal();
-    setStatus("", "Admin activo", "Ya puedes usar 'Ver asistencias' desde el menú.");
+   // ✅ sesión admin “principal” (sin correo / sin autorización)
+setAdminMode(true);
+
+// cerrar modales
+closeAdminModal();
+loginModal.hidden = true;
+
+// UI
+setStatus("", "Administrador", "Sesión iniciada como administrador ✅");
+
 
   } catch (e) {
     adminHint.textContent = String(e && e.message ? e.message : e);
@@ -1454,12 +1504,14 @@ async function adminChangePinFlow(oldPin) {
     setLoading(true, "Actualizando…", "Guardando nuevo PIN de administrador.");
     await gsAdminChangePin(oldPin, newPin);
 
-    // sesión admin activada
-    setAdminSession(true);
+// ✅ sesión admin principal
+setAdminMode(true);
 
-    adminHint.textContent = "PIN actualizado ✅";
-    closeAdminModal();
-    setStatus("", "Admin activo", "PIN actualizado. Ya puedes usar 'Ver asistencias'.");
+closeAdminModal();
+loginModal.hidden = true;
+
+setStatus("", "Administrador", "PIN actualizado ✅ Sesión iniciada como administrador.");
+
 
     // limpiar estado del botón
     delete btnAdminEnter.dataset.mode;
@@ -2076,12 +2128,14 @@ refreshFromSheet();
 setStatus("warn", "Listo", "Para registrar, activa ubicación.");
 
 // ✅ Mostrar login al abrir (si no hay perfil guardado)
-const _p = requireLogin();
-if (_p) {
-  applySessionUI(_p);
+if (isAdminMode()) {
+  setAdminMode(true); // aplica UI admin (cierra modal y pone ADMINISTRADOR)
 } else {
-  applySessionUI(null);
+  const _p = requireLogin();
+  if (_p) applySessionUI(_p);
+  else applySessionUI(null);
 }
+
 
 
 
