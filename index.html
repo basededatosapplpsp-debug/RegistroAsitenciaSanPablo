@@ -659,6 +659,8 @@ body.is-loading{
     <div id="userMenu" class="menu-panel" role="menu" hidden>
       <button id="btnRefreshSW" class="menu-item" type="button" role="menuitem">Actualizar</button>
       <button id="btnAdminViewAssist" class="menu-item" type="button" role="menuitem" hidden>Ver asistencias</button>
+      <button id="btnAdminConfig" class="menu-item" type="button" role="menuitem" hidden>Configuración</button>
+
 <button id="btnAdminApproveDevices" class="menu-item" type="button" role="menuitem" hidden>Aprobar dispositivos</button>
 
       <button id="btnLogout" class="menu-item danger" type="button" role="menuitem">Cerrar sesión</button>
@@ -902,12 +904,40 @@ body.is-loading{
 </div>
 
 
+<div id="adminConfigModal" class="modal-backdrop" hidden>
+  <div class="modal-card" style="width:min(520px,100%);">
+    <h2 class="modal-title">Configuración</h2>
+    <p class="modal-sub">Ajustes del sistema. Se guardan en la hoja CONFIG.</p>
+
+    <label class="modal-label">Hora límite ENTRADA (HH:MM)</label>
+    <input id="cfgOnTime" class="modal-input" type="text" placeholder="06:30" />
+
+    <label class="modal-label">Hora mínima SALIDA OK (HH:MM)</label>
+    <input id="cfgExitOk" class="modal-input" type="text" placeholder="14:00" />
+
+    <label class="modal-label">Radio del colegio (m)</label>
+    <input id="cfgRadius" class="modal-input" type="number" min="1" placeholder="120" />
+
+    <label class="modal-label">Precisión requerida (m)</label>
+    <input id="cfgAccuracy" class="modal-input" type="number" min="1" placeholder="50" />
+
+    <div class="modal-actions" style="justify-content:flex-end;">
+      <button id="btnCfgSave" type="button" class="btn btn-primary">Guardar</button>
+      <button id="btnCfgClose" type="button" class="btn btn-ghost">Cerrar</button>
+    </div>
+
+    <div id="cfgHint" class="modal-hint muted small"></div>
+  </div>
+</div>
+
+
 <script>
 // ======= CONFIG DEL COLEGIO (CAMBIA ESTO) =======
 const SCHOOL_LAT = 4.556189026908756;
 const SCHOOL_LNG = -74.11154255367394;
-const SCHOOL_RADIUS_METERS = 120;
-const REQUIRED_ACCURACY_METERS = 50;
+let SCHOOL_RADIUS_METERS = 120;
+let REQUIRED_ACCURACY_METERS = 50;
+
 
 // ======= GOOGLE SHEETS (CAMBIA ESTO) =======
 const GS_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbzqLGNfjp0CJi51woGWje8EmKT8rk7uBFhtCHCS-H_R9x4H5NICgYA-S9yu1K6mR7kc/exec"; // ej: https://script.google.com/macros/s/XXXX/exec
@@ -945,6 +975,15 @@ const btnCopyDevice = $("btnCopyDevice");
 const btnRequestAuth = $("btnRequestAuth");
 
 
+const btnAdminConfig = $("btnAdminConfig");
+const adminConfigModal = $("adminConfigModal");
+const cfgOnTime = $("cfgOnTime");
+const cfgExitOk = $("cfgExitOk");
+const cfgRadius = $("cfgRadius");
+const cfgAccuracy = $("cfgAccuracy");
+const btnCfgSave = $("btnCfgSave");
+const btnCfgClose = $("btnCfgClose");
+const cfgHint = $("cfgHint");
 
 
 const btnEntrada = $("btnEntrada");
@@ -1124,6 +1163,25 @@ async function gsAdminGetTeacherRecords(teacher, month) {
   return data.records || [];
 }
 
+async function gsAdminGetConfig() {
+  const res = await fetch(GS_WEBAPP_URL, {
+    method: "POST",
+    body: JSON.stringify({ action: "admin_get_config", key: GS_API_KEY })
+  });
+  const data = await res.json();
+  if (!data.ok) throw new Error(data.msg || data.error || "admin_get_config_failed");
+  return data.config;
+}
+
+async function gsAdminSetConfig(payload) {
+  const res = await fetch(GS_WEBAPP_URL, {
+    method: "POST",
+    body: JSON.stringify({ action: "admin_set_config", ...payload, key: GS_API_KEY })
+  });
+  const data = await res.json();
+  if (!data.ok) throw new Error(data.msg || data.error || "admin_set_config_failed");
+  return data;
+}
 
 
 async function gsAdminListDeviceRequests() {
@@ -1153,7 +1211,8 @@ async function gsAdminSetDeviceAuth(row, authorized) {
 
 
 // ======= Contadores de resumen (tardes / salidas antes) =======
-const EXIT_OK_HHMM_CLIENT = "14:00"; // debe coincidir con tu Apps Script (EXIT_OK_HHMM)
+let EXIT_OK_HHMM_CLIENT = "14:00";
+let ON_TIME_HHMM_CLIENT = "06:30";
 
 function timeToMinutes(hhmmss) {
   const s = String(hhmmss || "").trim();
@@ -1255,6 +1314,39 @@ function loadProfile() {
   }
 }
 
+function openAdminConfigModal() {
+  if (!adminConfigModal) return;
+  adminConfigModal.hidden = false;
+  cfgHint.textContent = "Cargando…";
+}
+
+function closeAdminConfigModal() {
+  if (!adminConfigModal) return;
+  adminConfigModal.hidden = true;
+  cfgHint.textContent = "";
+}
+
+async function loadAdminConfigIntoUI() {
+  const cfg = await gsAdminGetConfig();
+
+  // set inputs
+  cfgOnTime.value = cfg.ON_TIME_HHMM || "06:30";
+  cfgExitOk.value = cfg.EXIT_OK_HHMM || "14:00";
+  cfgRadius.value = String(cfg.SCHOOL_RADIUS_METERS ?? 120);
+  cfgAccuracy.value = String(cfg.REQUIRED_ACCURACY_METERS ?? 50);
+
+  // aplicar en runtime (impacta ubicación + contadores)
+  ON_TIME_HHMM_CLIENT = cfgOnTime.value;
+  EXIT_OK_HHMM_CLIENT = cfgExitOk.value;
+  SCHOOL_RADIUS_METERS = Number(cfgRadius.value) || 120;
+  REQUIRED_ACCURACY_METERS = Number(cfgAccuracy.value) || 50;
+
+  cfgHint.textContent = "Listo ✅";
+}
+
+function isValidHHMM(s) {
+  return /^\d{2}:\d{2}$/.test(String(s || "").trim());
+}
 
 
 function saveProfile(profile) {
@@ -1270,6 +1362,8 @@ function isAdminMode() {
 function setAdminMode(on) {
   localStorage.setItem(LS_ADMIN_KEY, on ? "1" : "0");
   if (btnAdminViewAssist) btnAdminViewAssist.hidden = !on;
+  if (btnAdminConfig) btnAdminConfig.hidden = !on;
+
 
   if (btnAdminApproveDevices) btnAdminApproveDevices.hidden = !on;
 
@@ -1300,6 +1394,7 @@ function setAdminMode(on) {
 if (btnAdminViewAssist) btnAdminViewAssist.hidden = !isAdminMode();
 
 if (btnAdminApproveDevices) btnAdminApproveDevices.hidden = !isAdminMode();
+if (btnAdminConfig) btnAdminConfig.hidden = !isAdminMode();
 
 
 
@@ -1413,6 +1508,70 @@ if (btnCopyDevice) {
     }
   });
 }
+
+if (btnAdminConfig) {
+  btnAdminConfig.addEventListener("click", async () => {
+    if (!isAdminMode()) {
+      setStatus("warn", "Requiere admin", "Ingresa como administrador primero.");
+      openAdminModal();
+      return;
+    }
+    try {
+      openAdminConfigModal();
+      setLoading(true, "Cargando…", "Leyendo CONFIG.");
+      await loadAdminConfigIntoUI();
+    } catch (e) {
+      cfgHint.textContent = String(e && e.message ? e.message : e);
+    } finally {
+      setLoading(false);
+    }
+  });
+}
+
+if (btnCfgClose) btnCfgClose.addEventListener("click", closeAdminConfigModal);
+
+if (btnCfgSave) {
+  btnCfgSave.addEventListener("click", async () => {
+    const onTime = String(cfgOnTime.value || "").trim();
+    const exitOk = String(cfgExitOk.value || "").trim();
+    const radius = String(cfgRadius.value || "").trim();
+    const acc = String(cfgAccuracy.value || "").trim();
+
+    if (!isValidHHMM(onTime) || !isValidHHMM(exitOk)) {
+      cfgHint.textContent = "Horas inválidas. Usa HH:MM (ej: 06:30).";
+      return;
+    }
+    const r = Number(radius), a = Number(acc);
+    if (!Number.isFinite(r) || r <= 0 || !Number.isFinite(a) || a <= 0) {
+      cfgHint.textContent = "Radio/precisión inválidos (números > 0).";
+      return;
+    }
+
+    try {
+      setLoading(true, "Guardando…", "Actualizando CONFIG.");
+      const resp = await gsAdminSetConfig({
+        on_time_hhmm: onTime,
+        exit_ok_hhmm: exitOk,
+        school_radius_m: r,
+        required_accuracy_m: a
+      });
+
+      // aplicar runtime
+      ON_TIME_HHMM_CLIENT = onTime;
+      EXIT_OK_HHMM_CLIENT = exitOk;
+      SCHOOL_RADIUS_METERS = r;
+      REQUIRED_ACCURACY_METERS = a;
+
+      cfgHint.textContent = resp.msg || "Guardado ✅";
+      setStatus("", "Configuración", "Cambios aplicados ✅");
+    } catch (e) {
+      cfgHint.textContent = String(e && e.message ? e.message : e);
+    } finally {
+      setLoading(false);
+    }
+  });
+}
+
 
 // Toggle del menú al tocar el botón circular
 if (btnUserMenu) {
