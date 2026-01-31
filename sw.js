@@ -47,24 +47,39 @@ self.addEventListener("fetch", (event) => {
   // Solo GET
   if (req.method !== "GET") return;
 
-  event.respondWith(
-    caches.match(req).then(cached => {
-      const fetchPromise = fetch(req)
-        .then(res => {
-          // cachea solo respuestas OK
-          if (res && res.ok) {
-            const copy = res.clone();
-            caches.open(CACHE_NAME).then(cache => cache.put(req, copy));
-          }
-          return res;
-        })
-        .catch(() => cached); // offline fallback
+  // ✅ Evitar cachear esquemas raros (chrome-extension:, data:, blob:, etc.)
+  const url = new URL(req.url);
+  if (url.protocol !== "http:" && url.protocol !== "https:") return;
 
-      // devuelve cache primero si existe, si no red
-      return cached || fetchPromise;
+  // ✅ NO cachear Google Apps Script (evita errores CORS/opaque y ensuciar cache)
+  if (url.hostname.includes("script.google.com")) {
+    // solo pasa directo a red
+    event.respondWith(fetch(req));
+    return;
+  }
+
+  event.respondWith(
+    caches.match(req).then((cached) => {
+      return (
+        cached ||
+        fetch(req)
+          .then((res) => {
+            // ✅ Solo cachear respuestas válidas y del mismo origen (más seguro)
+            if (!res || !res.ok) return res;
+
+            // Si la respuesta es opaque (no-cors), mejor no cachearla
+            if (res.type === "opaque") return res;
+
+            const copy = res.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(req, copy));
+            return res;
+          })
+          .catch(() => cached)
+      );
     })
   );
 });
+
 
 /* ===== KILL SWITCH (desde la app) ===== */
 self.addEventListener("message", (event) => {
@@ -79,3 +94,4 @@ self.addEventListener("message", (event) => {
     });
   }
 });
+
