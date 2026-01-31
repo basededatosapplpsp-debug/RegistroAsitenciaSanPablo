@@ -332,27 +332,16 @@ async function checkLocation() {
 
 // ======= Google Sheets API (Apps Script Web App) =======
 async function gsGetList(limit = 50) {
-  // ✅ Si no hay perfil/email, no pedimos nada (evita Failed to fetch al abrir)
-  const p = loadProfile();
-  if (!p || !p.email) return [];
-
   const url = new URL(GS_WEBAPP_URL);
   url.searchParams.set("action", "list");
   url.searchParams.set("limit", String(limit));
   url.searchParams.set("key", GS_API_KEY);
-  url.searchParams.set("email", p.email);
 
   const res = await fetch(url.toString(), { method: "GET" });
-
-  let data = null;
-  try { data = await res.json(); }
-  catch { throw new Error("Respuesta inválida del servidor"); }
-
+  const data = await res.json();
   if (!data.ok) throw new Error(data.error || "gs_list_failed");
   return data.records || [];
 }
-
-
 
 async function gsRegister(payload) {
   const res = await fetch(GS_WEBAPP_URL, {
@@ -476,27 +465,17 @@ function render(records) {
 
 
 async function refreshFromSheet() {
-  const p = loadProfile();
-
-  // ✅ Sin sesión: no consultamos backend
-  if (!p || !p.email) {
-    render([]); // limpia lista
-    setStatus("warn", "Inicia sesión", "Completa el inicio de sesión para ver tus registros.");
-    return;
-  }
-
   try {
-    setLoading(true, "Cargando…", "Leyendo tus registros desde Google Sheets.");
+    setLoading(true, "Cargando…", "Leyendo registros desde Google Sheets.");
     const records = await gsGetList(60);
     render(records);
-    setStatus("", "Listo", "Tus registros están actualizados.");
+    setStatus("", "Listo", "Datos sincronizados desde Google Sheets.");
   } catch (e) {
     setStatus("bad", "Error Google Sheets", String(e && e.message ? e.message : "Revisa URL/clave del Web App y permisos."));
   } finally {
     setLoading(false);
   }
 }
-
 
 
 // ======= Registrar =======
@@ -672,15 +651,14 @@ btnExport.addEventListener("click", exportCSV);
 
 
 
+// Inicial
+refreshFromSheet();
+setStatus("warn", "Listo", "Para registrar, activa ubicación y escribe el nombre.");
+
 // ✅ Mostrar login al abrir (si no hay perfil guardado)
 const _p = requireLogin();
 if (_p) {
   teacherNameEl.value = _p.name; // autocompletar nombre
-  refreshFromSheet();            // ✅ solo si ya hay sesión guardada
-} else {
-  render([]); // limpia lista al iniciar
-  setStatus("warn", "Inicia sesión", "Completa el inicio de sesión para continuar.");
 }
-
 
 
