@@ -593,6 +593,79 @@ body.is-loading{
   touch-action: none;
 }
 
+/* Botones redondos + responsive + hover + press */
+.btn-entrada,
+.btn-salida {
+  /* Tamaño responsive: mínimo 120px, ideal 22vw, máximo 170px */
+  width: clamp(120px, 22vw, 170px);
+  height: clamp(120px, 22vw, 170px);
+
+  border-radius: 50%;
+  font-size: clamp(18px, 2.2vw, 24px);
+  font-weight: 700;
+
+  border: 1px solid rgba(255,255,255,.12);
+  cursor: pointer;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+
+  /* Suavidad */
+  transition: transform .12s ease, filter .18s ease, box-shadow .18s ease;
+  box-shadow: 0 10px 24px rgba(0,0,0,.28);
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Hover (brillo + elevación) */
+.btn-entrada:hover,
+.btn-salida:hover {
+  filter: brightness(1.08);
+  transform: translateY(-2px);
+  box-shadow: 0 14px 30px rgba(0,0,0,.34);
+}
+
+/* Press / click (animación 💥) */
+.btn-entrada:active,
+.btn-salida:active {
+  transform: translateY(1px) scale(0.96);
+  filter: brightness(0.98);
+  box-shadow: 0 8px 18px rgba(0,0,0,.25);
+}
+
+/* Accesibilidad (teclado) */
+.btn-entrada:focus-visible,
+.btn-salida:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 4px rgba(255,255,255,.18), 0 12px 26px rgba(0,0,0,.3);
+}
+
+/* Colores */
+.btn-entrada {
+  background: linear-gradient(180deg, #20c997, #12b886);
+  color: #fff;
+}
+
+.btn-salida {
+  background: linear-gradient(180deg, #ff6b6b, #e03131);
+  color: #fff;
+}
+
+/* Ajustes extra para pantallas muy pequeñas */
+@media (max-width: 360px) {
+  .btn-entrada,
+  .btn-salida {
+    width: 118px;
+    height: 118px;
+    font-size: 18px;
+  }
+}
+
+
+
+
 </style>
 </head>
 
@@ -631,8 +704,8 @@ body.is-loading{
       <input id="teacherName" class="input" type="text" placeholder="Ej: Ana Pérez" autocomplete="name" />
 
       <div class="row">
-        <button id="btnEntrada" class="btn btn-primary">Registrar ENTRADA</button>
-        <button id="btnSalida" class="btn btn-secondary">Registrar SALIDA</button>
+        <button id="btnEntrada" class="btn btn-primary">ENTRADA</button>
+        <button id="btnSalida" class="btn btn-secondary">SALIDA</button>
       </div>
 
       <div class="status" id="status">
@@ -725,7 +798,7 @@ body.is-loading{
 
 
 <div class="modal-actions">
-  <button id="btnLoginSave" type="button" class="btn btn-primary">Guardar</button>
+  <button id="btnLoginSave" type="button" class="btn btn-primary">Entrar</button>
   <button id="btnRequestAuth" type="button" class="btn btn-ghost">Solicitar autorización</button>
 </div>
 
