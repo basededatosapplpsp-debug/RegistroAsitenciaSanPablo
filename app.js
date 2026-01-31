@@ -38,7 +38,6 @@ const btnRequestAuth = $("btnRequestAuth");
 
 const btnEntrada = $("btnEntrada");
 const btnSalida  = $("btnSalida");
-const btnClear   = $("btnClear");
 const btnExport  = $("btnExport");
 const btnInstall = $("btnInstall");
 const btnRefreshSW = $("btnRefreshSW");
@@ -64,6 +63,19 @@ function escapeHtml(s){
     "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
   }[c]));
 }
+
+function normalizeKey(s) {
+  return String(s || "")
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")                 // separa tildes
+    .replace(/[\u0300-\u036f]/g, "")  // quita tildes
+    .replace(/\s+/g, " ");            // colapsa espacios
+}
+
+
+
+
 function setStatus(kind, title, msg) {
   statusTitle.textContent = title;
   statusMsg.textContent = msg;
@@ -82,7 +94,6 @@ function setLoading(isLoading, title = "Procesando…", msg = "Por favor espera�
   // Deshabilitar botones principales para evitar dobles registros
   btnEntrada.disabled = on;
   btnSalida.disabled = on;
-  btnClear.disabled = on;
   btnExport.disabled = on;
 
   // Mensaje visual
@@ -401,12 +412,11 @@ async function gsClearCurrentMonth() {
 let cachedRecords = [];
 
 function render(records) {
-  // --- Filtro: solo registros del docente logueado en este teléfono ---
   const p = loadProfile();
-  const myName = (p && p.name ? String(p.name).trim().toLowerCase() : "");
+  const myNameKey = normalizeKey(p && p.name ? p.name : "");
 
-  const filtered = myName
-    ? (records || []).filter(r => String(r.teacher || "").trim().toLowerCase() === myName)
+  const filtered = myNameKey
+    ? (records || []).filter(r => normalizeKey(r.teacher) === myNameKey)
     : (records || []);
 
   cachedRecords = filtered;
@@ -451,6 +461,7 @@ function render(records) {
     `;
   }).join("");
 }
+
 
 
 async function refreshFromSheet() {
@@ -508,8 +519,13 @@ async function register(type) {
       lng: geo.longitude
     });
 
-    await refreshFromSheet();
+       await refreshFromSheet();
+
+    // ✅ abrir panel para que el usuario vea el registro de inmediato
+    setRecordsOpen(true);
+
     setStatus("", "Guardado", `${type} registrada para ${teacher}.`);
+
 
   } catch (e) {
     // ✅ Mostrar el mensaje real (si viene del servidor)
@@ -633,16 +649,7 @@ btnSalida.addEventListener("click",  () => register("SALIDA"));
 
 btnExport.addEventListener("click", exportCSV);
 
-btnClear.addEventListener("click", async () => {
-  try {
-    setStatus("warn", "Borrando…", "Limpiando el mes actual en Google Sheets.");
-    await gsClearCurrentMonth();
-    await refreshFromSheet();
-    setStatus("warn", "Borrado", "Se borraron los registros del mes actual.");
-  } catch (e) {
-    setStatus("bad", "No se pudo borrar", "Revisa Apps Script.");
-  }
-});
+
 
 // Inicial
 refreshFromSheet();
