@@ -43,6 +43,11 @@ const btnInstall = $("btnInstall");
 const btnRefreshSW = $("btnRefreshSW");
 const btnLogout = $("btnLogout");
 
+const btnUserMenu = $("btnUserMenu");
+const userMenu = $("userMenu");
+const userInitialsEl = $("userInitials");
+
+
 
 const btnToggleRecords = $("btnToggleRecords");
 const recordsPanel = $("recordsPanel");
@@ -136,25 +141,52 @@ function saveProfile(profile) {
   localStorage.setItem(LS_PROFILE_KEY, JSON.stringify(profile));
 }
 
+function getInitials(name) {
+  const parts = String(name || "").trim().split(/\s+/).filter(Boolean);
+  if (!parts.length) return "?";
+  const first = parts[0][0] || "";
+  const last = (parts.length > 1 ? parts[parts.length - 1][0] : "") || "";
+  return (first + last).toUpperCase();
+}
+
+function setMenuOpen(open) {
+  if (!btnUserMenu || !userMenu) return;
+  userMenu.hidden = !open;
+  btnUserMenu.setAttribute("aria-expanded", String(open));
+}
+
+function updateUserInitials(profile) {
+  if (!userInitialsEl) return;
+  if (profile && profile.name) userInitialsEl.textContent = getInitials(profile.name);
+  else userInitialsEl.textContent = "?";
+}
+
+
+
 function applySessionUI(profile) {
   if (profile && profile.name) {
     teacherNameEl.value = profile.name;
 
-    // ✅ input bloqueado y más grande
+    // input bloqueado y grande
     teacherNameEl.disabled = true;
     teacherNameEl.classList.add("is-locked");
 
-    // ✅ mostrar botón cerrar sesión
-    if (btnLogout) btnLogout.hidden = false;
+    // iniciales en el botón circular
+    updateUserInitials(profile);
+
+    // mostrar botón/menu solo si hay sesión
+    if (btnUserMenu) btnUserMenu.hidden = false;
   } else {
-    // ✅ input editable (por si haces logout)
     teacherNameEl.disabled = false;
     teacherNameEl.classList.remove("is-locked");
 
-    // ocultar botón cerrar sesión
-    if (btnLogout) btnLogout.hidden = true;
+    updateUserInitials(null);
+
+    if (btnUserMenu) btnUserMenu.hidden = true;
+    setMenuOpen(false);
   }
 }
+
 
 function logout() {
   // borrar perfil
@@ -212,6 +244,24 @@ if (btnCopyDevice) {
     }
   });
 }
+
+// Toggle del menú al tocar el botón circular
+if (btnUserMenu) {
+  btnUserMenu.addEventListener("click", (e) => {
+    e.stopPropagation();
+    const isOpen = userMenu && !userMenu.hidden;
+    setMenuOpen(!isOpen);
+  });
+}
+
+// Cerrar menú al tocar fuera
+document.addEventListener("click", () => setMenuOpen(false));
+
+// Cerrar menú al tocar una opción
+if (userMenu) {
+  userMenu.addEventListener("click", () => setMenuOpen(false));
+}
+
 
 
 btnLoginSave.addEventListener("click", async () => {
