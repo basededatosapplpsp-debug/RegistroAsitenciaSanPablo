@@ -38,6 +38,8 @@ body{
 
   min-height:100vh;
   padding-bottom: calc(60px + env(safe-area-inset-bottom));
+    overflow: hidden;          /* ✅ evita scroll en toda la app */
+  overscroll-behavior: none; /* ✅ evita “rebote” */
 }
 
 .header{
@@ -593,6 +595,28 @@ body.is-loading{
   overflow: hidden;
   touch-action: none;
 }
+
+
+/* ===== Layout sin scroll global + scroll solo en Registros ===== */
+
+/* que el área principal use el alto visible */
+.container{
+  max-height: calc(100vh - 120px); /* header+footer aprox */
+  overflow: hidden;                 /* ✅ el main NO scrollea */
+}
+
+/* el panel de registros es el que scrollea */
+#recordsPanel{
+  max-height: calc(100vh - 220px); /* deja espacio para header + tarjeta registrar + footer */
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* cuando registros está oculto, nada scrollea */
+#recordsPanel[hidden]{
+  overflow: hidden;
+}
+
 
 </style>
 </head>
