@@ -61,13 +61,36 @@ function todayStr() {
   return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
 }
 
+function normalizeDateYYYYMMDD(v) {
+  const s = String(v || "").trim();
+
+  // ya viene como 2026-02-01
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+
+  // viene como 01/02/2026 (dd/MM/yyyy)
+  if (/^\d{2}\/\d{2}\/\d{4}$/.test(s)) {
+    const [dd, mm, yyyy] = s.split("/");
+    return `${yyyy}-${mm}-${dd}`;
+  }
+
+  // intentar parsear
+  const d = new Date(s);
+  if (!isNaN(d.getTime())) {
+    return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+  }
+
+  return "";
+}
+
 function updateSalidaState(records) {
   const p = loadProfile();
   if (!p) return;
 
   const today = todayStr();
-  hasEntradaToday = records.some(r =>
-    r.type === "ENTRADA" && r.date === today
+
+  hasEntradaToday = (records || []).some(r =>
+    String(r.type || "").toUpperCase() === "ENTRADA" &&
+    normalizeDateYYYYMMDD(r.date) === today
   );
 
   if (hasEntradaToday) {
@@ -78,6 +101,7 @@ function updateSalidaState(records) {
     btnSalida.classList.add("is-inactive");
   }
 }
+
 
 
 // ======= Helpers =======
@@ -571,10 +595,12 @@ function render(records) {
   `).join("");
 
   // Cards (mobile)
-  if (!filtered.length) {
-    recordsList.innerHTML = `<div class="muted small">No hay registros para este docente.</div>`;
-    return;
-  }
+ if (!filtered.length) {
+  recordsList.innerHTML = `<div class="muted small">No hay registros para este docente.</div>`;
+  updateSalidaState(filtered); // ✅ fuerza SALIDA inactiva
+  return;
+}
+
 
   recordsList.innerHTML = filtered.map(r => {
     const badgeClass = (r.type === "ENTRADA")
@@ -597,7 +623,7 @@ function render(records) {
       </div>
     `;
   }).join("");
-  updateSalidaState(records);
+updateSalidaState(filtered);
 
 }
 
