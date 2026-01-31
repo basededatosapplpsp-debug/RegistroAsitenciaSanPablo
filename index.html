@@ -835,8 +835,13 @@ body.is-loading{
 <div id="adminAssistModal" class="modal-backdrop" hidden>
   <div class="modal-card" style="width:min(720px,100%);">
     <h2 class="modal-title">Ver asistencias</h2>
-    <p class="modal-sub">Selecciona un docente para ver sus registros del mes actual.</p>
+    <p class="modal-sub">Selecciona un docente para ver sus registros del mes seleccionado.</p>
 
+    <!-- ✅ NUEVO: selector de mes -->
+    <label class="modal-label">Mes</label>
+    <select id="adminMonthSelect" class="modal-input"></select>
+
+    <!-- (se mantiene igual) -->
     <label class="modal-label">Docente</label>
     <select id="adminTeacherSelect" class="modal-input"></select>
 
@@ -864,6 +869,7 @@ body.is-loading{
     </div>
   </div>
 </div>
+
 
 <!-- ======= MODAL APROBAR DISPOSITIVOS (ADMIN) ======= -->
 <div id="adminDevicesModal" class="modal-backdrop" hidden>
@@ -967,6 +973,8 @@ const adminTeacherTitle = $("adminTeacherTitle");
 const adminLateCountEl = $("adminLateCount");
 const adminEarlyExitCountEl = $("adminEarlyExitCount");
 const btnAdminAssistClose = $("btnAdminAssistClose");
+const adminMonthSelect = $("adminMonthSelect");
+
 
 // ======= ADMIN: APROBAR DISPOSITIVOS =======
 const btnAdminApproveDevices = $("btnAdminApproveDevices");
@@ -1083,25 +1091,39 @@ async function gsAdminChangePin(oldPin, newPin) {
   return data;
 }
 
-async function gsAdminListTeachers() {
+
+async function gsAdminListMonths() {
   const res = await fetch(GS_WEBAPP_URL, {
     method: "POST",
-    body: JSON.stringify({ action: "admin_list_teachers", key: GS_API_KEY })
+    body: JSON.stringify({ action: "admin_list_months", key: GS_API_KEY })
+  });
+  const data = await res.json();
+  if (!data.ok) throw new Error(data.msg || data.error || "admin_list_months_failed");
+  return data.months || []; // [{key:"YYYY-MM", label:"enero 2026"}, ...]
+}
+
+
+async function gsAdminListTeachers(month) {
+  const res = await fetch(GS_WEBAPP_URL, {
+    method: "POST",
+    body: JSON.stringify({ action: "admin_list_teachers", month, key: GS_API_KEY })
   });
   const data = await res.json();
   if (!data.ok) throw new Error(data.msg || data.error || "admin_list_teachers_failed");
   return data.teachers || [];
 }
 
-async function gsAdminGetTeacherRecords(teacher) {
+
+async function gsAdminGetTeacherRecords(teacher, month) {
   const res = await fetch(GS_WEBAPP_URL, {
     method: "POST",
-    body: JSON.stringify({ action: "admin_get_teacher_records", teacher, key: GS_API_KEY })
+    body: JSON.stringify({ action: "admin_get_teacher_records", teacher, month, key: GS_API_KEY })
   });
   const data = await res.json();
   if (!data.ok) throw new Error(data.msg || data.error || "admin_get_records_failed");
   return data.records || [];
 }
+
 
 
 async function gsAdminListDeviceRequests() {
@@ -1607,7 +1629,7 @@ function openAdminAssistModal() {
   adminAssistModal.hidden = false;
   adminAssistList.innerHTML = `<div class="muted small">Cargando…</div>`;
   adminTeacherTitle.textContent = "—";
-  adminLateCountEl.textContent = "Tardes: 0";
+  adminLateCountEl.textContent = "Entradas tardes: 0";
   adminEarlyExitCountEl.textContent = "Salidas antes: 0";
 }
 
@@ -1626,7 +1648,7 @@ function renderAdminTeacherRecords(teacher, records) {
 
   const earlyExitCount = (records || []).filter(isEarlyExitRecord).length;
 
-  adminLateCountEl.textContent = `Tardes: ${lateCount}`;
+  adminLateCountEl.textContent = `Entradas tardes: ${lateCount}`;
   adminEarlyExitCountEl.textContent = `Salidas antes: ${earlyExitCount}`;
 
   if (!records || !records.length) {
@@ -1663,7 +1685,8 @@ function renderAdminTeacherRecords(teacher, records) {
 }
 
 async function adminLoadTeachersAndBind() {
-  const teachers = await gsAdminListTeachers();
+  const month = adminMonthSelect ? adminMonthSelect.value : "";
+  const teachers = await gsAdminListTeachers(month);
 
   adminTeacherSelect.innerHTML = (teachers.length ? teachers : ["(Sin docentes)"])
     .map(t => `<option value="${escapeHtml(t)}">${escapeHtml(t)}</option>`)
@@ -1671,12 +1694,16 @@ async function adminLoadTeachersAndBind() {
 
   if (teachers.length) {
     const first = teachers[0];
-    const recs = await gsAdminGetTeacherRecords(first);
+    const recs = await gsAdminGetTeacherRecords(first, month);
     renderAdminTeacherRecords(first, recs);
   } else {
-    adminAssistList.innerHTML = `<div class="muted small">No hay docentes en el mes actual.</div>`;
+    adminAssistList.innerHTML = `<div class="muted small">No hay docentes en ese mes.</div>`;
+    adminTeacherTitle.textContent = "—";
+    adminLateCountEl.textContent = "Tardes: 0";
+    adminEarlyExitCountEl.textContent = "Salidas antes: 0";
   }
 }
+
 
 if (btnAdminViewAssist) {
   btnAdminViewAssist.addEventListener("click", async () => {
@@ -1686,9 +1713,20 @@ if (btnAdminViewAssist) {
       return;
     }
     try {
-      openAdminAssistModal();
-      setLoading(true, "Cargando…", "Leyendo docentes del mes actual.");
-      await adminLoadTeachersAndBind();
+    openAdminAssistModal();
+setLoading(true, "Cargando…", "Leyendo docentes del mes seleccionado.");
+
+// ✅ AQUI VA ESTO:
+if (adminMonthSelect) {
+  const months = await gsAdminListMonths();
+  adminMonthSelect.innerHTML = (months.length ? months : [{key:"",label:"(Sin meses)"}])
+    .map(m => `<option value="${escapeHtml(m.key)}">${escapeHtml(m.label)}</option>`)
+    .join("");
+}
+
+// y después:
+await adminLoadTeachersAndBind();
+
     } catch (e) {
       adminAssistList.innerHTML = `<div class="muted small">${escapeHtml(String(e && e.message ? e.message : e))}</div>`;
     } finally {
@@ -1731,13 +1769,26 @@ if (btnAdminDevicesClose) btnAdminDevicesClose.addEventListener("click", closeAd
 
 
 
+if (adminMonthSelect) {
+  adminMonthSelect.addEventListener("change", async () => {
+    try {
+      adminAssistList.innerHTML = `<div class="muted small">Cargando…</div>`;
+      await adminLoadTeachersAndBind();
+    } catch (e) {
+      adminAssistList.innerHTML = `<div class="muted small">${escapeHtml(String(e && e.message ? e.message : e))}</div>`;
+    }
+  });
+}
+
+
 
 if (adminTeacherSelect) {
   adminTeacherSelect.addEventListener("change", async () => {
     const t = adminTeacherSelect.value;
     try {
       adminAssistList.innerHTML = `<div class="muted small">Cargando…</div>`;
-      const recs = await gsAdminGetTeacherRecords(t);
+const month = adminMonthSelect ? adminMonthSelect.value : "";
+const recs = await gsAdminGetTeacherRecords(t, month);
       renderAdminTeacherRecords(t, recs);
     } catch (e) {
       adminAssistList.innerHTML = `<div class="muted small">${escapeHtml(String(e && e.message ? e.message : e))}</div>`;
@@ -2023,7 +2074,7 @@ function render(records) {
 
   const earlyExitCount = filtered.filter(isEarlyExitRecord).length;
 
-  if (lateCountEl) lateCountEl.textContent = `Tardes: ${lateCount}`;
+  if (lateCountEl) lateCountEl.textContent = `Entradas tardes: ${lateCount}`;
   if (earlyExitCountEl) earlyExitCountEl.textContent = `Salidas antes: ${earlyExitCount}`;
 
   // Tabla (desktop)
