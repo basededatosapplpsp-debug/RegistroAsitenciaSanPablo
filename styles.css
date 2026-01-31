@@ -418,73 +418,78 @@ h2{font-size:16px; margin:0 0 12px}
 
 /* ===== Botones ENTRADA / SALIDA PRO ===== */
 
-/* Base común */
+/* ===== Botones ENTRADA / SALIDA (pastel, profesional) ===== */
+
 #btnEntrada,
 #btnSalida{
   position: relative;
   overflow: hidden;
-  font-size: 15px;
-  font-weight: 900;
-  letter-spacing: .4px;
+  font-size: 14.5px;
+  font-weight: 800;
+  letter-spacing: .35px;
   padding: 14px 16px;
   border-radius: 16px;
-  transition: transform .15s ease, box-shadow .15s ease, filter .15s ease;
+  transition: transform .12s ease, box-shadow .12s ease, filter .12s ease;
 }
 
-/* Hover / active */
+/* Hover / active sutil */
 #btnEntrada:hover,
 #btnSalida:hover{
-  filter: brightness(1.05);
+  filter: brightness(1.02);
 }
 #btnEntrada:active,
 #btnSalida:active{
-  transform: translateY(2px) scale(.99);
+  transform: translateY(1px);
 }
 
 /* ================= ENTRADA ================= */
 #btnEntrada{
   background: linear-gradient(
     180deg,
-    #22c55e,
-    #16a34a
+    #d1fae5,   /* verde pastel */
+    #ecfdf5
   );
-  border: 1px solid rgba(34,197,94,.55);
+  color: #065f46;
+  border: 1px solid rgba(6,95,70,.25);
   box-shadow:
-    0 10px 25px rgba(34,197,94,.35),
-    inset 0 1px 0 rgba(255,255,255,.25);
+    0 6px 14px rgba(6,95,70,.15),
+    inset 0 1px 0 rgba(255,255,255,.6);
 }
 
-/* Icono ENTRADA */
+/* icono sutil */
 #btnEntrada::before{
-  content: "▶︎";
-  font-size: 14px;
+  content: "↘";
   margin-right: 8px;
+  font-size: 13px;
+  opacity: .7;
 }
 
 /* ================= SALIDA ================= */
 #btnSalida{
   background: linear-gradient(
     180deg,
-    #fb923c,
-    #ef4444
+    #ede9fe,   /* violeta pastel */
+    #f5f3ff
   );
-  border: 1px solid rgba(239,68,68,.55);
+  color: #4c1d95;
+  border: 1px solid rgba(76,29,149,.25);
   box-shadow:
-    0 10px 25px rgba(239,68,68,.35),
-    inset 0 1px 0 rgba(255,255,255,.25);
+    0 6px 14px rgba(76,29,149,.15),
+    inset 0 1px 0 rgba(255,255,255,.6);
 }
 
-/* Icono SALIDA */
 #btnSalida::before{
-  content: "⏹︎";
-  font-size: 13px;
+  content: "↗";
   margin-right: 8px;
+  font-size: 13px;
+  opacity: .7;
 }
 
 /* ================= Disabled ================= */
 #btnEntrada:disabled,
 #btnSalida:disabled{
-  opacity: .55;
-  filter: grayscale(.4);
+  opacity: .6;
   box-shadow: none;
+  filter: grayscale(.3);
 }
+
