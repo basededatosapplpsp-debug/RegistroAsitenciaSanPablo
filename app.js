@@ -700,7 +700,7 @@ async function register(type) {
   const t = nowParts();
 
   try {
-    setLoading(true, "Guardando…", "Enviando registro de asitencia.");
+    setLoading(true, "Guardando…", "Enviando registro de asistencia.");
 
     await gsRegister({
       action: "register",
