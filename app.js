@@ -337,11 +337,16 @@ async function gsGetList(limit = 50) {
   url.searchParams.set("limit", String(limit));
   url.searchParams.set("key", GS_API_KEY);
 
+  // ✅ pedir solo los registros del correo logueado
+  const p = loadProfile();
+  if (p && p.email) url.searchParams.set("email", p.email);
+
   const res = await fetch(url.toString(), { method: "GET" });
   const data = await res.json();
   if (!data.ok) throw new Error(data.error || "gs_list_failed");
   return data.records || [];
 }
+
 
 async function gsRegister(payload) {
   const res = await fetch(GS_WEBAPP_URL, {
