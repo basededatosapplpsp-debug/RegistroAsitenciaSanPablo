@@ -22,11 +22,22 @@
       <p class="sub">Entrada / salida con validación por ubicación</p>
     </div>
 
-   <div class="header-actions">
-  <button id="btnLogout" class="btn btn-ghost" hidden>Cerrar sesión</button>
-  <button id="btnRefreshSW" class="btn btn-ghost" title="Borrar caché y actualizar">Actualizar</button>
+<div class="header-actions">
+  <!-- Menú circular (avatar) -->
+  <div class="menu">
+    <button id="btnUserMenu" class="menu-btn" type="button" aria-haspopup="menu" aria-expanded="false" title="Menú">
+      <span id="userInitials">?</span>
+    </button>
+
+    <div id="userMenu" class="menu-panel" role="menu" hidden>
+      <button id="btnRefreshSW" class="menu-item" type="button" role="menuitem">Actualizar</button>
+      <button id="btnLogout" class="menu-item danger" type="button" role="menuitem">Cerrar sesión</button>
+    </div>
+  </div>
+
   <button id="btnInstall" class="btn btn-ghost" hidden>Instalar</button>
 </div>
+
 
   </header>
 
