@@ -441,104 +441,113 @@ h2{font-size:16px; margin:0 0 12px}
 .menu-item.danger:hover{ background: rgba(239,68,68,.12); border-color: rgba(239,68,68,.25); }
 
 
-/* ===== Botones ENTRADA / SALIDA PRO ===== */
-
-/* ===== Botones ENTRADA / SALIDA (redondos, grandes, sin flecha) ===== */
+/* ===== Botones ENTRADA / SALIDA (pro, pastel, compactos, SIEMPRE lado a lado) ===== */
 
 #btnEntrada,
 #btnSalida{
-  /* círculo */
-  width: clamp(130px, 22vw, 175px);
-  height: clamp(130px, 22vw, 175px);
+  /* Tamaño más pequeño */
+  width: clamp(96px, 18vw, 118px);
+  height: clamp(96px, 18vw, 118px);
   border-radius: 999px;
+  padding: 0;
 
-  /* texto */
-  font-size: clamp(18px, 2.4vw, 24px);
+  /* Tipografía pro */
+  font-size: clamp(14px, 2vw, 16px);
   font-weight: 900;
-  letter-spacing: .4px;
+  letter-spacing: .2px;
   text-transform: none;
 
-  /* centrado perfecto */
+  /* Centrado */
   display: inline-flex;
   align-items: center;
   justify-content: center;
 
-  /* look */
-  border: 1px solid rgba(255,255,255,.14);
+  /* Look elegante */
+  border: 1px solid rgba(255,255,255,.12);
+  background: rgba(255,255,255,.06);
+  color: var(--text);
+
+  /* Sombra suave */
+  box-shadow: 0 10px 22px rgba(0,0,0,.22);
+
+  /* Interacción */
   cursor: pointer;
   user-select: none;
   -webkit-tap-highlight-color: transparent;
-
-  /* animaciones */
   transition: transform .12s ease, filter .18s ease, box-shadow .18s ease;
-  box-shadow: 0 12px 28px rgba(0,0,0,.32);
-  padding: 0; /* importante: para que quede círculo real */
 }
 
-/* Hover ✨ */
+/* Hover ✨ (muy sutil, pro) */
 #btnEntrada:hover,
 #btnSalida:hover{
-  filter: brightness(1.08);
-  transform: translateY(-2px);
-  box-shadow: 0 16px 34px rgba(0,0,0,.38);
+  filter: brightness(1.04);
+  transform: translateY(-1px);
+  box-shadow: 0 12px 26px rgba(0,0,0,.26);
 }
 
 /* Press 💥 */
 #btnEntrada:active,
 #btnSalida:active{
-  transform: translateY(1px) scale(0.96);
-  filter: brightness(0.98);
-  box-shadow: 0 10px 22px rgba(0,0,0,.28);
+  transform: translateY(1px) scale(0.98);
+  filter: brightness(0.99);
+  box-shadow: 0 8px 18px rgba(0,0,0,.20);
 }
 
 /* Focus teclado */
 #btnEntrada:focus-visible,
 #btnSalida:focus-visible{
   outline: none;
-  box-shadow: 0 0 0 4px rgba(255,255,255,.18), 0 12px 28px rgba(0,0,0,.32);
+  box-shadow: 0 0 0 4px rgba(255,255,255,.12), 0 10px 24px rgba(0,0,0,.24);
 }
 
-/* Colores (manteniendo lógica intacta) */
+/* ===== Paleta pastel profesional ===== */
 #btnEntrada{
-  background: linear-gradient(180deg, #20c997, #12b886);
-  color: #ffffff;
+  background: linear-gradient(180deg, rgba(209,250,229,.92), rgba(236,253,245,.88));
+  color: #065f46;
+  border-color: rgba(6,95,70,.22);
 }
 
 #btnSalida{
-  background: linear-gradient(180deg, #ff6b6b, #e03131);
-  color: #ffffff;
+  background: linear-gradient(180deg, rgba(237,233,254,.92), rgba(245,243,255,.88));
+  color: #4c1d95;
+  border-color: rgba(76,29,149,.22);
 }
 
 /* Disabled */
 #btnEntrada:disabled,
 #btnSalida:disabled{
-  opacity: .55;
+  opacity: .58;
   box-shadow: none;
   filter: grayscale(.2);
   cursor: not-allowed;
   transform: none;
 }
 
-/* SALIDA inactiva hasta ENTRADA (tu lógica actual) */
+/* Tu estado actual: SALIDA inactiva */
 #btnSalida.is-inactive{
-  background: linear-gradient(180deg, #f1f5f9, #e5e7eb);
+  background: linear-gradient(180deg, rgba(241,245,249,.95), rgba(229,231,235,.90));
   color: #9ca3af;
-  border-color: rgba(0,0,0,.10);
+  border-color: rgba(255,255,255,.10);
   box-shadow: none;
-  cursor: not-allowed;
   filter: none;
+  cursor: not-allowed;
 }
 
-/* Ajuste para móvil: que se apilen y queden centrados */
+
+/* ===== Mobile: botones SIEMPRE lado a lado ===== */
 @media (max-width: 699px){
   .row{
-    flex-direction: column;
+    flex-direction: row;
+    justify-content: center;
     align-items: center;
+    gap: 12px;
+    flex-wrap: nowrap;
   }
   .row .btn{
-    width: auto; /* evita que el media query anterior los ponga full width */
+    width: auto;
   }
 }
+
 
 
 /* ======= LOADER GLOBAL (overlay moderno) ======= */
@@ -708,8 +717,9 @@ body.is-loading{
       <input id="teacherName" class="input" type="text" placeholder="Ej: Ana Pérez" autocomplete="name" />
 
       <div class="row">
-     <button id="btnEntrada" class="btn btn-primary">Entrada</button>
+<button id="btnEntrada" class="btn btn-primary">Entrada</button>
 <button id="btnSalida" class="btn btn-secondary">Salida</button>
+
 
       </div>
 
