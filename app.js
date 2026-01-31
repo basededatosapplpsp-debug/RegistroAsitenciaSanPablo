@@ -80,6 +80,11 @@ function normalizeKey(s) {
     .replace(/\s+/g, " ");            // colapsa espacios
 }
 
+function samePersonName(a, b) {
+  return normalizeKey(a) === normalizeKey(b);
+}
+
+
 
 
 
@@ -302,6 +307,18 @@ btnLoginSave.addEventListener("click", async () => {
       loginModal.hidden = false;
       return;
     }
+
+
+    // ✅ Si está autorizado, validar que el nombre corresponda al dispositivo
+const allowedName = (chk && chk.allowed_name) ? String(chk.allowed_name).trim() : "";
+if (allowedName && !samePersonName(name, allowedName)) {
+  const msg = `El nombre no corresponde a este dispositivo.\nAutorizado para: ${allowedName}`;
+  loginHint.textContent = msg;
+  setStatus("bad", "Nombre no válido", msg);
+  loginModal.hidden = false;
+  return;
+}
+
 
     // ✅ Autorizado: guardar perfil y cerrar modal
     const profile = { name, email, course };
