@@ -659,6 +659,7 @@ body.is-loading{
     <div id="userMenu" class="menu-panel" role="menu" hidden>
       <button id="btnRefreshSW" class="menu-item" type="button" role="menuitem">Actualizar</button>
       <button id="btnAdminViewAssist" class="menu-item" type="button" role="menuitem" hidden>Ver asistencias</button>
+<button id="btnAdminApproveDevices" class="menu-item" type="button" role="menuitem" hidden>Aprobar dispositivos</button>
 
       <button id="btnLogout" class="menu-item danger" type="button" role="menuitem">Cerrar sesión</button>
     </div>
@@ -842,7 +843,7 @@ body.is-loading{
     <div class="row row-between" style="margin-top:10px;">
       <div class="muted small" id="adminTeacherTitle">—</div>
       <div style="display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end;">
-        <span class="badge badge-late" id="adminLateCount">Tardes: 0</span>
+        <span class="badge badge-late" id="adminLateCount">Entradas tardes: 0</span>
         <span class="badge badge-neutral" id="adminEarlyExitCount">Salidas antes: 0</span>
       </div>
     </div>
@@ -864,6 +865,35 @@ body.is-loading{
   </div>
 </div>
 
+<!-- ======= MODAL APROBAR DISPOSITIVOS (ADMIN) ======= -->
+<div id="adminDevicesModal" class="modal-backdrop" hidden>
+  <div class="modal-card" style="width:min(820px,100%);">
+    <h2 class="modal-title">Aprobar dispositivos</h2>
+    <p class="modal-sub">Aprueba o rechaza solicitudes pendientes en la hoja <b>DISPOSITIVOS</b>.</p>
+
+    <div class="row row-between" style="margin-top:10px;">
+      <div class="muted small" id="adminDevicesCount">Pendientes: 0</div>
+      <div style="display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end;">
+        <button id="btnAdminDevicesReload" type="button" class="btn btn-ghost small">Recargar</button>
+      </div>
+    </div>
+
+    <div id="adminDevicesList" style="
+      margin-top:12px;
+      max-height: min(62vh, 560px);
+      overflow:auto;
+      -webkit-overflow-scrolling:touch;
+      border:1px solid var(--line);
+      border-radius:14px;
+      padding:10px;
+      background: rgba(0,0,0,.10);
+    "></div>
+
+    <div class="modal-actions" style="justify-content:flex-end;">
+      <button id="btnAdminDevicesClose" type="button" class="btn btn-ghost">Cerrar</button>
+    </div>
+  </div>
+</div>
 
 
 <script>
@@ -938,6 +968,13 @@ const adminLateCountEl = $("adminLateCount");
 const adminEarlyExitCountEl = $("adminEarlyExitCount");
 const btnAdminAssistClose = $("btnAdminAssistClose");
 
+// ======= ADMIN: APROBAR DISPOSITIVOS =======
+const btnAdminApproveDevices = $("btnAdminApproveDevices");
+const adminDevicesModal = $("adminDevicesModal");
+const adminDevicesList = $("adminDevicesList");
+const adminDevicesCount = $("adminDevicesCount");
+const btnAdminDevicesClose = $("btnAdminDevicesClose");
+const btnAdminDevicesReload = $("btnAdminDevicesReload");
 
 const btnUserMenu = $("btnUserMenu");
 const userMenu = $("userMenu");
@@ -1067,6 +1104,32 @@ async function gsAdminGetTeacherRecords(teacher) {
 }
 
 
+async function gsAdminListDeviceRequests() {
+  const res = await fetch(GS_WEBAPP_URL, {
+    method: "POST",
+    body: JSON.stringify({ action: "admin_list_device_requests", key: GS_API_KEY })
+  });
+  const data = await res.json();
+  if (!data.ok) throw new Error(data.msg || data.error || "admin_list_device_requests_failed");
+  return data.requests || [];
+}
+
+async function gsAdminSetDeviceAuth(row, authorized) {
+  const res = await fetch(GS_WEBAPP_URL, {
+    method: "POST",
+    body: JSON.stringify({
+      action: "admin_set_device_auth",
+      row,
+      authorized: authorized ? "SI" : "NO",
+      key: GS_API_KEY
+    })
+  });
+  const data = await res.json();
+  if (!data.ok) throw new Error(data.msg || data.error || "admin_set_device_auth_failed");
+  return data;
+}
+
+
 // ======= Contadores de resumen (tardes / salidas antes) =======
 const EXIT_OK_HHMM_CLIENT = "14:00"; // debe coincidir con tu Apps Script (EXIT_OK_HHMM)
 
@@ -1186,6 +1249,9 @@ function setAdminMode(on) {
   localStorage.setItem(LS_ADMIN_KEY, on ? "1" : "0");
   if (btnAdminViewAssist) btnAdminViewAssist.hidden = !on;
 
+  if (btnAdminApproveDevices) btnAdminApproveDevices.hidden = !on;
+
+
   // Si entro como admin: cerrar login modal y bloquear “docente”
   if (on) {
     loginModal.hidden = true;
@@ -1211,6 +1277,7 @@ function setAdminMode(on) {
 // Estado inicial
 if (btnAdminViewAssist) btnAdminViewAssist.hidden = !isAdminMode();
 
+if (btnAdminApproveDevices) btnAdminApproveDevices.hidden = !isAdminMode();
 
 
 
@@ -1630,6 +1697,40 @@ if (btnAdminViewAssist) {
   });
 }
 
+if (btnAdminApproveDevices) {
+  btnAdminApproveDevices.addEventListener("click", async () => {
+    if (!isAdminMode()) {
+      setStatus("warn", "Requiere admin", "Ingresa como administrador primero.");
+      openAdminModal();
+      return;
+    }
+    try {
+      openAdminDevicesModal();
+      setLoading(true, "Cargando…", "Leyendo solicitudes pendientes.");
+      await adminLoadDeviceRequests();
+    } catch (e) {
+      adminDevicesList.innerHTML = `<div class="muted small">${escapeHtml(String(e && e.message ? e.message : e))}</div>`;
+    } finally {
+      setLoading(false);
+    }
+  });
+}
+
+if (btnAdminDevicesReload) {
+  btnAdminDevicesReload.addEventListener("click", async () => {
+    try {
+      setLoading(true, "Recargando…", "Leyendo solicitudes pendientes.");
+      await adminLoadDeviceRequests();
+    } finally {
+      setLoading(false);
+    }
+  });
+}
+
+if (btnAdminDevicesClose) btnAdminDevicesClose.addEventListener("click", closeAdminDevicesModal);
+
+
+
 
 if (adminTeacherSelect) {
   adminTeacherSelect.addEventListener("change", async () => {
@@ -1646,6 +1747,91 @@ if (adminTeacherSelect) {
 
 if (btnAdminAssistClose) btnAdminAssistClose.addEventListener("click", closeAdminAssistModal);
 
+function openAdminDevicesModal() {
+  if (!adminDevicesModal) return;
+  adminDevicesModal.hidden = false;
+  if (adminDevicesList) adminDevicesList.innerHTML = `<div class="muted small">Cargando…</div>`;
+  if (adminDevicesCount) adminDevicesCount.textContent = "Pendientes: —";
+}
+
+function closeAdminDevicesModal() {
+  if (!adminDevicesModal) return;
+  adminDevicesModal.hidden = true;
+}
+
+function renderAdminDeviceRequests(requests) {
+  const list = (requests || []);
+  if (adminDevicesCount) adminDevicesCount.textContent = `Pendientes: ${list.length}`;
+
+  if (!list.length) {
+    adminDevicesList.innerHTML = `<div class="muted small">No hay solicitudes pendientes ✅</div>`;
+    return;
+  }
+
+  adminDevicesList.innerHTML = list.map(r => {
+    const email = escapeHtml(r.email || "");
+    const device = escapeHtml(r.device_id || "");
+    const notes = escapeHtml(r.notes || "");
+    const row = Number(r.row || 0);
+
+    return `
+      <div class="record-card" style="margin-bottom:10px;">
+        <div class="top">
+          <span class="teacher">${email}</span>
+          <span class="badge badge-neutral">Fila: ${row}</span>
+        </div>
+
+        <div class="meta" style="margin-top:8px;">
+          <div class="muted small">DEVICE_ID:</div>
+          <div class="device-id" style="margin-top:4px;">${device}</div>
+        </div>
+
+        <div class="meta" style="margin-top:10px;">
+          <div class="muted small">Notas:</div>
+          <div class="muted small" style="margin-top:4px; white-space:pre-wrap;">${notes || "—"}</div>
+        </div>
+
+        <div class="row" style="margin-top:12px;">
+          <button class="btn btn-primary" data-approve="${row}">Aprobar ✅</button>
+          <button class="btn btn-danger" data-reject="${row}">Rechazar ❌</button>
+        </div>
+      </div>
+    `;
+  }).join("");
+
+  // bind botones (delegación)
+  adminDevicesList.querySelectorAll("[data-approve]").forEach(btn => {
+    btn.addEventListener("click", async () => {
+      const row = Number(btn.getAttribute("data-approve"));
+      await adminSetDeviceRow(row, true);
+    });
+  });
+
+  adminDevicesList.querySelectorAll("[data-reject]").forEach(btn => {
+    btn.addEventListener("click", async () => {
+      const row = Number(btn.getAttribute("data-reject"));
+      await adminSetDeviceRow(row, false);
+    });
+  });
+}
+
+async function adminLoadDeviceRequests() {
+  const reqs = await gsAdminListDeviceRequests();
+  renderAdminDeviceRequests(reqs);
+}
+
+async function adminSetDeviceRow(row, approve) {
+  try {
+    setLoading(true, approve ? "Aprobando…" : "Rechazando…", "Actualizando hoja DISPOSITIVOS.");
+    await gsAdminSetDeviceAuth(row, approve);
+    await adminLoadDeviceRequests();
+    setStatus("", "Listo", approve ? "Dispositivo aprobado ✅" : "Dispositivo rechazado ❌");
+  } catch (e) {
+    setStatus("bad", "Error", String(e && e.message ? e.message : e));
+  } finally {
+    setLoading(false);
+  }
+}
 
 
 if (!btnRequestAuth) {
