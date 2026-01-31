@@ -20,6 +20,12 @@ const distEl = $("dist");
 const accEl = $("acc");
 const coordsEl = $("coords");
 
+// ======= LOADER UI =======
+const appLoader = $("appLoader");
+const loaderTitleEl = $("loaderTitle");
+const loaderMsgEl = $("loaderMsg");
+
+
 // ======= LOGIN MODAL UI =======
 const loginModal = $("loginModal");
 const loginNameEl = $("loginName");
@@ -159,9 +165,20 @@ function setLoading(isLoading, title = "Procesando…", msg = "Por favor espera�
   btnSalida.disabled = on;
   btnExport.disabled = on;
 
-  // Mensaje visual
+  // Mostrar overlay loader
+  if (appLoader) {
+    appLoader.hidden = !on;
+    if (loaderTitleEl) loaderTitleEl.textContent = title;
+    if (loaderMsgEl) loaderMsgEl.textContent = msg;
+  }
+
+  // Evitar scroll/taps detrás
+  document.body.classList.toggle("is-loading", on);
+
+  // Mensaje visual (tu status bar)
   if (on) setStatus("warn", title, msg);
 }
+
 
 
 
