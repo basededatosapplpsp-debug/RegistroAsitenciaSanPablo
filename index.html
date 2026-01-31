@@ -658,6 +658,8 @@ body.is-loading{
 
     <div id="userMenu" class="menu-panel" role="menu" hidden>
       <button id="btnRefreshSW" class="menu-item" type="button" role="menuitem">Actualizar</button>
+      <button id="btnAdminViewAssist" class="menu-item" type="button" role="menuitem" hidden>Ver asistencias</button>
+
       <button id="btnLogout" class="menu-item danger" type="button" role="menuitem">Cerrar sesión</button>
     </div>
   </div>
@@ -783,7 +785,9 @@ body.is-loading{
 <div class="modal-actions">
   <button id="btnLoginSave" type="button" class="btn btn-primary">Entrar</button>
   <button id="btnRequestAuth" type="button" class="btn btn-ghost">Solicitar autorización</button>
+  <button id="btnAdminOpen" type="button" class="btn btn-ghost">Administrador</button>
 </div>
+
 
 
 
@@ -801,6 +805,65 @@ body.is-loading{
     </div>
   </div>
 </div>
+
+
+<!-- ======= MODAL ADMIN (PIN / CAMBIO / ASISTENCIAS) ======= -->
+<div id="adminModal" class="modal-backdrop" hidden>
+  <div class="modal-card">
+    <h2 class="modal-title">Administrador</h2>
+    <p class="modal-sub" id="adminSub">Ingresa tu PIN para continuar.</p>
+
+    <label class="modal-label">PIN</label>
+    <input id="adminPin" class="modal-input" type="password" inputmode="numeric" maxlength="8" placeholder="••••" />
+
+    <div id="adminChangeBlock" hidden>
+      <label class="modal-label">Nuevo PIN (4 a 8 dígitos)</label>
+      <input id="adminNewPin" class="modal-input" type="password" inputmode="numeric" maxlength="8" placeholder="••••" />
+    </div>
+
+    <div class="modal-actions">
+      <button id="btnAdminEnter" type="button" class="btn btn-primary">Entrar</button>
+      <button id="btnAdminClose" type="button" class="btn btn-ghost">Cerrar</button>
+    </div>
+
+    <div id="adminHint" class="modal-hint muted small"></div>
+  </div>
+</div>
+
+<!-- ======= MODAL VER ASISTENCIAS (ADMIN) ======= -->
+<div id="adminAssistModal" class="modal-backdrop" hidden>
+  <div class="modal-card" style="width:min(720px,100%);">
+    <h2 class="modal-title">Ver asistencias</h2>
+    <p class="modal-sub">Selecciona un docente para ver sus registros del mes actual.</p>
+
+    <label class="modal-label">Docente</label>
+    <select id="adminTeacherSelect" class="modal-input"></select>
+
+    <div class="row row-between" style="margin-top:10px;">
+      <div class="muted small" id="adminTeacherTitle">—</div>
+      <div style="display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end;">
+        <span class="badge badge-late" id="adminLateCount">Tardes: 0</span>
+        <span class="badge badge-neutral" id="adminEarlyExitCount">Salidas antes: 0</span>
+      </div>
+    </div>
+
+    <div id="adminAssistList" style="
+      margin-top:12px;
+      max-height: min(60vh, 520px);
+      overflow:auto;
+      -webkit-overflow-scrolling:touch;
+      border:1px solid var(--line);
+      border-radius:14px;
+      padding:10px;
+      background: rgba(0,0,0,.10);
+    "></div>
+
+    <div class="modal-actions" style="justify-content:flex-end;">
+      <button id="btnAdminAssistClose" type="button" class="btn btn-ghost">Cerrar</button>
+    </div>
+  </div>
+</div>
+
 
 
 <script>
@@ -854,6 +917,27 @@ const btnExport  = $("btnExport");
 const btnInstall = $("btnInstall");
 const btnRefreshSW = $("btnRefreshSW");
 const btnLogout = $("btnLogout");
+
+// ======= ADMIN UI =======
+const btnAdminOpen = $("btnAdminOpen");
+const adminModal = $("adminModal");
+const adminPinEl = $("adminPin");
+const adminNewPinEl = $("adminNewPin");
+const adminChangeBlock = $("adminChangeBlock");
+const adminHint = $("adminHint");
+const adminSub = $("adminSub");
+const btnAdminEnter = $("btnAdminEnter");
+const btnAdminClose = $("btnAdminClose");
+
+const btnAdminViewAssist = $("btnAdminViewAssist");
+const adminAssistModal = $("adminAssistModal");
+const adminTeacherSelect = $("adminTeacherSelect");
+const adminAssistList = $("adminAssistList");
+const adminTeacherTitle = $("adminTeacherTitle");
+const adminLateCountEl = $("adminLateCount");
+const adminEarlyExitCountEl = $("adminEarlyExitCount");
+const btnAdminAssistClose = $("btnAdminAssistClose");
+
 
 const btnUserMenu = $("btnUserMenu");
 const userMenu = $("userMenu");
@@ -936,6 +1020,61 @@ function escapeHtml(s){
   return String(s).replace(/[&<>"']/g, (c)=>({
     "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
   }[c]));
+}
+
+
+// ======= ADMIN SESSION =======
+const LS_ADMIN_KEY = "asistencia_admin_session_v1";
+let isAdminSession = (localStorage.getItem(LS_ADMIN_KEY) === "1");
+
+function setAdminSession(on) {
+  isAdminSession = !!on;
+  localStorage.setItem(LS_ADMIN_KEY, on ? "1" : "0");
+  if (btnAdminViewAssist) btnAdminViewAssist.hidden = !on;
+}
+
+// default: oculto si no es admin
+if (btnAdminViewAssist) btnAdminViewAssist.hidden = !isAdminSession;
+
+// ======= Admin API =======
+async function gsAdminCheckPin(pin) {
+  const res = await fetch(GS_WEBAPP_URL, {
+    method: "POST",
+    body: JSON.stringify({ action: "admin_check_pin", pin, key: GS_API_KEY })
+  });
+  const data = await res.json();
+  if (!data.ok) throw new Error(data.msg || data.error || "admin_check_failed");
+  return data;
+}
+
+async function gsAdminChangePin(oldPin, newPin) {
+  const res = await fetch(GS_WEBAPP_URL, {
+    method: "POST",
+    body: JSON.stringify({ action: "admin_change_pin", old_pin: oldPin, new_pin: newPin, key: GS_API_KEY })
+  });
+  const data = await res.json();
+  if (!data.ok) throw new Error(data.msg || data.error || "admin_change_failed");
+  return data;
+}
+
+async function gsAdminListTeachers() {
+  const res = await fetch(GS_WEBAPP_URL, {
+    method: "POST",
+    body: JSON.stringify({ action: "admin_list_teachers", key: GS_API_KEY })
+  });
+  const data = await res.json();
+  if (!data.ok) throw new Error(data.msg || data.error || "admin_list_teachers_failed");
+  return data.teachers || [];
+}
+
+async function gsAdminGetTeacherRecords(teacher) {
+  const res = await fetch(GS_WEBAPP_URL, {
+    method: "POST",
+    body: JSON.stringify({ action: "admin_get_teacher_records", teacher, key: GS_API_KEY })
+  });
+  const data = await res.json();
+  if (!data.ok) throw new Error(data.msg || data.error || "admin_get_records_failed");
+  return data.records || [];
 }
 
 
@@ -1096,6 +1235,8 @@ function applySessionUI(profile) {
 function logout() {
   // borrar perfil
   localStorage.removeItem(LS_PROFILE_KEY);
+  setAdminSession(false); // ✅ apaga modo admin
+
 
   // limpiar UI
   applySessionUI(null);
@@ -1246,6 +1387,216 @@ loginModal.hidden = true;
 });
 
 
+function openAdminModal() {
+  if (!adminModal) return;
+  adminModal.hidden = false;
+  adminChangeBlock.hidden = true;
+  adminSub.textContent = "Ingresa tu PIN para continuar.";
+  adminHint.textContent = "";
+  adminPinEl.value = "";
+  adminNewPinEl.value = "";
+  adminPinEl.focus();
+}
+
+function closeAdminModal() {
+  if (!adminModal) return;
+  adminModal.hidden = true;
+  adminHint.textContent = "";
+}
+
+async function adminEnterFlow() {
+  const pin = String(adminPinEl.value || "").trim();
+  if (!pin) { adminHint.textContent = "Escribe el PIN."; return; }
+
+  try {
+    setLoading(true, "Verificando…", "Comprobando PIN de administrador.");
+    const chk = await gsAdminCheckPin(pin);
+
+    if (!chk.authorized) {
+      adminHint.textContent = chk.msg || "PIN incorrecto.";
+      return;
+    }
+
+    // si debe cambiar (pin por defecto)
+    if (chk.must_change) {
+      adminSub.textContent = "PIN por defecto detectado. Debes cambiarlo ahora.";
+      adminChangeBlock.hidden = false;
+      adminHint.textContent = "Define un nuevo PIN (4 a 8 dígitos).";
+      adminNewPinEl.focus();
+
+      // al volver a presionar Entrar, intentará cambiar
+      btnAdminEnter.dataset.mode = "change";
+      btnAdminEnter.dataset.oldpin = pin;
+      return;
+    }
+
+    // ok: abre sesión admin
+    setAdminSession(true);
+    adminHint.textContent = "Modo administrador activado ✅";
+    closeAdminModal();
+    setStatus("", "Admin activo", "Ya puedes usar 'Ver asistencias' desde el menú.");
+
+  } catch (e) {
+    adminHint.textContent = String(e && e.message ? e.message : e);
+  } finally {
+    setLoading(false);
+  }
+}
+
+async function adminChangePinFlow(oldPin) {
+  const newPin = String(adminNewPinEl.value || "").trim();
+  if (!/^\d{4,8}$/.test(newPin)) {
+    adminHint.textContent = "El nuevo PIN debe tener 4 a 8 dígitos.";
+    return;
+  }
+
+  try {
+    setLoading(true, "Actualizando…", "Guardando nuevo PIN de administrador.");
+    await gsAdminChangePin(oldPin, newPin);
+
+    // sesión admin activada
+    setAdminSession(true);
+
+    adminHint.textContent = "PIN actualizado ✅";
+    closeAdminModal();
+    setStatus("", "Admin activo", "PIN actualizado. Ya puedes usar 'Ver asistencias'.");
+
+    // limpiar estado del botón
+    delete btnAdminEnter.dataset.mode;
+    delete btnAdminEnter.dataset.oldpin;
+
+  } catch (e) {
+    adminHint.textContent = String(e && e.message ? e.message : e);
+  } finally {
+    setLoading(false);
+  }
+}
+
+if (btnAdminOpen) btnAdminOpen.addEventListener("click", openAdminModal);
+if (btnAdminClose) btnAdminClose.addEventListener("click", closeAdminModal);
+
+if (btnAdminEnter) {
+  btnAdminEnter.addEventListener("click", async () => {
+    const mode = btnAdminEnter.dataset.mode || "enter";
+    if (mode === "change") {
+      const oldPin = btnAdminEnter.dataset.oldpin || "";
+      await adminChangePinFlow(oldPin);
+    } else {
+      await adminEnterFlow();
+    }
+  });
+}
+
+
+function openAdminAssistModal() {
+  if (!adminAssistModal) return;
+  adminAssistModal.hidden = false;
+  adminAssistList.innerHTML = `<div class="muted small">Cargando…</div>`;
+  adminTeacherTitle.textContent = "—";
+  adminLateCountEl.textContent = "Tardes: 0";
+  adminEarlyExitCountEl.textContent = "Salidas antes: 0";
+}
+
+function closeAdminAssistModal() {
+  if (!adminAssistModal) return;
+  adminAssistModal.hidden = true;
+}
+
+function renderAdminTeacherRecords(teacher, records) {
+  adminTeacherTitle.textContent = teacher || "—";
+
+  // contadores
+  const lateCount = (records || []).filter(r =>
+    String(r.type || "").toUpperCase() === "ENTRADA" && !!r.late
+  ).length;
+
+  const earlyExitCount = (records || []).filter(isEarlyExitRecord).length;
+
+  adminLateCountEl.textContent = `Tardes: ${lateCount}`;
+  adminEarlyExitCountEl.textContent = `Salidas antes: ${earlyExitCount}`;
+
+  if (!records || !records.length) {
+    adminAssistList.innerHTML = `<div class="muted small">No hay registros para este docente.</div>`;
+    return;
+  }
+
+  adminAssistList.innerHTML = records.map(r => {
+    const type = String(r.type || "").toUpperCase();
+    const isLate = (type === "ENTRADA" && !!r.late);
+    const isEarly = isEarlyExitRecord(r);
+
+    // estilo: verde si ok, rojo si tarde/early
+    const cls = (type === "ENTRADA")
+      ? (isLate ? "record-card late" : "record-card ontime")
+      : (isEarly ? "record-card late" : "record-card ontime");
+
+    const badge = (type === "ENTRADA")
+      ? (isLate ? `<span class="badge badge-late">ENTRADA • TARDE</span>` : `<span class="badge badge-ontime">ENTRADA • A TIEMPO</span>`)
+      : (isEarly ? `<span class="badge badge-late">SALIDA • ANTES</span>` : `<span class="badge badge-ontime">SALIDA • OK</span>`);
+
+    return `
+      <div class="${cls}" style="margin-bottom:10px;">
+        <div class="top">
+          <span class="teacher">${escapeHtml(teacher)}</span>
+          ${badge}
+        </div>
+        <div class="meta">
+          ${escapeHtml(r.date)} • ${escapeHtml(r.time)}
+        </div>
+      </div>
+    `;
+  }).join("");
+}
+
+async function adminLoadTeachersAndBind() {
+  const teachers = await gsAdminListTeachers();
+
+  adminTeacherSelect.innerHTML = (teachers.length ? teachers : ["(Sin docentes)"])
+    .map(t => `<option value="${escapeHtml(t)}">${escapeHtml(t)}</option>`)
+    .join("");
+
+  if (teachers.length) {
+    const first = teachers[0];
+    const recs = await gsAdminGetTeacherRecords(first);
+    renderAdminTeacherRecords(first, recs);
+  } else {
+    adminAssistList.innerHTML = `<div class="muted small">No hay docentes en el mes actual.</div>`;
+  }
+}
+
+if (btnAdminViewAssist) {
+  btnAdminViewAssist.addEventListener("click", async () => {
+    if (!isAdminSession) {
+      setStatus("warn", "Requiere admin", "Ingresa como administrador primero.");
+      openAdminModal();
+      return;
+    }
+    try {
+      openAdminAssistModal();
+      setLoading(true, "Cargando…", "Leyendo docentes del mes actual.");
+      await adminLoadTeachersAndBind();
+    } catch (e) {
+      adminAssistList.innerHTML = `<div class="muted small">${escapeHtml(String(e && e.message ? e.message : e))}</div>`;
+    } finally {
+      setLoading(false);
+    }
+  });
+}
+
+if (adminTeacherSelect) {
+  adminTeacherSelect.addEventListener("change", async () => {
+    const t = adminTeacherSelect.value;
+    try {
+      adminAssistList.innerHTML = `<div class="muted small">Cargando…</div>`;
+      const recs = await gsAdminGetTeacherRecords(t);
+      renderAdminTeacherRecords(t, recs);
+    } catch (e) {
+      adminAssistList.innerHTML = `<div class="muted small">${escapeHtml(String(e && e.message ? e.message : e))}</div>`;
+    }
+  });
+}
+
+if (btnAdminAssistClose) btnAdminAssistClose.addEventListener("click", closeAdminAssistModal);
 
 
 
