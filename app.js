@@ -732,21 +732,40 @@ async function register(type) {
 
 
   } catch (e) {
-    // ✅ Mostrar el mensaje real (si viene del servidor)
-    const msg = String(e && e.message ? e.message : e);
+    // ✅ Mensaje real (si viene del servidor)
+    const msg = String(e && e.message ? e.message : e).toLowerCase();
+
+    // ✅ Caso típico sin internet / red caída
+    const isOffline =
+      (typeof navigator !== "undefined" && navigator.onLine === false) ||
+      msg.includes("failed to fetch") ||
+      msg.includes("networkerror") ||
+      msg.includes("load failed") ||
+      msg.includes("err_internet_disconnected") ||
+      msg.includes("err_network_changed");
+
+    if (isOffline) {
+      setStatus(
+        "bad",
+        "Sin conexión",
+        "Revisa tu conexión a internet e intenta de nuevo."
+      );
+      return;
+    }
 
     // Si quieres títulos más bonitos según el caso:
-    if (msg.toLowerCase().includes("no está autorizado") || msg.includes("device_not_authorized")) {
-      setStatus("bad", "Teléfono no autorizado", msg);
-    } else if (msg.toLowerCase().includes("ya existe") || msg.includes("already_registered")) {
-      setStatus("warn", "Registro duplicado", msg);
+    if (msg.includes("no está autorizado") || msg.includes("device_not_authorized")) {
+      setStatus("bad", "Teléfono no autorizado", String(e && e.message ? e.message : e));
+    } else if (msg.includes("ya existe") || msg.includes("already_registered")) {
+      setStatus("warn", "Registro duplicado", String(e && e.message ? e.message : e));
     } else if (msg.includes("unauthorized")) {
       setStatus("bad", "Sin permisos", "Clave incorrecta o permisos del WebApp.");
     } else {
-      setStatus("bad", "No se pudo guardar", msg || "Revisa conexión y Apps Script.");
+      setStatus("bad", "No se pudo guardar", String(e && e.message ? e.message : e) || "Revisa conexión y Apps Script.");
     }
 
   } finally {
+
     setLoading(false);
   }
 }
