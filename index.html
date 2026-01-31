@@ -1142,6 +1142,33 @@ function escapeHtml(s){
   }[c]));
 }
 
+function isNTCRecord(r) {
+  if (!r) return false;
+
+  // Caso ideal: el servidor ya envía boolean ntc
+  if (r.ntc === true) return true;
+
+  // Por si llega como string "true"/"TRUE"/"1"
+  const ntcStr = String(r.ntc || "").trim().toLowerCase();
+  if (ntcStr === "true" || ntcStr === "1" || ntcStr === "si" || ntcStr === "sí") return true;
+
+  // Compatibilidad: algunos backends guardan "NTC" en campos como distancia/precisión/notas
+  const dist = String(r.distance_m ?? r.dist ?? r.distance ?? "").trim().toUpperCase();
+  const acc  = String(r.accuracy_m ?? r.acc ?? r.accuracy ?? "").trim().toUpperCase();
+  const notes = String(r.notes ?? r.nota ?? "").trim().toUpperCase();
+
+  if (dist === "NTC" || acc === "NTC") return true;
+  if (notes.includes("NTC")) return true;
+
+  // Si el registro manual no tiene device_id (a veces queda vacío)
+  const device = String(r.device_id ?? "").trim();
+  if (device === "" && (dist === "" || acc === "")) {
+    // condición suave: sin device y sin datos geo => probablemente NTC
+    return true;
+  }
+
+  return false;
+}
 
 
 
@@ -1871,8 +1898,9 @@ function renderAdminTeacherRecords(teacher, records) {
     const isLate = (type === "ENTRADA" && !!r.late);
     const isEarly = isEarlyExitRecord(r);
 
-    // ✅ NTC (sin teléfono): viene como boolean desde el servidor
-    const ntcTxt = (r && (r.ntc === true || String(r.ntc).toLowerCase() === "true")) ? " • NTC" : "";
+    // ✅ NTC robusto (sirve aunque no venga r.ntc)
+    const ntc = isNTCRecord(r);
+    const ntcTxt = ntc ? " • NTC" : "";
 
     // estilo: verde si ok, rojo si tarde/early
     const cls = (type === "ENTRADA")
@@ -1902,6 +1930,7 @@ function renderAdminTeacherRecords(teacher, records) {
     `;
   }).join("");
 }
+
 
 
 async function adminLoadTeachersAndBind() {
@@ -2378,11 +2407,18 @@ let cachedRecords = [];
 
 function render(records) {
   const p = loadProfile();
+  const admin = isAdminMode();
+
   const myNameKey = normalizeKey(p && p.name ? p.name : "");
 
-  const filtered = myNameKey
-    ? (records || []).filter(r => normalizeKey(r.teacher) === myNameKey)
-    : (records || []);
+  // ✅ Si es admin: mostrar TODOS los registros (no filtrar por nombre)
+  // ✅ Si es docente: solo sus registros
+  const filtered = admin
+    ? (records || [])
+    : (myNameKey
+        ? (records || []).filter(r => normalizeKey(r.teacher) === myNameKey)
+        : (records || [])
+      );
 
   cachedRecords = filtered;
 
@@ -2396,39 +2432,70 @@ function render(records) {
   if (lateCountEl) lateCountEl.textContent = `Entradas tardes: ${lateCount}`;
   if (earlyExitCountEl) earlyExitCountEl.textContent = `Salidas antes: ${earlyExitCount}`;
 
-  // Tabla (desktop)
-  tbody.innerHTML = filtered.map(r => `
-    <tr class="${r.type === "ENTRADA" ? (r.late ? "late" : "ontime") : ""}">
-      <td>${escapeHtml(r.date)}</td>
-      <td>${escapeHtml(r.time)}</td>
-      <td>${escapeHtml(r.teacher)}</td>
-      <td>${escapeHtml(r.type)}</td>
-      <td>—</td>
-      <td>—</td>
-    </tr>
-  `).join("");
+  // ======= TABLA (desktop) =======
+  tbody.innerHTML = filtered.map(r => {
+    const type = String(r.type || "").toUpperCase();
+    const ntc = isNTCRecord(r);
 
-  // Cards (mobile)
+    const dist = ntc
+      ? "NTC"
+      : (r.distance_m ?? r.dist ?? r.distance ?? "—");
+
+    const acc = ntc
+      ? "NTC"
+      : (r.accuracy_m ?? r.acc ?? r.accuracy ?? "—");
+
+    const typeLabel = ntc ? `${type} • NTC` : type;
+
+    const rowCls =
+      (type === "ENTRADA")
+        ? (r.late ? "late" : "ontime")
+        : "";
+
+    return `
+      <tr class="${rowCls}">
+        <td>${escapeHtml(r.date)}</td>
+        <td>${escapeHtml(r.time)}</td>
+        <td>${escapeHtml(r.teacher)}</td>
+        <td>${escapeHtml(typeLabel)}</td>
+        <td>${escapeHtml(dist)}</td>
+        <td>${escapeHtml(acc)}</td>
+      </tr>
+    `;
+  }).join("");
+
+  // ======= CARDS (mobile) =======
   if (!filtered.length) {
     recordsList.innerHTML = `<div class="muted small">No hay registros para este docente.</div>`;
-    updateSalidaState(filtered); // ✅ fuerza SALIDA inactiva
+    updateSalidaState(filtered);
     return;
   }
 
   recordsList.innerHTML = filtered.map(r => {
-    const badgeClass = (r.type === "ENTRADA")
+    const type = String(r.type || "").toUpperCase();
+    const ntc = isNTCRecord(r);
+    const ntcTxt = ntc ? " • NTC" : "";
+
+    // Badges: entrada a tiempo/tarde; salida neutral (como tenías) pero con NTC si aplica
+    const badgeClass = (type === "ENTRADA")
       ? (r.late ? "badge badge-late" : "badge badge-ontime")
       : "badge badge-neutral";
 
-    const rowClass = (r.type === "ENTRADA")
+    // Colores tarjeta: entrada late/ontime; salida se mantiene neutra como tenías
+    const rowClass = (type === "ENTRADA")
       ? (r.late ? "record-card late" : "record-card ontime")
       : "record-card";
+
+    const badgeText =
+      (type === "ENTRADA")
+        ? `${type}${r.late ? " • TARDE" : " • A TIEMPO"}${ntcTxt}`
+        : `${type}${ntcTxt}`;
 
     return `
       <div class="${rowClass}">
         <div class="top">
           <span class="teacher">${escapeHtml(r.teacher)}</span>
-          <span class="${badgeClass}">${escapeHtml(r.type)}${r.type==="ENTRADA" ? (r.late ? " • TARDE" : " • A TIEMPO") : ""}</span>
+          <span class="${badgeClass}">${escapeHtml(badgeText)}</span>
         </div>
         <div class="meta">
           ${escapeHtml(r.date)} • ${escapeHtml(r.time)}
@@ -2439,6 +2506,7 @@ function render(records) {
 
   updateSalidaState(filtered);
 }
+
 
 
 
