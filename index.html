@@ -1880,11 +1880,10 @@ function renderAdminTeacherRecords(teacher, records) {
     const isLate = (type === "ENTRADA" && !!r.late);
     const isEarly = isEarlyExitRecord(r);
 
-    // ✅ NTC robusto (sirve aunque no venga r.ntc)
+    // ✅ NTC SOLO si viene explícito desde el servidor (por NOTE = "NTC")
     const ntc = isNTCRecord(r);
     const ntcTxt = ntc ? " • NTC" : "";
 
-    // estilo: verde si ok, rojo si tarde/early
     const cls = (type === "ENTRADA")
       ? (isLate ? "record-card late" : "record-card ontime")
       : (isEarly ? "record-card late" : "record-card ontime");
@@ -1912,6 +1911,7 @@ function renderAdminTeacherRecords(teacher, records) {
     `;
   }).join("");
 }
+
 
 
 
@@ -2458,12 +2458,10 @@ function render(records) {
     const ntc = isNTCRecord(r);
     const ntcTxt = ntc ? " • NTC" : "";
 
-    // Badges: entrada a tiempo/tarde; salida neutral (como tenías) pero con NTC si aplica
     const badgeClass = (type === "ENTRADA")
       ? (r.late ? "badge badge-late" : "badge badge-ontime")
       : "badge badge-neutral";
 
-    // Colores tarjeta: entrada late/ontime; salida se mantiene neutra como tenías
     const rowClass = (type === "ENTRADA")
       ? (r.late ? "record-card late" : "record-card ontime")
       : "record-card";
