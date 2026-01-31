@@ -659,6 +659,8 @@ body.is-loading{
     <div id="userMenu" class="menu-panel" role="menu" hidden>
       <button id="btnRefreshSW" class="menu-item" type="button" role="menuitem">Actualizar</button>
       <button id="btnAdminViewAssist" class="menu-item" type="button" role="menuitem" hidden>Ver asistencias</button>
+      <button id="btnAdminManual" class="menu-item" type="button" role="menuitem" hidden>Registro manual</button>
+
       <button id="btnAdminConfig" class="menu-item" type="button" role="menuitem" hidden>Configuración</button>
 
 <button id="btnAdminApproveDevices" class="menu-item" type="button" role="menuitem" hidden>Aprobar dispositivos</button>
@@ -931,6 +933,31 @@ body.is-loading{
 </div>
 
 
+<!-- ======= MODAL REGISTRO MANUAL (ADMIN) ======= -->
+<div id="adminManualModal" class="modal-backdrop" hidden>
+  <div class="modal-card" style="width:min(520px,100%);">
+    <h2 class="modal-title">Registro manual</h2>
+    <p class="modal-sub">Registra ENTRADA o SALIDA cuando el docente no tuvo teléfono (marca NTC).</p>
+
+    <label class="modal-label">Docente</label>
+    <select id="adminManualTeacher" class="modal-input"></select>
+
+    <div class="row" style="margin-top:12px;">
+      <button id="btnAdminManualEntrada" type="button" class="btn btn-primary">Entrada (NTC)</button>
+      <button id="btnAdminManualSalida" type="button" class="btn btn-secondary">Salida (NTC)</button>
+    </div>
+
+    <div id="adminManualHint" class="modal-hint muted small"></div>
+
+    <div class="modal-actions" style="justify-content:flex-end;">
+      <button id="btnAdminManualClose" type="button" class="btn btn-ghost">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+
+
+
 <script>
 // ======= CONFIG DEL COLEGIO (CAMBIA ESTO) =======
 const SCHOOL_LAT = 4.556189026908756;
@@ -1013,6 +1040,15 @@ const adminLateCountEl = $("adminLateCount");
 const adminEarlyExitCountEl = $("adminEarlyExitCount");
 const btnAdminAssistClose = $("btnAdminAssistClose");
 const adminMonthSelect = $("adminMonthSelect");
+
+const btnAdminManual = $("btnAdminManual");
+const adminManualModal = $("adminManualModal");
+const adminManualTeacher = $("adminManualTeacher");
+const btnAdminManualEntrada = $("btnAdminManualEntrada");
+const btnAdminManualSalida  = $("btnAdminManualSalida");
+const btnAdminManualClose   = $("btnAdminManualClose");
+const adminManualHint       = $("adminManualHint");
+
 
 
 // ======= ADMIN: APROBAR DISPOSITIVOS =======
@@ -1182,6 +1218,17 @@ async function gsAdminSetConfig(payload) {
   if (!data.ok) throw new Error(data.msg || data.error || "admin_set_config_failed");
   return data;
 }
+
+async function gsAdminManualRegister(teacher, type, iso) {
+  const res = await fetch(GS_WEBAPP_URL, {
+    method: "POST",
+    body: JSON.stringify({ action: "admin_manual_register", teacher, type, iso, key: GS_API_KEY })
+  });
+  const data = await res.json();
+  if (!data.ok) throw new Error(data.msg || data.error || "admin_manual_register_failed");
+  return data;
+}
+
 
 
 async function gsAdminListDeviceRequests() {
@@ -1364,6 +1411,9 @@ function setAdminMode(on) {
   if (btnAdminViewAssist) btnAdminViewAssist.hidden = !on;
   if (btnAdminConfig) btnAdminConfig.hidden = !on;
 
+  if (btnAdminManual) btnAdminManual.hidden = !on;
+
+
 
   if (btnAdminApproveDevices) btnAdminApproveDevices.hidden = !on;
 
@@ -1395,6 +1445,7 @@ if (btnAdminViewAssist) btnAdminViewAssist.hidden = !isAdminMode();
 
 if (btnAdminApproveDevices) btnAdminApproveDevices.hidden = !isAdminMode();
 if (btnAdminConfig) btnAdminConfig.hidden = !isAdminMode();
+if (btnAdminManual) btnAdminManual.hidden = !isAdminMode();
 
 
 
@@ -1820,14 +1871,23 @@ function renderAdminTeacherRecords(teacher, records) {
     const isLate = (type === "ENTRADA" && !!r.late);
     const isEarly = isEarlyExitRecord(r);
 
+    // ✅ NTC (sin teléfono): viene como boolean desde el servidor
+    const ntcTxt = (r && (r.ntc === true || String(r.ntc).toLowerCase() === "true")) ? " • NTC" : "";
+
     // estilo: verde si ok, rojo si tarde/early
     const cls = (type === "ENTRADA")
       ? (isLate ? "record-card late" : "record-card ontime")
       : (isEarly ? "record-card late" : "record-card ontime");
 
     const badge = (type === "ENTRADA")
-      ? (isLate ? `<span class="badge badge-late">ENTRADA • TARDE</span>` : `<span class="badge badge-ontime">ENTRADA • A TIEMPO</span>`)
-      : (isEarly ? `<span class="badge badge-late">SALIDA • ANTES</span>` : `<span class="badge badge-ontime">SALIDA • OK</span>`);
+      ? (isLate
+          ? `<span class="badge badge-late">ENTRADA • TARDE${ntcTxt}</span>`
+          : `<span class="badge badge-ontime">ENTRADA • A TIEMPO${ntcTxt}</span>`
+        )
+      : (isEarly
+          ? `<span class="badge badge-late">SALIDA • ANTES${ntcTxt}</span>`
+          : `<span class="badge badge-ontime">SALIDA • OK${ntcTxt}</span>`
+        );
 
     return `
       <div class="${cls}" style="margin-bottom:10px;">
@@ -1842,6 +1902,7 @@ function renderAdminTeacherRecords(teacher, records) {
     `;
   }).join("");
 }
+
 
 async function adminLoadTeachersAndBind() {
   const month = adminMonthSelect ? adminMonthSelect.value : "";
@@ -1862,6 +1923,81 @@ async function adminLoadTeachersAndBind() {
     adminEarlyExitCountEl.textContent = "Salidas antes: 0";
   }
 }
+
+
+function openAdminManualModal() {
+  if (!adminManualModal) return;
+  adminManualModal.hidden = false;
+  adminManualHint.textContent = "";
+  adminManualTeacher.innerHTML = `<option>(Cargando...)</option>`;
+}
+
+function closeAdminManualModal() {
+  if (!adminManualModal) return;
+  adminManualModal.hidden = true;
+  adminManualHint.textContent = "";
+}
+
+async function adminLoadTeachersForManual() {
+  const teachers = await gsAdminListTeachers();
+  adminManualTeacher.innerHTML = (teachers.length ? teachers : ["(Sin docentes)"])
+    .map(t => `<option value="${escapeHtml(t)}">${escapeHtml(t)}</option>`)
+    .join("");
+}
+
+async function adminDoManual(type) {
+  const teacher = String(adminManualTeacher.value || "").trim();
+  if (!teacher || teacher === "(Sin docentes)") {
+    adminManualHint.textContent = "No hay docentes para seleccionar.";
+    return;
+  }
+
+  try {
+    setLoading(true, "Guardando…", "Registrando asistencia manual (NTC).");
+
+    // usa la hora actual (igual que si lo hiciera el docente)
+    const iso = new Date().toISOString();
+
+    await gsAdminManualRegister(teacher, type, iso);
+
+    adminManualHint.textContent = `✅ ${type} guardada (NTC) para ${teacher}.`;
+
+    // refrescar listas/contadores
+    await refreshFromSheet();
+
+    // si está abierto el modal de asistencias admin, recarga si coincide el docente
+    // (opcional, no rompe nada)
+  } catch (e) {
+    adminManualHint.textContent = String(e && e.message ? e.message : e);
+  } finally {
+    setLoading(false);
+  }
+}
+
+
+
+if (btnAdminManual) {
+  btnAdminManual.addEventListener("click", async () => {
+    if (!isAdminMode()) {
+      setStatus("warn", "Requiere admin", "Ingresa como administrador primero.");
+      openAdminModal();
+      return;
+    }
+    try {
+      openAdminManualModal();
+      setLoading(true, "Cargando…", "Leyendo docentes del mes actual.");
+      await adminLoadTeachersForManual();
+    } catch (e) {
+      adminManualHint.textContent = String(e && e.message ? e.message : e);
+    } finally {
+      setLoading(false);
+    }
+  });
+}
+
+if (btnAdminManualEntrada) btnAdminManualEntrada.addEventListener("click", () => adminDoManual("ENTRADA"));
+if (btnAdminManualSalida)  btnAdminManualSalida.addEventListener("click", () => adminDoManual("SALIDA"));
+if (btnAdminManualClose)   btnAdminManualClose.addEventListener("click", closeAdminManualModal);
 
 
 if (btnAdminViewAssist) {
