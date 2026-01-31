@@ -53,6 +53,33 @@ const btnToggleRecords = $("btnToggleRecords");
 const recordsPanel = $("recordsPanel");
 const recordsList = $("recordsList");
 
+
+let hasEntradaToday = false;
+
+function todayStr() {
+  const d = new Date();
+  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+}
+
+function updateSalidaState(records) {
+  const p = loadProfile();
+  if (!p) return;
+
+  const today = todayStr();
+  hasEntradaToday = records.some(r =>
+    r.type === "ENTRADA" && r.date === today
+  );
+
+  if (hasEntradaToday) {
+    btnSalida.disabled = false;
+    btnSalida.classList.remove("is-inactive");
+  } else {
+    btnSalida.disabled = true;
+    btnSalida.classList.add("is-inactive");
+  }
+}
+
+
 // ======= Helpers =======
 function pad(n){ return String(n).padStart(2,"0"); }
 function nowParts() {
@@ -570,6 +597,8 @@ function render(records) {
       </div>
     `;
   }).join("");
+  updateSalidaState(records);
+
 }
 
 
@@ -591,6 +620,16 @@ async function refreshFromSheet() {
 // ======= Registrar =======
 // ======= Registrar =======
 async function register(type) {
+
+  if (type === "SALIDA" && !hasEntradaToday) {
+  setStatus(
+    "warn",
+    "Primero registra ENTRADA",
+    "No puedes registrar la salida sin haber registrado la entrada hoy."
+  );
+  return;
+}
+
   const profile = requireLogin();
   if (!profile) return;
 
@@ -630,6 +669,13 @@ async function register(type) {
     });
 
        await refreshFromSheet();
+
+       if (type === "ENTRADA") {
+  hasEntradaToday = true;
+  btnSalida.disabled = false;
+  btnSalida.classList.remove("is-inactive");
+}
+
 
     // ✅ abrir panel para que el usuario vea el registro de inmediato
     setRecordsOpen(true);
