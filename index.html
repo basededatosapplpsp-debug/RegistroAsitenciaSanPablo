@@ -443,97 +443,101 @@ h2{font-size:16px; margin:0 0 12px}
 
 /* ===== Botones ENTRADA / SALIDA PRO ===== */
 
-/* ===== Botones ENTRADA / SALIDA (pastel, profesional) ===== */
+/* ===== Botones ENTRADA / SALIDA (redondos, grandes, sin flecha) ===== */
 
 #btnEntrada,
 #btnSalida{
-  position: relative;
-  overflow: hidden;
-  font-size: 14.5px;
-  font-weight: 800;
-  letter-spacing: .35px;
-  padding: 14px 16px;
-  border-radius: 16px;
-  transition: transform .12s ease, box-shadow .12s ease, filter .12s ease;
+  /* círculo */
+  width: clamp(130px, 22vw, 175px);
+  height: clamp(130px, 22vw, 175px);
+  border-radius: 999px;
+
+  /* texto */
+  font-size: clamp(18px, 2.4vw, 24px);
+  font-weight: 900;
+  letter-spacing: .4px;
+  text-transform: none;
+
+  /* centrado perfecto */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  /* look */
+  border: 1px solid rgba(255,255,255,.14);
+  cursor: pointer;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+
+  /* animaciones */
+  transition: transform .12s ease, filter .18s ease, box-shadow .18s ease;
+  box-shadow: 0 12px 28px rgba(0,0,0,.32);
+  padding: 0; /* importante: para que quede círculo real */
 }
 
-/* Hover / active sutil */
+/* Hover ✨ */
 #btnEntrada:hover,
 #btnSalida:hover{
-  filter: brightness(1.02);
+  filter: brightness(1.08);
+  transform: translateY(-2px);
+  box-shadow: 0 16px 34px rgba(0,0,0,.38);
 }
+
+/* Press 💥 */
 #btnEntrada:active,
 #btnSalida:active{
-  transform: translateY(1px);
+  transform: translateY(1px) scale(0.96);
+  filter: brightness(0.98);
+  box-shadow: 0 10px 22px rgba(0,0,0,.28);
 }
 
-/* ================= ENTRADA ================= */
+/* Focus teclado */
+#btnEntrada:focus-visible,
+#btnSalida:focus-visible{
+  outline: none;
+  box-shadow: 0 0 0 4px rgba(255,255,255,.18), 0 12px 28px rgba(0,0,0,.32);
+}
+
+/* Colores (manteniendo lógica intacta) */
 #btnEntrada{
-  background: linear-gradient(
-    180deg,
-    #d1fae5,   /* verde pastel */
-    #ecfdf5
-  );
-  color: #065f46;
-  border: 1px solid rgba(6,95,70,.25);
-  box-shadow:
-    0 6px 14px rgba(6,95,70,.15),
-    inset 0 1px 0 rgba(255,255,255,.6);
+  background: linear-gradient(180deg, #20c997, #12b886);
+  color: #ffffff;
 }
 
-/* icono sutil */
-#btnEntrada::before{
-  content: "↘";
-  margin-right: 8px;
-  font-size: 13px;
-  opacity: .7;
-}
-
-/* ================= SALIDA ================= */
 #btnSalida{
-  background: linear-gradient(
-    180deg,
-    #ede9fe,   /* violeta pastel */
-    #f5f3ff
-  );
-  color: #4c1d95;
-  border: 1px solid rgba(76,29,149,.25);
-  box-shadow:
-    0 6px 14px rgba(76,29,149,.15),
-    inset 0 1px 0 rgba(255,255,255,.6);
+  background: linear-gradient(180deg, #ff6b6b, #e03131);
+  color: #ffffff;
 }
 
-#btnSalida::before{
-  content: "↗";
-  margin-right: 8px;
-  font-size: 13px;
-  opacity: .7;
-}
-
-/* ================= Disabled ================= */
+/* Disabled */
 #btnEntrada:disabled,
 #btnSalida:disabled{
-  opacity: .6;
+  opacity: .55;
   box-shadow: none;
-  filter: grayscale(.3);
+  filter: grayscale(.2);
+  cursor: not-allowed;
+  transform: none;
 }
 
-
-/* ===== SALIDA inactiva hasta ENTRADA ===== */
+/* SALIDA inactiva hasta ENTRADA (tu lógica actual) */
 #btnSalida.is-inactive{
-  background: linear-gradient(
-    180deg,
-    #f1f5f9,
-    #e5e7eb
-  );
+  background: linear-gradient(180deg, #f1f5f9, #e5e7eb);
   color: #9ca3af;
-  border-color: rgba(0,0,0,.08);
+  border-color: rgba(0,0,0,.10);
   box-shadow: none;
   cursor: not-allowed;
+  filter: none;
 }
 
-#btnSalida.is-inactive::before{
-  opacity: .35;
+/* Ajuste para móvil: que se apilen y queden centrados */
+@media (max-width: 699px){
+  .row{
+    flex-direction: column;
+    align-items: center;
+  }
+  .row .btn{
+    width: auto; /* evita que el media query anterior los ponga full width */
+  }
 }
 
 
@@ -704,8 +708,9 @@ body.is-loading{
       <input id="teacherName" class="input" type="text" placeholder="Ej: Ana Pérez" autocomplete="name" />
 
       <div class="row">
-        <button id="btnEntrada" class="btn btn-primary">ENTRADA</button>
-        <button id="btnSalida" class="btn btn-secondary">SALIDA</button>
+     <button id="btnEntrada" class="btn btn-primary">Entrada</button>
+<button id="btnSalida" class="btn btn-secondary">Salida</button>
+
       </div>
 
       <div class="status" id="status">
