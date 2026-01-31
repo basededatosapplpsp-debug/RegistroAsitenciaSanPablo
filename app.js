@@ -212,6 +212,9 @@ btnLoginSave.addEventListener("click", async () => {
 
     setStatus("", "Sesión iniciada", "Dispositivo autorizado ✅ Ya puedes registrar asistencia.");
 
+    await refreshFromSheet();
+
+
   } catch (e) {
     const msg = String(e && e.message ? e.message : e);
     loginHint.textContent = msg;
@@ -398,10 +401,18 @@ async function gsClearCurrentMonth() {
 let cachedRecords = [];
 
 function render(records) {
-  cachedRecords = records;
+  // --- Filtro: solo registros del docente logueado en este teléfono ---
+  const p = loadProfile();
+  const myName = (p && p.name ? String(p.name).trim().toLowerCase() : "");
+
+  const filtered = myName
+    ? (records || []).filter(r => String(r.teacher || "").trim().toLowerCase() === myName)
+    : (records || []);
+
+  cachedRecords = filtered;
 
   // Tabla (desktop)
-  tbody.innerHTML = records.map(r => `
+  tbody.innerHTML = filtered.map(r => `
     <tr class="${r.type === "ENTRADA" ? (r.late ? "late" : "ontime") : ""}">
       <td>${escapeHtml(r.date)}</td>
       <td>${escapeHtml(r.time)}</td>
@@ -413,12 +424,12 @@ function render(records) {
   `).join("");
 
   // Cards (mobile)
-  if (!records.length) {
-    recordsList.innerHTML = `<div class="muted small">No hay registros todavía.</div>`;
+  if (!filtered.length) {
+    recordsList.innerHTML = `<div class="muted small">No hay registros para este docente.</div>`;
     return;
   }
 
-  recordsList.innerHTML = records.map(r => {
+  recordsList.innerHTML = filtered.map(r => {
     const badgeClass = (r.type === "ENTRADA")
       ? (r.late ? "badge badge-late" : "badge badge-ontime")
       : "badge badge-neutral";
@@ -440,6 +451,7 @@ function render(records) {
     `;
   }).join("");
 }
+
 
 async function refreshFromSheet() {
   try {
