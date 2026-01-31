@@ -720,7 +720,7 @@ body.is-loading{
 <div class="row row-between" style="margin-top:10px;">
   <div class="muted small">Resumen</div>
   <div style="display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end;">
-    <span class="badge badge-late" id="lateCount">Tardes: 0</span>
+    <span class="badge badge-late" id="lateCount">Entradas tardes: 0</span>
     <span class="badge badge-neutral" id="earlyExitCount">Salidas antes: 0</span>
   </div>
 </div>
@@ -1722,7 +1722,7 @@ btnExport.addEventListener("click", exportCSV);
 
 // Inicial
 refreshFromSheet();
-setStatus("warn", "Listo", "Para registrar, activa ubicación y escribe el nombre.");
+setStatus("warn", "Listo", "Para registrar, activa ubicación.");
 
 // ✅ Mostrar login al abrir (si no hay perfil guardado)
 const _p = requireLogin();
