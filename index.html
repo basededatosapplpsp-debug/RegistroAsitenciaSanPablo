@@ -3010,7 +3010,7 @@ function downloadAdminExcel() {
   if (teacher) url.searchParams.set("teacher", teacher);
 
   // descarga directa (abre el archivo)
-  window.location.href = url.toString();
+  window.open(url.toString(), "_blank");
 }
 
 if (btnExportXlsx) btnExportXlsx.addEventListener("click", downloadAdminExcel);
