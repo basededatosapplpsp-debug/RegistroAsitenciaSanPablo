@@ -1388,8 +1388,9 @@ function updateAdminMonthSummaryFromRecords(allMonthRecords) {
   if (!adminMonthSummary || !monthTeachersCountEl || !monthRecordsCountEl) return;
 
   const admin = isAdminMode();
-  adminMonthSummary.hidden = !admin;
 
+  // ✅ si NO es admin, SIEMPRE oculto y salgo
+  adminMonthSummary.hidden = !admin;
   if (!admin) return;
 
   const totalRecords = (allMonthRecords || []).length;
@@ -1399,6 +1400,7 @@ function updateAdminMonthSummaryFromRecords(allMonthRecords) {
   monthTeachersCountEl.textContent = `Docentes: ${totalTeachers}`;
   monthRecordsCountEl.textContent = `Registros: ${totalRecords}`;
 }
+
 
 
 function setStatus(kind, title, msg) {
@@ -1554,8 +1556,16 @@ function initAdminRecordsPanelUI() {
   if (!adminRecordsFilters || !recordsMonthSelect || !recordsTeacherSelect) return;
 
   const on = isAdminMode();
+
+  // ✅ SOLO ADMIN ve filtros
   adminRecordsFilters.hidden = !on;
 
+  // ✅ SOLO ADMIN ve resumen del mes
+  if (typeof adminMonthSummary !== "undefined" && adminMonthSummary) {
+    adminMonthSummary.hidden = !on;
+  }
+
+  // Si NO es admin, no llenar combos (y listo)
   if (!on) return;
 
   // llenar meses (últimos 12)
@@ -1569,11 +1579,8 @@ function initAdminRecordsPanelUI() {
 
   // docente inicia en Todos
   recordsTeacherSelect.innerHTML = `<option value="__ALL__">Todos</option>`;
-
-    // mostrar resumen del mes (solo admin)
-  if (adminMonthSummary) adminMonthSummary.hidden = !on;
-
 }
+
 
 // ✅ cambios de filtros
 if (recordsMonthSelect) {
@@ -3043,10 +3050,12 @@ setStatus("warn", "Listo", "Para registrar, activa ubicación.");
 if (isAdminMode()) {
   setAdminMode(true); // aplica UI admin (cierra modal y pone ADMINISTRADOR)
 } else {
+  initAdminRecordsPanelUI(); // ✅ fuerza ocultar combos + resumen si NO es admin
   const _p = requireLogin();
   if (_p) applySessionUI(_p);
   else applySessionUI(null);
 }
+
 
 
 
