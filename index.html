@@ -756,6 +756,12 @@ body:not(.is-admin) #adminMonthSummary{
         <button id="btnExport" class="btn btn-ghost">Exportar CSV</button>
       </div>
 
+<div class="row">
+  <button id="btnExport" class="btn btn-ghost">Exportar CSV</button>
+  <button id="btnExportXlsx" class="btn btn-ghost" hidden>Excel (con formato)</button>
+</div>
+
+
       <!-- ===== Admin: Resumen del mes (solo admin) ===== -->
       <div id="adminMonthSummary" class="admin-month-summary" hidden>
         <span class="badge badge-neutral" id="monthTeachersCount">Docentes: 0</span>
@@ -1053,6 +1059,7 @@ const deviceIdTextEl = $("deviceIdText");
 const btnCopyDevice = $("btnCopyDevice");
 
 const btnRequestAuth = $("btnRequestAuth");
+const btnExportXlsx = $("btnExportXlsx");
 
 
 const btnAdminConfig = $("btnAdminConfig");
@@ -1566,6 +1573,9 @@ function initAdminRecordsPanelUI() {
   if (!adminRecordsFilters || !recordsMonthSelect || !recordsTeacherSelect) return;
 
   const on = isAdminMode();
+
+if (btnExportXlsx) btnExportXlsx.hidden = !on;
+
 
   // ✅ SOLO ADMIN ve filtros
   adminRecordsFilters.hidden = !on;
@@ -2938,6 +2948,10 @@ function csvCell(v){
   return s;
 }
 
+
+
+
+
 function exportCSV() {
   // En admin, cachedRecords ya representa:
   // - Todos (si selector = __ALL__)
@@ -2978,6 +2992,28 @@ function exportCSV() {
 
   setStatus("", "Exportado", "CSV descargado.");
 }
+
+
+function downloadAdminExcel() {
+  if (!isAdminMode()) {
+    setStatus("warn", "Requiere admin", "Solo disponible en modo administrador.");
+    return;
+  }
+
+  const month = recordsMonthSelect ? String(recordsMonthSelect.value || "").trim() : "";
+  const teacher = recordsTeacherSelect ? String(recordsTeacherSelect.value || "__ALL__") : "__ALL__";
+
+  const url = new URL(GS_WEBAPP_URL);
+  url.searchParams.set("action", "export_xlsx");
+  url.searchParams.set("key", GS_API_KEY);
+  if (month) url.searchParams.set("month", month);
+  if (teacher) url.searchParams.set("teacher", teacher);
+
+  // descarga directa (abre el archivo)
+  window.location.href = url.toString();
+}
+
+if (btnExportXlsx) btnExportXlsx.addEventListener("click", downloadAdminExcel);
 
 
 // ======= INSTALL (A2HS) =======
