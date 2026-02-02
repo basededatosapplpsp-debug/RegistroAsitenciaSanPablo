@@ -639,6 +639,34 @@ body.is-loading{
 }
 
 
+
+/* ===== Admin Registros: resumen del mes + filtros compactos ===== */
+.admin-month-summary{
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+  margin-top:8px;
+  margin-bottom:6px;
+}
+
+.admin-filters{
+  margin-top:6px;
+  display:grid;
+  gap:10px;              /* menos separación, se ve más pro */
+  align-items:end;
+}
+
+/* 2 columnas cuando hay espacio, 1 columna en móvil */
+@media (min-width: 520px){
+  .admin-filters{
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.filter-item{ min-width: 0; }
+
+
+
 </style>
 </head>
 
@@ -723,28 +751,34 @@ body.is-loading{
         <button id="btnExport" class="btn btn-ghost">Exportar CSV</button>
       </div>
 
-      <!-- ===== Filtros admin (Mes / Docente) ===== -->
-<div id="adminRecordsFilters" class="row" style="margin-top:10px;" hidden>
-  <div style="flex:1 1 180px;">
-    <label class="label" for="recordsMonthSelect">Mes</label>
-    <select id="recordsMonthSelect" class="input"></select>
-  </div>
+      <!-- ===== Admin: Resumen del mes (solo admin) ===== -->
+      <div id="adminMonthSummary" class="admin-month-summary" hidden>
+        <span class="badge badge-neutral" id="monthTeachersCount">Docentes: 0</span>
+        <span class="badge badge-neutral" id="monthRecordsCount">Registros: 0</span>
+      </div>
 
-  <div style="flex:1 1 220px;">
-    <label class="label" for="recordsTeacherSelect">Docente</label>
-    <select id="recordsTeacherSelect" class="input"></select>
-  </div>
-</div>
+      <!-- ===== Filtros admin (Mes / Docente) - compactos ===== -->
+      <div id="adminRecordsFilters" class="admin-filters" hidden>
+        <div class="filter-item">
+          <label class="label" for="recordsMonthSelect">Mes</label>
+          <select id="recordsMonthSelect" class="input"></select>
+        </div>
 
+        <div class="filter-item">
+          <label class="label" for="recordsTeacherSelect">Docente</label>
+          <select id="recordsTeacherSelect" class="input"></select>
+        </div>
+      </div>
 
       <!-- ===== Resumen (contadores) ===== -->
-<div class="row row-between" style="margin-top:10px;">
-  <div class="muted small">Resumen</div>
-  <div style="display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end;">
-    <span class="badge badge-late" id="lateCount">Entradas tardes: 0</span>
-    <span class="badge badge-neutral" id="earlyExitCount">Salidas antes: 0</span>
-  </div>
-</div>
+      <div class="row row-between" style="margin-top:10px;">
+        <div class="muted small">Resumen</div>
+        <div style="display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end;">
+          <span class="badge badge-late" id="lateCount">Entradas tardes: 0</span>
+          <span class="badge badge-neutral" id="earlyExitCount">Salidas antes: 0</span>
+        </div>
+      </div>
+
 
 
       <!-- LISTA MOBILE -->
@@ -1086,6 +1120,11 @@ const recordsList = $("recordsList");
 const lateCountEl = $("lateCount");
 const earlyExitCountEl = $("earlyExitCount");
 
+const adminMonthSummary = $("adminMonthSummary");
+const monthTeachersCountEl = $("monthTeachersCount");
+const monthRecordsCountEl = $("monthRecordsCount");
+
+
 // ===== Admin filtros en panel Registros =====
 const adminRecordsFilters = $("adminRecordsFilters");
 const recordsMonthSelect = $("recordsMonthSelect");
@@ -1345,6 +1384,21 @@ function uniqueTeachersFromRecords(records) {
   return Array.from(set).sort((a,b) => a.localeCompare(b, "es"));
 }
 
+function updateAdminMonthSummaryFromRecords(allMonthRecords) {
+  if (!adminMonthSummary || !monthTeachersCountEl || !monthRecordsCountEl) return;
+
+  const admin = isAdminMode();
+  adminMonthSummary.hidden = !admin;
+
+  if (!admin) return;
+
+  const totalRecords = (allMonthRecords || []).length;
+  const teachers = uniqueTeachersFromRecords(allMonthRecords || []);
+  const totalTeachers = teachers.length;
+
+  monthTeachersCountEl.textContent = `Docentes: ${totalTeachers}`;
+  monthRecordsCountEl.textContent = `Registros: ${totalRecords}`;
+}
 
 
 function setStatus(kind, title, msg) {
@@ -1515,6 +1569,10 @@ function initAdminRecordsPanelUI() {
 
   // docente inicia en Todos
   recordsTeacherSelect.innerHTML = `<option value="__ALL__">Todos</option>`;
+
+    // mostrar resumen del mes (solo admin)
+  if (adminMonthSummary) adminMonthSummary.hidden = !on;
+
 }
 
 // ✅ cambios de filtros
@@ -2393,7 +2451,7 @@ async function checkLocation() {
 }
 
 // ======= Google Sheets API (Apps Script Web App) =======
-async function gsGetList(limit = 50, monthYYYYMM = "") {
+async function gsGetList(limit = 50, monthYYYYMM = "", teacher = "") {
   const url = new URL(GS_WEBAPP_URL);
   url.searchParams.set("action", "list");
   url.searchParams.set("limit", String(limit));
@@ -2402,11 +2460,15 @@ async function gsGetList(limit = 50, monthYYYYMM = "") {
   // ✅ Mes opcional (YYYY-MM)
   if (monthYYYYMM) url.searchParams.set("month", monthYYYYMM);
 
+  // ✅ Docente opcional (si el backend lo soporta; si no, lo ignora y no rompe)
+  if (teacher) url.searchParams.set("teacher", teacher);
+
   const res = await fetch(url.toString(), { method: "GET" });
   const data = await res.json();
   if (!data.ok) throw new Error(data.error || "gs_list_failed");
   return data.records || [];
 }
+
 
 
 async function gsRegister(payload) {
@@ -2674,16 +2736,26 @@ async function refreshFromSheet() {
   try {
     setStatus("warn", "Cargando…", "Leyendo registros de asistencia.");
 
+    const admin = isAdminMode();
+    const p = loadProfile();
+
     // ✅ Admin: usar mes seleccionado (si existe el selector)
     let month = "";
-    if (isAdminMode() && typeof recordsMonthSelect !== "undefined" && recordsMonthSelect) {
+    if (admin && typeof recordsMonthSelect !== "undefined" && recordsMonthSelect) {
       month = String(recordsMonthSelect.value || "").trim(); // YYYY-MM
     }
 
-    const records = await gsGetList(1200, month);
+    // ✅ Normal: intentar pedir solo los registros de este docente (si el backend lo soporta)
+    // Si el backend ignora "teacher", no rompe nada: seguirá retornando todo.
+    const teacherFilter = (!admin && p && p.name) ? String(p.name).trim() : "";
+
+    const records = await gsGetList(1200, month, teacherFilter);
+
+    // ✅ Admin: resumen de cuántos docentes y registros hay en ese mes
+    updateAdminMonthSummaryFromRecords(records);
 
     // ✅ Admin: actualizar lista de docentes según lo cargado (sin romper selección)
-    if (isAdminMode() && typeof recordsTeacherSelect !== "undefined" && recordsTeacherSelect) {
+    if (admin && typeof recordsTeacherSelect !== "undefined" && recordsTeacherSelect) {
       const current = String(recordsTeacherSelect.value || "__ALL__");
       const teachers = uniqueTeachersFromRecords(records);
 
