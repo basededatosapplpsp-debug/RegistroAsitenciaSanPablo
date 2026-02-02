@@ -754,12 +754,9 @@ body:not(.is-admin) #adminMonthSummary{
     <section class="card collapse" id="recordsPanel" hidden>
       <div class="row">
         <button id="btnExport" class="btn btn-ghost">Exportar CSV</button>
+          <button id="btnExportXlsx" class="btn btn-ghost" hidden>Excel (con formato)</button>
       </div>
 
-<div class="row">
-  <button id="btnExport" class="btn btn-ghost">Exportar CSV</button>
-  <button id="btnExportXlsx" class="btn btn-ghost" hidden>Excel (con formato)</button>
-</div>
 
 
       <!-- ===== Admin: Resumen del mes (solo admin) ===== -->
@@ -3010,7 +3007,7 @@ function downloadAdminExcel() {
   if (teacher) url.searchParams.set("teacher", teacher);
 
   // descarga directa (abre el archivo)
-  window.open(url.toString(), "_blank");
+  window.location.href = url.toString();
 }
 
 if (btnExportXlsx) btnExportXlsx.addEventListener("click", downloadAdminExcel);
