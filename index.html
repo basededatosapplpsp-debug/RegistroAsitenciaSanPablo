@@ -723,6 +723,20 @@ body.is-loading{
         <button id="btnExport" class="btn btn-ghost">Exportar CSV</button>
       </div>
 
+      <!-- ===== Filtros admin (Mes / Docente) ===== -->
+<div id="adminRecordsFilters" class="row" style="margin-top:10px;" hidden>
+  <div style="flex:1 1 180px;">
+    <label class="label" for="recordsMonthSelect">Mes</label>
+    <select id="recordsMonthSelect" class="input"></select>
+  </div>
+
+  <div style="flex:1 1 220px;">
+    <label class="label" for="recordsTeacherSelect">Docente</label>
+    <select id="recordsTeacherSelect" class="input"></select>
+  </div>
+</div>
+
+
       <!-- ===== Resumen (contadores) ===== -->
 <div class="row row-between" style="margin-top:10px;">
   <div class="muted small">Resumen</div>
@@ -1072,6 +1086,10 @@ const recordsList = $("recordsList");
 const lateCountEl = $("lateCount");
 const earlyExitCountEl = $("earlyExitCount");
 
+// ===== Admin filtros en panel Registros =====
+const adminRecordsFilters = $("adminRecordsFilters");
+const recordsMonthSelect = $("recordsMonthSelect");
+const recordsTeacherSelect = $("recordsTeacherSelect");
 
 
 let hasEntradaToday = false;
@@ -1302,6 +1320,30 @@ function samePersonName(a, b) {
 }
 
 
+function monthKeyFromDate(d) {
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}`; // YYYY-MM
+}
+
+function buildMonthOptions(lastN = 12) {
+  const out = [];
+  const now = new Date();
+  for (let i = 0; i < lastN; i++) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const key = monthKeyFromDate(d);
+    const label = d.toLocaleDateString("es-CO", { month: "long", year: "numeric" });
+    out.push({ key, label: label.charAt(0).toUpperCase() + label.slice(1) });
+  }
+  return out;
+}
+
+function uniqueTeachersFromRecords(records) {
+  const set = new Set();
+  (records || []).forEach(r => {
+    const t = String(r.teacher || "").trim();
+    if (t) set.add(t);
+  });
+  return Array.from(set).sort((a,b) => a.localeCompare(b, "es"));
+}
 
 
 
@@ -1436,6 +1478,11 @@ function setAdminMode(on) {
     updateUserInitials({ name: "Administrador" });
     if (btnUserMenu) btnUserMenu.hidden = false;
     setMenuOpen(false);
+
+initAdminRecordsPanelUI();
+refreshFromSheet();
+
+
   } else {
     // Si salgo de admin: vuelve a comportamiento normal
     if (!loadProfile()) {
@@ -1448,6 +1495,45 @@ function setAdminMode(on) {
     }
   }
 }
+
+function initAdminRecordsPanelUI() {
+  if (!adminRecordsFilters || !recordsMonthSelect || !recordsTeacherSelect) return;
+
+  const on = isAdminMode();
+  adminRecordsFilters.hidden = !on;
+
+  if (!on) return;
+
+  // llenar meses (últimos 12)
+  const months = buildMonthOptions(12);
+  recordsMonthSelect.innerHTML = months
+    .map(m => `<option value="${m.key}">${escapeHtml(m.label)}</option>`)
+    .join("");
+
+  // mes actual por defecto
+  recordsMonthSelect.value = monthKeyFromDate(new Date());
+
+  // docente inicia en Todos
+  recordsTeacherSelect.innerHTML = `<option value="__ALL__">Todos</option>`;
+}
+
+// ✅ cambios de filtros
+if (recordsMonthSelect) {
+  recordsMonthSelect.addEventListener("change", async () => {
+    if (!isAdminMode()) return;
+    await refreshFromSheet();
+  });
+}
+
+if (recordsTeacherSelect) {
+  recordsTeacherSelect.addEventListener("change", () => {
+    if (!isAdminMode()) return;
+    // re-filtra usando los datos ya cargados
+    render(__recordsAllRaw);
+  });
+}
+
+
 
 // Estado inicial
 if (btnAdminViewAssist) btnAdminViewAssist.hidden = !isAdminMode();
@@ -2307,17 +2393,21 @@ async function checkLocation() {
 }
 
 // ======= Google Sheets API (Apps Script Web App) =======
-async function gsGetList(limit = 50) {
+async function gsGetList(limit = 50, monthYYYYMM = "") {
   const url = new URL(GS_WEBAPP_URL);
   url.searchParams.set("action", "list");
   url.searchParams.set("limit", String(limit));
   url.searchParams.set("key", GS_API_KEY);
+
+  // ✅ Mes opcional (YYYY-MM)
+  if (monthYYYYMM) url.searchParams.set("month", monthYYYYMM);
 
   const res = await fetch(url.toString(), { method: "GET" });
   const data = await res.json();
   if (!data.ok) throw new Error(data.error || "gs_list_failed");
   return data.records || [];
 }
+
 
 async function gsRegister(payload) {
   const res = await fetch(GS_WEBAPP_URL, {
@@ -2385,22 +2475,115 @@ async function gsClearCurrentMonth() {
 
 
 // ======= Render (desde Google Sheets) =======
+// ======= Render (desde Google Sheets) =======
 let cachedRecords = [];
+let __recordsAllRaw = []; // ✅ en admin: guarda todos los del mes cargado
 
 function render(records) {
+  __recordsAllRaw = (records || []);
+
   const p = loadProfile();
   const admin = isAdminMode();
 
-  const myNameKey = normalizeKey(p && p.name ? p.name : "");
+  // ✅ Admin: filtrar por selector (Todos o un docente)
+  if (admin) {
+    const selected = (typeof recordsTeacherSelect !== "undefined" && recordsTeacherSelect)
+      ? String(recordsTeacherSelect.value || "__ALL__")
+      : "__ALL__";
 
-  // ✅ Si es admin: mostrar TODOS los registros (no filtrar por nombre)
-  // ✅ Si es docente: solo sus registros
-  const filtered = admin
-    ? (records || [])
-    : (myNameKey
-        ? (records || []).filter(r => normalizeKey(r.teacher) === myNameKey)
-        : (records || [])
-      );
+    const filtered = (selected && selected !== "__ALL__")
+      ? __recordsAllRaw.filter(r => normalizeKey(r.teacher) === normalizeKey(selected))
+      : __recordsAllRaw;
+
+    cachedRecords = filtered;
+
+    // ======= CONTADORES =======
+    const lateCount = filtered.filter(r =>
+      String(r.type || "").toUpperCase() === "ENTRADA" && !!r.late
+    ).length;
+
+    const earlyExitCount = filtered.filter(isEarlyExitRecord).length;
+
+    if (lateCountEl) lateCountEl.textContent = `Entradas tardes: ${lateCount}`;
+    if (earlyExitCountEl) earlyExitCountEl.textContent = `Salidas antes: ${earlyExitCount}`;
+
+    // ======= TABLA (desktop) =======
+    tbody.innerHTML = filtered.map(r => {
+      const type = String(r.type || "").toUpperCase();
+      const ntc = isNTCRecord(r);
+
+      const dist = ntc
+        ? "NTC"
+        : (r.distance_m ?? r.dist ?? r.distance ?? "—");
+
+      const acc = ntc
+        ? "NTC"
+        : (r.accuracy_m ?? r.acc ?? r.accuracy ?? "—");
+
+      const typeLabel = ntc ? `${type} • NTC` : type;
+
+      const rowCls =
+        (type === "ENTRADA")
+          ? (r.late ? "late" : "ontime")
+          : "";
+
+      return `
+        <tr class="${rowCls}">
+          <td>${escapeHtml(r.date)}</td>
+          <td>${escapeHtml(r.time)}</td>
+          <td>${escapeHtml(r.teacher)}</td>
+          <td>${escapeHtml(typeLabel)}</td>
+          <td>${escapeHtml(dist)}</td>
+          <td>${escapeHtml(acc)}</td>
+        </tr>
+      `;
+    }).join("");
+
+    // ======= CARDS (mobile) =======
+    if (!filtered.length) {
+      recordsList.innerHTML = `<div class="muted small">No hay registros para el filtro seleccionado.</div>`;
+      return; // ✅ en admin no tocamos updateSalidaState()
+    }
+
+    recordsList.innerHTML = filtered.map(r => {
+      const type = String(r.type || "").toUpperCase();
+      const ntc = isNTCRecord(r);
+      const ntcTxt = ntc ? " • NTC" : "";
+
+      const badgeClass = (type === "ENTRADA")
+        ? (r.late ? "badge badge-late" : "badge badge-ontime")
+        : "badge badge-neutral";
+
+      const rowClass = (type === "ENTRADA")
+        ? (r.late ? "record-card late" : "record-card ontime")
+        : "record-card";
+
+      const badgeText =
+        (type === "ENTRADA")
+          ? `${type}${r.late ? " • TARDE" : " • A TIEMPO"}${ntcTxt}`
+          : `${type}${ntcTxt}`;
+
+      return `
+        <div class="${rowClass}">
+          <div class="top">
+            <span class="teacher">${escapeHtml(r.teacher)}</span>
+            <span class="${badgeClass}">${escapeHtml(badgeText)}</span>
+          </div>
+          <div class="meta">
+            ${escapeHtml(r.date)} • ${escapeHtml(r.time)}
+          </div>
+        </div>
+      `;
+    }).join("");
+
+    return; // ✅ admin termina aquí
+  }
+
+  // ✅ Docente: solo sus registros (como lo tenías)
+  const myNameKey = normalizeKey(p && p.name ? p.name : "");
+  const filtered = myNameKey
+    ? __recordsAllRaw.filter(r => normalizeKey(r.teacher) === myNameKey)
+    : __recordsAllRaw;
 
   cachedRecords = filtered;
 
@@ -2487,15 +2670,31 @@ function render(records) {
   updateSalidaState(filtered);
 }
 
-
-
-
-
 async function refreshFromSheet() {
   try {
     setStatus("warn", "Cargando…", "Leyendo registros de asistencia.");
 
-    const records = await gsGetList(60);
+    // ✅ Admin: usar mes seleccionado (si existe el selector)
+    let month = "";
+    if (isAdminMode() && typeof recordsMonthSelect !== "undefined" && recordsMonthSelect) {
+      month = String(recordsMonthSelect.value || "").trim(); // YYYY-MM
+    }
+
+    const records = await gsGetList(1200, month);
+
+    // ✅ Admin: actualizar lista de docentes según lo cargado (sin romper selección)
+    if (isAdminMode() && typeof recordsTeacherSelect !== "undefined" && recordsTeacherSelect) {
+      const current = String(recordsTeacherSelect.value || "__ALL__");
+      const teachers = uniqueTeachersFromRecords(records);
+
+      recordsTeacherSelect.innerHTML =
+        `<option value="__ALL__">Todos</option>` +
+        teachers.map(t => `<option value="${escapeHtml(t)}">${escapeHtml(t)}</option>`).join("");
+
+      const exists = teachers.some(t => normalizeKey(t) === normalizeKey(current));
+      recordsTeacherSelect.value = exists ? current : "__ALL__";
+    }
+
     render(records);
 
     setStatus("", "Listo", "Datos de asistencia sincronizados.");
@@ -2507,6 +2706,8 @@ async function refreshFromSheet() {
     );
   }
 }
+
+
 
 
 
@@ -2647,21 +2848,38 @@ function csvCell(v){
 }
 
 function exportCSV() {
-  if (!cachedRecords.length) {
+  // En admin, cachedRecords ya representa:
+  // - Todos (si selector = __ALL__)
+  // - Un docente (si selector = ese nombre)
+  // En modo normal, cachedRecords es el docente logueado.
+  const dataToExport = cachedRecords || [];
+
+  if (!dataToExport.length) {
     setStatus("warn", "Sin datos", "No hay registros para exportar.");
     return;
   }
+
   const header = ["teacher","type","date","time","late","iso"];
   const lines = [header.join(",")].concat(
-    cachedRecords.map(r => header.map(k => csvCell(r[k])).join(","))
+    dataToExport.map(r => header.map(k => csvCell(r[k])).join(","))
   );
 
   const blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8" });
   const url = URL.createObjectURL(blob);
 
+  // nombre del archivo: admin incluye mes y (si aplica) docente
+  let fname = `asistencia_${new Date().toISOString().slice(0,10)}`;
+
+  if (isAdminMode()) {
+    const month = recordsMonthSelect ? String(recordsMonthSelect.value || "").trim() : "";
+    const who = recordsTeacherSelect ? String(recordsTeacherSelect.value || "__ALL__") : "__ALL__";
+    if (month) fname += `_${month}`;
+    if (who && who !== "__ALL__") fname += `_${who.replace(/\s+/g, "_")}`;
+  }
+
   const a = document.createElement("a");
   a.href = url;
-  a.download = `asistencia_${new Date().toISOString().slice(0,10)}.csv`;
+  a.download = `${fname}.csv`;
   document.body.appendChild(a);
   a.click();
   a.remove();
@@ -2669,6 +2887,7 @@ function exportCSV() {
 
   setStatus("", "Exportado", "CSV descargado.");
 }
+
 
 // ======= INSTALL (A2HS) =======
 let deferredPrompt = null;
@@ -2764,3 +2983,4 @@ if (isAdminMode()) {
 
 </body>
 </html>
+
