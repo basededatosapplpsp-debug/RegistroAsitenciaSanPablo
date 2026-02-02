@@ -2991,7 +2991,7 @@ function exportCSV() {
 }
 
 
-function downloadAdminExcel() {
+async function downloadAdminExcel() {
   if (!isAdminMode()) {
     setStatus("warn", "Requiere admin", "Solo disponible en modo administrador.");
     return;
@@ -3000,15 +3000,32 @@ function downloadAdminExcel() {
   const month = recordsMonthSelect ? String(recordsMonthSelect.value || "").trim() : "";
   const teacher = recordsTeacherSelect ? String(recordsTeacherSelect.value || "__ALL__") : "__ALL__";
 
-  const url = new URL(GS_WEBAPP_URL);
-  url.searchParams.set("action", "export_xlsx");
-  url.searchParams.set("key", GS_API_KEY);
-  if (month) url.searchParams.set("month", month);
-  if (teacher) url.searchParams.set("teacher", teacher);
+  try {
+    setLoading(true, "Generando Excel…", "Preparando archivo para descarga.");
 
-  // descarga directa (abre el archivo)
-  window.open(url.toString(), "_blank");
+    const url = new URL(GS_WEBAPP_URL);
+    url.searchParams.set("action", "export_xlsx_link");
+    url.searchParams.set("key", GS_API_KEY);
+    if (month) url.searchParams.set("month", month);
+    if (teacher) url.searchParams.set("teacher", teacher);
+
+    const res = await fetch(url.toString(), { method: "GET" });
+    const data = await res.json();
+
+    if (!data.ok || !data.url) throw new Error(data.msg || "No se pudo generar el link.");
+
+    // ✅ Abrir directo Drive (ya no abre script.google.com)
+    const opened = window.open(data.url, "_blank");
+    if (!opened) window.location.href = data.url;
+
+    setStatus("", "Listo", "Descarga iniciada ✅");
+  } catch (e) {
+    setStatus("bad", "Error", String(e && e.message ? e.message : e));
+  } finally {
+    setLoading(false);
+  }
 }
+
 
 if (btnExportXlsx) btnExportXlsx.addEventListener("click", downloadAdminExcel);
 
