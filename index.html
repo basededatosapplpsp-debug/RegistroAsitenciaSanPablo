@@ -665,6 +665,11 @@ body.is-loading{
 
 .filter-item{ min-width: 0; }
 
+/* ✅ HARD LOCK: si NO es admin, NUNCA se ven combos ni contadores de docentes/registros */
+body:not(.is-admin) #adminRecordsFilters,
+body:not(.is-admin) #adminMonthSummary{
+  display: none !important;
+}
 
 
 </style>
@@ -1515,6 +1520,8 @@ function isAdminMode() {
 
 function setAdminMode(on) {
   localStorage.setItem(LS_ADMIN_KEY, on ? "1" : "0");
+  document.body.classList.toggle("is-admin", on);
+
   if (btnAdminViewAssist) btnAdminViewAssist.hidden = !on;
   if (btnAdminConfig) btnAdminConfig.hidden = !on;
 
@@ -1550,6 +1557,9 @@ refreshFromSheet();
       setMenuOpen(false);
     }
   }
+
+  initAdminRecordsPanelUI(); // ✅ fuerza ocultar/mostrar SIEMPRE
+
 }
 
 function initAdminRecordsPanelUI() {
@@ -1856,6 +1866,8 @@ if (allowedName && !samePersonName(name, allowedName)) {
 
     // ✅ Autorizado: guardar perfil y cerrar modal
     const profile = { name, email, course };
+    setAdminMode(false); // ✅ asegura que un docente jamás quede en modo admin
+
 saveProfile(profile);
 
 applySessionUI(profile);
@@ -3045,6 +3057,8 @@ btnExport.addEventListener("click", exportCSV);
 // Inicial
 refreshFromSheet();
 setStatus("warn", "Listo", "Para registrar, activa ubicación.");
+document.body.classList.toggle("is-admin", isAdminMode());
+
 
 // ✅ Mostrar login al abrir (si no hay perfil guardado)
 if (isAdminMode()) {
