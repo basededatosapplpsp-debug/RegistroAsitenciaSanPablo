@@ -2704,9 +2704,13 @@ function discSelectStudent_(studentName) {
 
   discApplyLevelUI_(lv);
 
-  // "who" solo se conoce cuando el servidor devuelve report (al marcar),
-  // así que aquí no inventamos; dejamos “—” hasta que haya marcación.
+// ✅ si ya viene who en la lista (cache), lo mostramos
+if (item && Array.isArray(item.who) && item.who.length) {
+  discRenderWho_(item.who);
+} else {
   if (discWhoList) discWhoList.textContent = "—";
+}
+
 }
 
 function openDisciplineModal() {
@@ -3817,6 +3821,7 @@ if (isAdminMode()) {
 
 </body>
 </html>
+
 
 
 
