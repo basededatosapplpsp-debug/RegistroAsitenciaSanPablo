@@ -1075,8 +1075,16 @@ body:not(.is-admin) #adminMonthSummary{
     <h2 class="modal-title">Llamado de atención</h2>
     <p class="modal-sub">Reporta uso de celular en clase. Marca el nivel (1 a 4). Al llegar a 4 se notifica a los docentes que participaron.</p>
 
-    <label class="modal-label">Estudiante</label>
-    <input id="discStudent" class="modal-input" type="text" placeholder="Ej: Juan Pérez" />
+    <!-- ✅ Selector de estudiantes reportados/en proceso (mes actual) -->
+<label class="modal-label">Estudiantes reportados / en proceso</label>
+<select id="discStudentSelect" class="modal-input">
+  <option value="">(Selecciona uno…)</option>
+</select>
+<div class="muted small" id="discStudentSelectHint" style="margin-top:6px;"></div>
+
+<label class="modal-label">Estudiante (nuevo o manual)</label>
+<input id="discStudent" class="modal-input" type="text" placeholder="Ej: Juan Pérez" />
+
 
     <div class="disc-levels">
       <button type="button" class="disc-level" data-level="1">1 • Leve</button>
@@ -1190,6 +1198,10 @@ const discReportedList = $("discReportedList");
 const discHint = $("discHint");
 const btnDiscClose = $("btnDiscClose");
 const btnDiscReload = $("btnDiscReload");
+
+  const discStudentSelectEl = $("discStudentSelect");
+const discStudentSelectHintEl = $("discStudentSelectHint");
+
 
 
 // ======= ADMIN UI =======
@@ -2640,15 +2652,76 @@ function discSetHint_(msg, kind="") {
   discHint.className = "modal-hint muted small" + (kind ? ` ${kind}` : "");
 }
 
+function discFillStudentSelect_(items) {
+  if (!discStudentSelectEl) return;
+
+  const list = Array.isArray(items) ? items : [];
+  const opts = [`<option value="">(Selecciona uno…)</option>`];
+
+  // muestra reportados (4) y en proceso (1..3)
+  list.forEach(it => {
+    const student = String(it.student || "").trim();
+    if (!student) return;
+
+    const lvl = Number(it.maxLevel || 0);
+    const total = Number(it.totalMarks || 0);
+    const icon = (lvl >= 4) ? "🚨" : "🟡";
+
+    opts.push(
+      `<option value="${escapeHtml(student)}">${icon} ${escapeHtml(student)} — Nivel ${lvl} • ${total} llamados</option>`
+    );
+  });
+
+  discStudentSelectEl.innerHTML = opts.join("");
+
+  if (discStudentSelectHintEl) {
+    const rep = list.filter(x => Number(x.maxLevel || 0) >= 4).length;
+    const prog = list.filter(x => Number(x.maxLevel || 0) >= 1 && Number(x.maxLevel || 0) < 4).length;
+    discStudentSelectHintEl.textContent =
+      `Mes actual: ${rep} reportados (nivel 4) • ${prog} en proceso (nivel 1-3).`;
+  }
+}
+
+function discFindInCache_(studentName) {
+  const key = normalizeKey(studentName);
+  return (__discCacheList || []).find(x => normalizeKey(x.student) === key) || null;
+}
+
+function discSelectStudent_(studentName) {
+  const s = normalizeStudent_(studentName);
+  __discCurrentStudent = s || "";
+
+  if (discStudentEl) discStudentEl.value = s || "";
+
+  if (!s) {
+    discClearLevelUI_();
+    if (discWhoList) discWhoList.textContent = "—";
+    return;
+  }
+
+  const item = discFindInCache_(s);
+  const lv = item ? Number(item.maxLevel || 0) : 0;
+
+  discApplyLevelUI_(lv);
+
+  // "who" solo se conoce cuando el servidor devuelve report (al marcar),
+  // así que aquí no inventamos; dejamos “—” hasta que haya marcación.
+  if (discWhoList) discWhoList.textContent = "—";
+}
+
 function openDisciplineModal() {
   if (!disciplineModal) return;
   disciplineModal.hidden = false;
   discSetHint_("");
-  // precargar lista
+
+  // precargar UI con caché
   discRenderReportedList_(__discCacheList);
+  discFillStudentSelect_(__discCacheList);
+
   // refrescar desde servidor
   discReloadReportedList(true);
 }
+
 
 function closeDisciplineModal() {
   if (!disciplineModal) return;
@@ -2757,22 +2830,53 @@ async function discReloadReportedList(showHint=false) {
   try {
     const month = discMonthKey_();
     const items = await gsDisciplineList(month);
+
     __discCacheList = items;
+
+    // lista + combo
     discRenderReportedList_(items);
+    discFillStudentSelect_(items);
+
+    // si hay estudiante seleccionado (combo o input), repintar su nivel desde cache
+    const selected = discStudentSelectEl ? String(discStudentSelectEl.value || "").trim() : "";
+    const typed = discStudentEl ? String(discStudentEl.value || "").trim() : "";
+    const current = selected || typed;
+
+    if (current) discSelectStudent_(current);
+
     if (showHint) discSetHint_("Lista sincronizada ✅");
   } catch (e) {
     if (showHint) discSetHint_(String(e && e.message ? e.message : e));
   }
 }
 
+
 async function discDoMarkLevel(level) {
   const profile = requireLogin();
   if (!profile) return;
 
-  const student = normalizeStudent_(discStudentEl ? discStudentEl.value : "");
+  const lvl = Number(level || 0);
+  if (lvl < 1 || lvl > 4) return;
+
+  // ✅ estudiante: primero combo, si no, input
+  const fromSelect = discStudentSelectEl ? String(discStudentSelectEl.value || "").trim() : "";
+  const fromInput  = discStudentEl ? normalizeStudent_(discStudentEl.value) : "";
+  const student = normalizeStudent_(fromSelect || fromInput);
+
   if (!student) {
-    discSetHint_("Escribe el nombre del estudiante.");
+    discSetHint_("Selecciona o escribe el nombre del estudiante.");
     if (discStudentEl) discStudentEl.focus();
+    return;
+  }
+
+  // ✅ regla de orden: no se puede saltar niveles
+  const item = discFindInCache_(student);
+  const currentMax = item ? Number(item.maxLevel || 0) : 0;
+
+  if (lvl > currentMax + 1) {
+    discSetHint_(`Debes marcar primero el nivel ${currentMax + 1}.`);
+    // repintar lo válido
+    discApplyLevelUI_(currentMax);
     return;
   }
 
@@ -2784,27 +2888,35 @@ async function discDoMarkLevel(level) {
     const resp = await gsDisciplineMark({
       month: discMonthKey_(),
       student,
-      level: Number(level),
+      level: lvl,
       teacher: profile.name,
       email: profile.email
     });
 
-    // resp.report: detalle del estudiante
-    // resp.list: lista resumen del mes
-    if (resp && resp.report) {
-      discApplyLevelUI_(resp.report.maxLevel || 0);
-      discRenderWho_(resp.report.who || []);
-    }
-
+    // actualizar cache + UI
     if (resp && Array.isArray(resp.list)) {
       __discCacheList = resp.list;
       discRenderReportedList_(resp.list);
+      discFillStudentSelect_(resp.list);
     } else {
-      // fallback
-      discReloadReportedList(false);
+      await discReloadReportedList(false);
     }
 
-    if (Number(level) >= 4) {
+    // dejar seleccionado el estudiante en el combo (si existe ahí)
+    if (discStudentSelectEl) discStudentSelectEl.value = student;
+
+    // estado detallado (cuando el backend lo manda)
+    if (resp && resp.report) {
+      discApplyLevelUI_(resp.report.maxLevel || 0);
+      discRenderWho_(resp.report.who || []);
+    } else {
+      // fallback: repintar desde cache
+      const updated = discFindInCache_(student);
+      discApplyLevelUI_(updated ? updated.maxLevel : lvl);
+      if (discWhoList) discWhoList.textContent = "—";
+    }
+
+    if (lvl >= 4) {
       discSetHint_("Nivel 4 registrado. Notificación enviada a los docentes participantes ✅");
     } else {
       discSetHint_("Registrado ✅");
@@ -2816,6 +2928,7 @@ async function discDoMarkLevel(level) {
     setLoading(false);
   }
 }
+
 
 /* ======= Poll para “actualizar en cada celular” (sin push) ======= */
 function discStartPolling_() {
@@ -2862,16 +2975,47 @@ function discBindUI_() {
     });
   });
 
-  // si cambian estudiante, limpia UI (para que no quede “marcado” de otro)
-  if (discStudentEl) {
-    discStudentEl.addEventListener("input", () => {
-      const s = normalizeStudent_(discStudentEl.value);
-      if (!s || s !== __discCurrentStudent) {
-        discClearLevelUI_();
-        if (discWhoList) discWhoList.textContent = "—";
-      }
-    });
-  }
+
+
+  // ✅ Al cambiar el combo: cargar ese estudiante y mostrar su nivel actual
+if (discStudentSelectEl) {
+  discStudentSelectEl.addEventListener("change", () => {
+    const s = String(discStudentSelectEl.value || "").trim();
+    if (s) {
+      discSelectStudent_(s);
+    } else {
+      // si vuelve a vacío, no borramos el input automáticamente
+      // pero limpiamos selección "actual"
+      __discCurrentStudent = "";
+    }
+  });
+}
+
+// ✅ Si escriben manual, “desvinculamos” el combo y repintamos si ya existe en cache
+if (discStudentEl) {
+  discStudentEl.addEventListener("input", () => {
+    const s = normalizeStudent_(discStudentEl.value);
+
+    if (discStudentSelectEl) discStudentSelectEl.value = "";
+
+    if (!s) {
+      discClearLevelUI_();
+      if (discWhoList) discWhoList.textContent = "—";
+      return;
+    }
+
+    const item = discFindInCache_(s);
+    if (item) {
+      discApplyLevelUI_(Number(item.maxLevel || 0));
+      if (discWhoList) discWhoList.textContent = "—";
+    } else {
+      // estudiante nuevo: UI limpia
+      discClearLevelUI_();
+      if (discWhoList) discWhoList.textContent = "—";
+    }
+  });
+}
+
 }
 
 
@@ -3673,6 +3817,7 @@ if (isAdminMode()) {
 
 </body>
 </html>
+
 
 
 
