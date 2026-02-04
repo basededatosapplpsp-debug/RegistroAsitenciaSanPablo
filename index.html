@@ -2806,23 +2806,21 @@ async function refreshFromSheet() {
     const admin = isAdminMode();
     const p = loadProfile();
 
-    // ✅ Admin: usar mes seleccionado (si existe el selector)
     let month = "";
-    if (admin && typeof recordsMonthSelect !== "undefined" && recordsMonthSelect) {
+    if (admin && recordsMonthSelect) {
       month = String(recordsMonthSelect.value || "").trim(); // YYYY-MM
     }
 
-    // ✅ Normal: intentar pedir solo los registros de este docente (si el backend lo soporta)
-    // Si el backend ignora "teacher", no rompe nada: seguirá retornando todo.
     const teacherFilter = (!admin && p && p.name) ? String(p.name).trim() : "";
 
-    const records = await gsGetList(1200, month, teacherFilter);
+    // ✅ menos carga para docente, más para admin
+    const limit = admin ? 2000 : 200;
 
-    // ✅ Admin: resumen de cuántos docentes y registros hay en ese mes
+    const records = await gsGetList(limit, month, teacherFilter);
+
     updateAdminMonthSummaryFromRecords(records);
 
-    // ✅ Admin: actualizar lista de docentes según lo cargado (sin romper selección)
-    if (admin && typeof recordsTeacherSelect !== "undefined" && recordsTeacherSelect) {
+    if (admin && recordsTeacherSelect) {
       const current = String(recordsTeacherSelect.value || "__ALL__");
       const teachers = uniqueTeachersFromRecords(records);
 
@@ -3178,6 +3176,7 @@ if (isAdminMode()) {
 
 </body>
 </html>
+
 
 
 
