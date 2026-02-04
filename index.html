@@ -2684,31 +2684,72 @@ if (!btnRequestAuth) {
 
 
 // ==============================
-// DISCIPLINA (CELULAR EN CLASE) — SOLO “REPORTADOS DEL MES” (Nivel 4)
+// DISCIPLINA (CELULAR EN CLASE) — SOLO “REPORTADOS DEL MES”
 // ==============================
 
-const LS_DISC_POLL_KEY = "asistencia_disciplina_poll_v1";
 let __discPollTimer = null;
-let __discCurrentStudent = "";
-let __discCacheList = []; // lista del mes actual (para render rápido)
+let __discCurrentStudent = "";   // nombre seleccionado desde la lista
+let __discCacheList = [];        // lista del mes actual (para render rápido)
 
 function discMonthKey_() {
   return monthKeyFromDate(new Date()); // YYYY-MM
 }
 
-function discSetHint_(msg, kind="") {
-  if (!discHint) return;
-  discHint.textContent = msg || "";
-  discHint.className = "modal-hint muted small" + (kind ? ` ${kind}` : "");
+function normalizeStudent_(s){
+  return String(s || "").trim().replace(/\s+/g, " ");
 }
 
-function discDotClassByLevel_(lvl){
-  const n = Number(lvl || 0);
-  if (n >= 4) return "lvl-4";
-  if (n === 3) return "lvl-3";
-  if (n === 2) return "lvl-2";
-  if (n === 1) return "lvl-1";
-  return "";
+function discSetHint_(msg) {
+  if (!discHint) return;
+  discHint.textContent = msg || "";
+  discHint.className = "modal-hint muted small";
+}
+
+// ✅ colores del puntico según nivel
+function discSetDotByLevel_(level){
+  if (!discLevelDotEl) return;
+  const lv = Number(level || 0);
+  discLevelDotEl.className = "dot" + (lv ? ` lvl-${lv}` : "");
+}
+
+// ✅ pinta el recuadro “Seleccionado”
+function discUpdateSelectedBox_(studentName){
+  const s = normalizeStudent_(studentName);
+  __discCurrentStudent = s;
+
+  if (!discSelectedNameEl || !discSelectedMetaEl) return;
+
+  if (!s) {
+    discSelectedNameEl.textContent = "(Selecciona un estudiante de la lista)";
+    discSelectedMetaEl.textContent = "—";
+    discSetDotByLevel_(0);
+    discClearLevelUI_();
+    if (discWhoList) discWhoList.textContent = "—";
+    return;
+  }
+
+  const item = discFindInCache_(s);
+  const maxLevel = item ? Number(item.maxLevel || 0) : 0;
+  const total = item ? Number(item.totalMarks || 0) : 0;
+  const teachersCount = item ? Number(item.teachersCount || 0) : 0;
+
+  discSelectedNameEl.textContent = s;
+
+  if (maxLevel > 0) {
+    discSelectedMetaEl.textContent = `Nivel ${maxLevel} • Llamados: ${total} • Docentes: ${teachersCount}`;
+  } else {
+    discSelectedMetaEl.textContent = `Sin llamados este mes`;
+  }
+
+  discSetDotByLevel_(maxLevel);
+  discApplyLevelUI_(maxLevel);
+
+  // mostrar quién lo marcó (si viene)
+  if (item && Array.isArray(item.who) && item.who.length) {
+    discRenderWho_(item.who);
+  } else {
+    if (discWhoList) discWhoList.textContent = "—";
+  }
 }
 
 function discFindInCache_(studentName) {
@@ -2723,135 +2764,78 @@ function discClearLevelUI_() {
 function discApplyLevelUI_(level) {
   discClearLevelUI_();
   const lv = Number(level || 0);
-  for (let i = 1; i <= lv; i++) {
+  for (let i=1;i<=lv;i++){
     const btn = document.querySelector(`.disc-level[data-level="${i}"]`);
     if (btn) btn.classList.add("active");
   }
 }
 
-function discClearSelectedUI_() {
-  __discCurrentStudent = "";
-  discClearLevelUI_();
-
-  if (discWhoList) discWhoList.textContent = "—";
-
-  if (discSelectedNameEl) discSelectedNameEl.textContent = "(Selecciona un estudiante de la lista)";
-  if (discSelectedMetaEl) discSelectedMetaEl.textContent = "—";
-
-  // dot por defecto
-  if (discLevelDotEl) discLevelDotEl.className = "dot";
-}
-
 function discRenderWho_(whoArr) {
   if (!discWhoList) return;
-
   const list = Array.isArray(whoArr) ? whoArr : [];
   if (!list.length) {
     discWhoList.textContent = "—";
     return;
   }
 
-  // Orden: nivel desc, luego nombre asc
-  list.sort((a,b) =>
-    (Number(b.level||0) - Number(a.level||0)) ||
-    String(a.teacher||"").localeCompare(String(b.teacher||""), "es")
-  );
-
+  // ✅ Muestra: Docente + nivel que puso
   discWhoList.innerHTML = list.map(x => {
     const name = escapeHtml(x.teacher || "");
-    const lvlN = Number(x.level || 0);
-    const dotCls = discDotClassByLevel_(lvlN);
-
-    return `
-      <span class="disc-pill" style="display:flex;align-items:center;gap:8px;">
-        <span class="lvl-dot ${dotCls}"></span>
-        ${name} • Nivel ${escapeHtml(String(lvlN))}/4
-      </span>
-    `;
+    const lvl = escapeHtml(String(x.level || ""));
+    return `<span class="disc-pill">${name} • Nivel ${lvl}</span>`;
   }).join("");
 }
 
-function discSelectStudent_(studentName) {
-  const s = String(studentName || "").trim().replace(/\s+/g, " ");
-  if (!s) { discClearSelectedUI_(); return; }
-
-  __discCurrentStudent = s;
-
-  // Resaltar seleccionado en la lista
-  if (discReportedList) {
-    discReportedList.querySelectorAll(".disc-item").forEach(el => {
-      el.classList.toggle("selected", normalizeKey(el.dataset.student) === normalizeKey(s));
-    });
-  }
-
-  const item = discFindInCache_(s);
-  const maxLv = item ? Number(item.maxLevel || 0) : 0;
-  const total = item ? Number(item.totalMarks || 0) : 0;
-
-  discApplyLevelUI_(maxLv);
-
-  if (discSelectedNameEl) discSelectedNameEl.textContent = s;
-  if (discSelectedMetaEl) discSelectedMetaEl.textContent = `Llamados: ${total} • Nivel máx: ${maxLv}/4`;
-
-  if (discLevelDotEl) {
-    const cls = discDotClassByLevel_(maxLv);
-    discLevelDotEl.className = "dot" + (cls ? ` ${cls}` : "");
-  }
-
-  // Mostrar detalle “quién marcó”
-  if (item && Array.isArray(item.who) && item.who.length) {
-    discRenderWho_(item.who);
-  } else {
-    if (discWhoList) discWhoList.textContent = "—";
-  }
-}
-
+// ✅ LISTA “Reportados del mes” = solo nombres ordenados, click selecciona
 function discRenderReportedList_(items) {
   if (!discReportedList) return;
-
-  const all = Array.isArray(items) ? items : [];
-
-  // ✅ SOLO reportados del mes (nivel 4) y ordenados por nombre
-  const list = all
-    .filter(it => Number(it.maxLevel || 0) >= 4)
-    .sort((a,b) => String(a.student||"").localeCompare(String(b.student||""), "es"));
+  const list = Array.isArray(items) ? items : [];
 
   if (!list.length) {
-    discReportedList.innerHTML = `<div class="muted small">No hay reportados (nivel 4) este mes.</div>`;
+    discReportedList.innerHTML = `<div class="muted small">No hay reportes este mes.</div>`;
     return;
   }
 
-  discReportedList.innerHTML = list.map(it => {
-    const studentRaw = String(it.student || "").trim();
-    const student = escapeHtml(studentRaw);
+  // ordenar por nombre
+  const sorted = [...list].sort((a,b) =>
+    String(a.student||"").localeCompare(String(b.student||""), "es", { sensitivity:"base" })
+  );
+
+  const selectedKey = normalizeKey(__discCurrentStudent);
+
+  discReportedList.innerHTML = sorted.map(it => {
+    const student = String(it.student || "").trim();
+    if (!student) return "";
+
     const maxLevel = Number(it.maxLevel || 0);
-    const totalMarks = Number(it.totalMarks || 0);
-    const dotCls = discDotClassByLevel_(maxLevel);
+    const total = Number(it.totalMarks || 0);
+
+    const clsSelected = (normalizeKey(student) === selectedKey) ? "selected" : "";
+    const dotCls = maxLevel ? `lvl-dot lvl-${maxLevel}` : "lvl-dot";
 
     return `
-      <button type="button" class="disc-item" data-student="${escapeHtml(studentRaw)}">
+      <button type="button"
+              class="disc-item ${clsSelected}"
+              data-student="${escapeHtml(student)}">
         <div class="left">
-          <span class="lvl-dot ${dotCls}"></span>
-          <span class="name">${student}</span>
+          <span class="${dotCls}"></span>
+          <span class="name">${escapeHtml(student)}</span>
         </div>
-        <div class="right">
-          <span class="badge badge-late">Nivel 4</span>
-          <span class="badge badge-neutral">${escapeHtml(String(totalMarks))} llamados</span>
+        <div class="right muted small">
+          ${maxLevel ? `Nivel ${maxLevel}` : "—"} • ${total} llamados
         </div>
       </button>
     `;
   }).join("");
 
-  // Bind click
+  // ✅ bind click (selección)
   discReportedList.querySelectorAll(".disc-item").forEach(btn => {
     btn.addEventListener("click", () => {
-      const s = String(btn.dataset.student || "").trim();
-      discSelectStudent_(s);
+      const s = btn.getAttribute("data-student") || "";
+      discUpdateSelectedBox_(s);
+      discRenderReportedList_(__discCacheList); // repinta selección
     });
   });
-
-  // Si ya había seleccionado uno, mantenerlo
-  if (__discCurrentStudent) discSelectStudent_(__discCurrentStudent);
 }
 
 /* ======= Google Sheets API (acciones) ======= */
@@ -2891,15 +2875,10 @@ async function discReloadReportedList(showHint=false) {
 
     __discCacheList = items;
 
-    // ✅ solo lista reportados (nivel 4)
     discRenderReportedList_(items);
 
-    // mantener selección si aún existe y sigue siendo nivel 4
-    if (__discCurrentStudent) {
-      const exists = discFindInCache_(__discCurrentStudent);
-      if (!exists || Number(exists.maxLevel || 0) < 4) discClearSelectedUI_();
-      else discSelectStudent_(__discCurrentStudent);
-    }
+    // si ya había seleccionado, refrescar box desde cache
+    if (__discCurrentStudent) discUpdateSelectedBox_(__discCurrentStudent);
 
     if (showHint) discSetHint_("Lista sincronizada ✅");
   } catch (e) {
@@ -2914,14 +2893,13 @@ async function discDoMarkLevel(level) {
   const lvl = Number(level || 0);
   if (lvl < 1 || lvl > 4) return;
 
-  // ✅ SOLO se permite marcar a quien está seleccionado desde “Reportados del mes”
-  const student = String(__discCurrentStudent || "").trim();
+  const student = normalizeStudent_(__discCurrentStudent);
   if (!student) {
-    discSetHint_("Selecciona un estudiante en 'Reportados del mes' primero.");
+    discSetHint_("Primero selecciona un estudiante de la lista.");
     return;
   }
 
-  // ✅ regla: no saltar niveles
+  // regla: no saltar niveles
   const item = discFindInCache_(student);
   const currentMax = item ? Number(item.maxLevel || 0) : 0;
 
@@ -2942,33 +2920,20 @@ async function discDoMarkLevel(level) {
       email: profile.email
     });
 
-    // actualizar cache + UI
-    if (resp && Array.isArray(resp.list)) __discCacheList = resp.list;
-    else __discCacheList = await gsDisciplineList(discMonthKey_());
-
-    discRenderReportedList_(__discCacheList);
-
-    // actualizar detalle (si backend manda report)
-    if (resp && resp.report) {
-      discApplyLevelUI_(resp.report.maxLevel || lvl);
-      discRenderWho_(resp.report.who || []);
-
-      const maxLv = Number(resp.report.maxLevel || 0);
-      const total = Number(resp.report.totalMarks || 0);
-
-      if (discSelectedMetaEl) discSelectedMetaEl.textContent = `Llamados: ${total} • Nivel máx: ${maxLv}/4`;
-      if (discLevelDotEl) {
-        const cls = discDotClassByLevel_(maxLv);
-        discLevelDotEl.className = "dot" + (cls ? ` ${cls}` : "");
-      }
+    // si backend manda lista actualizada
+    if (resp && Array.isArray(resp.list)) {
+      __discCacheList = resp.list;
+      discRenderReportedList_(__discCacheList);
     } else {
-      discSelectStudent_(student);
+      await discReloadReportedList(false);
     }
 
-    discSetHint_(lvl >= 4
-      ? "Nivel 4 registrado. Notificación enviada a los docentes participantes ✅"
-      : "Registrado ✅"
-    );
+    // refrescar seleccionado desde cache nueva
+    discUpdateSelectedBox_(student);
+    discRenderReportedList_(__discCacheList);
+
+    if (lvl >= 4) discSetHint_("Nivel 4 registrado. Notificación enviada ✅");
+    else discSetHint_("Registrado ✅");
 
   } catch (e) {
     discSetHint_(String(e && e.message ? e.message : e));
@@ -2977,26 +2942,7 @@ async function discDoMarkLevel(level) {
   }
 }
 
-function openDisciplineModal() {
-  if (!disciplineModal) return;
-  disciplineModal.hidden = false;
-  discSetHint_("");
-
-  // precargar con cache
-  discRenderReportedList_(__discCacheList);
-
-  // refrescar desde servidor
-  discReloadReportedList(true);
-}
-
-function closeDisciplineModal() {
-  if (!disciplineModal) return;
-  disciplineModal.hidden = true;
-  discSetHint_("");
-  discClearSelectedUI_();
-}
-
-/* ======= Poll para “actualizar en cada celular” (sin push) ======= */
+/* ======= Poll para sincronizar entre celulares ======= */
 function discStartPolling_() {
   if (__discPollTimer) return;
 
@@ -3011,11 +2957,29 @@ function discStartPolling_() {
 
       if (disciplineModal && disciplineModal.hidden === false) {
         discRenderReportedList_(items);
+        if (__discCurrentStudent) discUpdateSelectedBox_(__discCurrentStudent);
       }
-    } catch {
-      // silencioso
-    }
+    } catch {}
   }, 20000);
+}
+
+function openDisciplineModal() {
+  if (!disciplineModal) return;
+  disciplineModal.hidden = false;
+  discSetHint_("");
+
+  // reset selección visual al abrir
+  discUpdateSelectedBox_(__discCurrentStudent || "");
+
+  // render cache rápido + refresco real
+  discRenderReportedList_(__discCacheList);
+  discReloadReportedList(true);
+}
+
+function closeDisciplineModal() {
+  if (!disciplineModal) return;
+  disciplineModal.hidden = true;
+  discSetHint_("");
 }
 
 function discBindUI_() {
@@ -3036,7 +3000,6 @@ function discBindUI_() {
     });
   });
 }
-
 
 
 // ======= GEO =======
@@ -3837,6 +3800,7 @@ if (isAdminMode()) {
 
 </body>
 </html>
+
 
 
 
