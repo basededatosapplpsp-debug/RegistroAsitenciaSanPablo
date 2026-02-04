@@ -1242,6 +1242,60 @@ function escapeHtml(s){
   }[c]));
 }
 
+// ======= CACHE + TIMEOUT LIST =======
+const LS_CACHE_KEY = "asistencia_cache_records_v1";
+const LIST_TIMEOUT_MS = 12000; // 12s (ajústalo si quieres)
+
+// key de caché según modo/mes/docente
+function cacheKeyForCurrentView_() {
+  const admin = isAdminMode();
+  const p = loadProfile();
+  const month = (admin && typeof recordsMonthSelect !== "undefined" && recordsMonthSelect)
+    ? String(recordsMonthSelect.value || "").trim()
+    : ""; // "" = mes actual en backend
+
+  const teacher = (!admin && p && p.name) ? normalizeKey(p.name) : "__ADMIN__";
+  return `${admin ? "admin" : "user"}|${month || "current"}|${teacher}`;
+}
+
+function saveRecordsCache_(key, records) {
+  try {
+    const raw = localStorage.getItem(LS_CACHE_KEY);
+    const obj = raw ? JSON.parse(raw) : {};
+    obj[key] = { ts: Date.now(), records: records || [] };
+    localStorage.setItem(LS_CACHE_KEY, JSON.stringify(obj));
+  } catch {}
+}
+
+function loadRecordsCache_(key, maxAgeMs = 24 * 60 * 60 * 1000) {
+  try {
+    const raw = localStorage.getItem(LS_CACHE_KEY);
+    if (!raw) return null;
+    const obj = JSON.parse(raw);
+    const item = obj[key];
+    if (!item || !Array.isArray(item.records)) return null;
+    if ((Date.now() - (item.ts || 0)) > maxAgeMs) return null;
+    return item.records;
+  } catch {
+    return null;
+  }
+}
+
+async function fetchJsonWithTimeout_(url, options = {}, timeoutMs = LIST_TIMEOUT_MS) {
+  const ctrl = new AbortController();
+  const t = setTimeout(() => ctrl.abort(), timeoutMs);
+
+  try {
+    const res = await fetch(url, { ...options, signal: ctrl.signal });
+    const data = await res.json();
+    return data;
+  } finally {
+    clearTimeout(t);
+  }
+}
+
+  
+
 function isNTCRecord(r) {
   if (!r) return false;
 
@@ -1927,7 +1981,7 @@ loginModal.hidden = true;
 
     setStatus("", "Sesión iniciada", "Dispositivo autorizado ✅ Ya puedes registrar asistencia.");
 
-refreshFromSheet(); // ✅ sin await: apaga loader más rápido
+refreshFromSheet({ silent: true, useCache: false }); // ✅ no toca status, solo refresca datos
 
 
   } catch (e) {
@@ -2524,17 +2578,23 @@ async function gsGetList(limit = 50, monthYYYYMM = "", teacher = "") {
   url.searchParams.set("limit", String(limit));
   url.searchParams.set("key", GS_API_KEY);
 
-  // ✅ Mes opcional (YYYY-MM)
   if (monthYYYYMM) url.searchParams.set("month", monthYYYYMM);
-
-  // ✅ Docente opcional (si el backend lo soporta; si no, lo ignora y no rompe)
   if (teacher) url.searchParams.set("teacher", teacher);
 
-  const res = await fetch(url.toString(), { method: "GET" });
-  const data = await res.json();
-  if (!data.ok) throw new Error(data.error || "gs_list_failed");
+  let data = null;
+  try {
+    data = await fetchJsonWithTimeout_(url.toString(), { method: "GET" }, LIST_TIMEOUT_MS);
+  } catch (e) {
+    // abort / timeout
+    const msg = String(e && e.name ? e.name : e);
+    if (msg.includes("AbortError")) throw new Error("Tiempo de espera agotado. Revisa internet y vuelve a intentar.");
+    throw e;
+  }
+
+  if (!data || !data.ok) throw new Error((data && data.error) || "gs_list_failed");
   return data.records || [];
 }
+
 
 
 
@@ -2799,29 +2859,53 @@ updateDailyButtonsState(filtered);
 updateDailyButtonsState(filtered);
 }
 
-async function refreshFromSheet() {
-  try {
-    setStatus("warn", "Cargando…", "Leyendo registros de asistencia.");
+async function refreshFromSheet(options = {}) {
+  const {
+    useCache = true,      // renderiza caché primero
+    silent = false,       // no cambia el status "Cargando..."
+    showLoadingAfterMs = 450 // solo mostrar "Cargando" si tarda > 450ms
+  } = options;
 
-    const admin = isAdminMode();
-    const p = loadProfile();
+  const admin = isAdminMode();
+  const p = loadProfile();
 
-    // ✅ Admin: usar mes seleccionado (si existe el selector)
-    let month = "";
-    if (admin && typeof recordsMonthSelect !== "undefined" && recordsMonthSelect) {
-      month = String(recordsMonthSelect.value || "").trim(); // YYYY-MM
+  // mes (admin)
+  let month = "";
+  if (admin && typeof recordsMonthSelect !== "undefined" && recordsMonthSelect) {
+    month = String(recordsMonthSelect.value || "").trim();
+  }
+
+  // docente (normal)
+  const teacherFilter = (!admin && p && p.name) ? String(p.name).trim() : "";
+
+  // 1) Render rápido con caché (para que "no demore al iniciar")
+  const cacheKey = cacheKeyForCurrentView_();
+  if (useCache) {
+    const cached = loadRecordsCache_(cacheKey);
+    if (cached && cached.length) {
+      render(cached);
+      // NO pongas "Listo" aquí; dejamos que la red lo confirme luego
     }
+  }
 
-    // ✅ Normal: intentar pedir solo los registros de este docente (si el backend lo soporta)
-    // Si el backend ignora "teacher", no rompe nada: seguirá retornando todo.
-    const teacherFilter = (!admin && p && p.name) ? String(p.name).trim() : "";
+  // 2) “Cargando…” SOLO si realmente tarda (evita sensación de lentitud)
+  let loadingTimer = null;
+  if (!silent) {
+    loadingTimer = setTimeout(() => {
+      setStatus("warn", "Cargando…", "Leyendo registros de asistencia.");
+    }, showLoadingAfterMs);
+  }
 
-    const records = await gsGetList(1200, month, teacherFilter);
+  try {
+    // 3) Reduce carga en inicio para docente (admin sigue alto)
+    const limit = admin ? 1200 : 300;
 
-    // ✅ Admin: resumen de cuántos docentes y registros hay en ese mes
+    const records = await gsGetList(limit, month, teacherFilter);
+
+    // Resumen admin
     updateAdminMonthSummaryFromRecords(records);
 
-    // ✅ Admin: actualizar lista de docentes según lo cargado (sin romper selección)
+    // Admin: refrescar combo docentes
     if (admin && typeof recordsTeacherSelect !== "undefined" && recordsTeacherSelect) {
       const current = String(recordsTeacherSelect.value || "__ALL__");
       const teachers = uniqueTeachersFromRecords(records);
@@ -2836,15 +2920,23 @@ async function refreshFromSheet() {
 
     render(records);
 
-    setStatus("", "Listo", "Datos de asistencia sincronizados.");
+    // Guardar caché
+    saveRecordsCache_(cacheKey, records);
+
+    if (!silent) setStatus("", "Listo", "Datos de asistencia sincronizados.");
   } catch (e) {
-    setStatus(
-      "bad",
-      "Error Google Sheets",
-      String(e && e.message ? e.message : "Revisa URL/clave del Web App y permisos.")
-    );
+    if (!silent) {
+      setStatus(
+        "bad",
+        "Error Google Sheets",
+        String(e && e.message ? e.message : "Revisa URL/clave del Web App y permisos.")
+      );
+    }
+  } finally {
+    if (loadingTimer) clearTimeout(loadingTimer);
   }
 }
+
 
 
 
@@ -2922,7 +3014,7 @@ async function register(type) {
       lng: geo.longitude
     });
 
-refreshFromSheet(); // ✅ sin await: apaga loader apenas gsRegister termina
+refreshFromSheet({ silent: true, useCache: false }); // ✅ no toca status, solo refresca datos
 
 if (type === "ENTRADA") {
   hasEntradaToday = true;
@@ -3154,9 +3246,10 @@ btnExport.addEventListener("click", exportCSV);
 
 
 
-// Inicial
-refreshFromSheet();
+// Inicial: rápido (cache) + refresh silencioso
+refreshFromSheet({ useCache: true, silent: true });
 setStatus("warn", "Listo", "Para registrar, activa ubicación.");
+
 document.body.classList.toggle("is-admin", isAdminMode());
 
 
@@ -3178,6 +3271,7 @@ if (isAdminMode()) {
 
 </body>
 </html>
+
 
 
 
