@@ -1141,6 +1141,8 @@ const recordsTeacherSelect = $("recordsTeacherSelect");
 
 
 let hasEntradaToday = false;
+let hasSalidaToday  = false;
+
 
 function todayStr() {
   const d = new Date();
@@ -1168,25 +1170,57 @@ function normalizeDateYYYYMMDD(v) {
   return "";
 }
 
-function updateSalidaState(records) {
+function updateDailyButtonsState(records) {
+  // En admin, no se usan estos botones (y además el input dice ADMINISTRADOR)
+  if (isAdminMode()) {
+    btnEntrada.disabled = true;
+    btnSalida.disabled = true;
+    btnSalida.classList.remove("is-inactive");
+    return;
+  }
+
   const p = loadProfile();
   if (!p) return;
 
   const today = todayStr();
 
+  // ✅ OJO: "records" aquí YA viene filtrado al docente logueado (en modo normal)
   hasEntradaToday = (records || []).some(r =>
     String(r.type || "").toUpperCase() === "ENTRADA" &&
     normalizeDateYYYYMMDD(r.date) === today
   );
 
-  if (hasEntradaToday) {
-    btnSalida.disabled = false;
-    btnSalida.classList.remove("is-inactive");
-  } else {
+  hasSalidaToday = (records || []).some(r =>
+    String(r.type || "").toUpperCase() === "SALIDA" &&
+    normalizeDateYYYYMMDD(r.date) === today
+  );
+
+  // ✅ Estados:
+  // 1) Ninguno: Entrada ON, Salida OFF
+  // 2) Solo entrada: Entrada OFF, Salida ON
+  // 3) Entrada + salida: ambos OFF hasta mañana
+  if (!hasEntradaToday && !hasSalidaToday) {
+    btnEntrada.disabled = false;
+
     btnSalida.disabled = true;
     btnSalida.classList.add("is-inactive");
+    return;
   }
+
+  if (hasEntradaToday && !hasSalidaToday) {
+    btnEntrada.disabled = true;
+
+    btnSalida.disabled = false;
+    btnSalida.classList.remove("is-inactive");
+    return;
+  }
+
+  // ✅ Si ya están ambas hoy:
+  btnEntrada.disabled = true;
+  btnSalida.disabled = true;
+  btnSalida.classList.remove("is-inactive");
 }
+
 
 
 
@@ -1427,10 +1461,17 @@ function setLoading(isLoading, title = "Procesando…", msg = "Por favor espera�
 
   const on = __loadingCount > 0;
 
-  // Deshabilitar botones principales para evitar dobles registros
-  btnEntrada.disabled = on;
-  btnSalida.disabled = on;
-  btnExport.disabled = on;
+// Deshabilitar botones principales para evitar dobles registros
+if (on) {
+  btnEntrada.disabled = true;
+  btnSalida.disabled = true;
+  btnExport.disabled = true;
+} else {
+  // ✅ Al terminar el loader, restaurar el estado real del día
+  btnExport.disabled = false;
+  updateDailyButtonsState(cachedRecords); // cachedRecords ya es "lo que ve" el docente
+}
+
 
   // Mostrar overlay loader
   if (appLoader) {
@@ -2720,7 +2761,7 @@ function render(records) {
   // ======= CARDS (mobile) =======
   if (!filtered.length) {
     recordsList.innerHTML = `<div class="muted small">No hay registros para este docente.</div>`;
-    updateSalidaState(filtered);
+updateDailyButtonsState(filtered);
     return;
   }
 
@@ -2755,7 +2796,7 @@ function render(records) {
     `;
   }).join("");
 
-  updateSalidaState(filtered);
+updateDailyButtonsState(filtered);
 }
 
 async function refreshFromSheet() {
@@ -2883,11 +2924,20 @@ async function register(type) {
 
        await refreshFromSheet();
 
-       if (type === "ENTRADA") {
+if (type === "ENTRADA") {
   hasEntradaToday = true;
+  btnEntrada.disabled = true;
+
   btnSalida.disabled = false;
   btnSalida.classList.remove("is-inactive");
 }
+
+if (type === "SALIDA") {
+  hasSalidaToday = true;
+  btnEntrada.disabled = true;
+  btnSalida.disabled = true;
+}
+
 
 
     // ✅ abrir panel para que el usuario vea el registro de inmediato
@@ -3128,5 +3178,6 @@ if (isAdminMode()) {
 
 </body>
 </html>
+
 
 
