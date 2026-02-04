@@ -1250,13 +1250,17 @@ const LIST_TIMEOUT_MS = 12000; // 12s (ajústalo si quieres)
 function cacheKeyForCurrentView_() {
   const admin = isAdminMode();
   const p = loadProfile();
-  const month = (admin && typeof recordsMonthSelect !== "undefined" && recordsMonthSelect)
-    ? String(recordsMonthSelect.value || "").trim()
-    : ""; // "" = mes actual en backend
+
+  // ✅ Admin: mes del selector
+  // ✅ Docente: mes actual SIEMPRE
+  const month = admin
+    ? (recordsMonthSelect ? String(recordsMonthSelect.value || "").trim() : "")
+    : monthKeyFromDate(new Date()); // YYYY-MM
 
   const teacher = (!admin && p && p.name) ? normalizeKey(p.name) : "__ADMIN__";
   return `${admin ? "admin" : "user"}|${month || "current"}|${teacher}`;
 }
+
 
 function saveRecordsCache_(key, records) {
   try {
@@ -2859,36 +2863,49 @@ updateDailyButtonsState(filtered);
 updateDailyButtonsState(filtered);
 }
 
+  function filterToMonth_(records, monthYYYYMM) {
+  const m = String(monthYYYYMM || "").trim();
+  if (!m) return records || [];
+  return (records || []).filter(r => String(r.date || "").startsWith(m + "-"));
+}
+
+
+  
+
 async function refreshFromSheet(options = {}) {
   const {
-    useCache = true,      // renderiza caché primero
-    silent = false,       // no cambia el status "Cargando..."
+    useCache = true,         // renderiza caché primero
+    silent = false,          // no cambia el status "Cargando..."
     showLoadingAfterMs = 450 // solo mostrar "Cargando" si tarda > 450ms
   } = options;
 
   const admin = isAdminMode();
   const p = loadProfile();
 
-  // mes (admin)
+  // ✅ Mes:
+  // - Admin: selector
+  // - Docente: mes actual SIEMPRE
   let month = "";
   if (admin && typeof recordsMonthSelect !== "undefined" && recordsMonthSelect) {
-    month = String(recordsMonthSelect.value || "").trim();
+    month = String(recordsMonthSelect.value || "").trim(); // YYYY-MM
+  } else {
+    month = monthKeyFromDate(new Date()); // ✅ docente: mes actual
   }
 
-  // docente (normal)
+  // ✅ Docente: pedir solo sus registros
   const teacherFilter = (!admin && p && p.name) ? String(p.name).trim() : "";
 
-  // 1) Render rápido con caché (para que "no demore al iniciar")
+  // 1) Render rápido con caché (no se siente "lento al iniciar")
   const cacheKey = cacheKeyForCurrentView_();
   if (useCache) {
     const cached = loadRecordsCache_(cacheKey);
     if (cached && cached.length) {
       render(cached);
-      // NO pongas "Listo" aquí; dejamos que la red lo confirme luego
+      // no ponemos "Listo" aquí: esperamos confirmación de red
     }
   }
 
-  // 2) “Cargando…” SOLO si realmente tarda (evita sensación de lentitud)
+  // 2) “Cargando…” SOLO si realmente tarda
   let loadingTimer = null;
   if (!silent) {
     loadingTimer = setTimeout(() => {
@@ -2897,15 +2914,20 @@ async function refreshFromSheet(options = {}) {
   }
 
   try {
-    // 3) Reduce carga en inicio para docente (admin sigue alto)
+    // ✅ Reduce carga en docente: solo mes actual y solo su nombre
     const limit = admin ? 1200 : 300;
 
-    const records = await gsGetList(limit, month, teacherFilter);
+    let records = await gsGetList(limit, month, teacherFilter);
 
-    // Resumen admin
+    // ✅ Seguro extra: docente SOLO mes actual (por si backend devolviera más)
+    if (!admin) {
+      records = filterToMonth_(records, month);
+    }
+
+    // ✅ Admin: resumen del mes
     updateAdminMonthSummaryFromRecords(records);
 
-    // Admin: refrescar combo docentes
+    // ✅ Admin: actualizar lista de docentes según lo cargado (sin romper selección)
     if (admin && typeof recordsTeacherSelect !== "undefined" && recordsTeacherSelect) {
       const current = String(recordsTeacherSelect.value || "__ALL__");
       const teachers = uniqueTeachersFromRecords(records);
@@ -2918,9 +2940,10 @@ async function refreshFromSheet(options = {}) {
       recordsTeacherSelect.value = exists ? current : "__ALL__";
     }
 
+    // Render final
     render(records);
 
-    // Guardar caché
+    // Guardar caché (ya filtrado)
     saveRecordsCache_(cacheKey, records);
 
     if (!silent) setStatus("", "Listo", "Datos de asistencia sincronizados.");
@@ -2936,6 +2959,7 @@ async function refreshFromSheet(options = {}) {
     if (loadingTimer) clearTimeout(loadingTimer);
   }
 }
+
 
 
 
@@ -3271,6 +3295,7 @@ if (isAdminMode()) {
 
 </body>
 </html>
+
 
 
 
