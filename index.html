@@ -1927,7 +1927,7 @@ loginModal.hidden = true;
 
     setStatus("", "Sesión iniciada", "Dispositivo autorizado ✅ Ya puedes registrar asistencia.");
 
-    await refreshFromSheet();
+refreshFromSheet(); // ✅ sin await: apaga loader más rápido
 
 
   } catch (e) {
@@ -2185,7 +2185,7 @@ async function adminDoManual(type) {
     adminManualHint.textContent = `✅ ${type} guardada (NTC) para ${teacher}.`;
 
     // refrescar listas/contadores
-    await refreshFromSheet();
+refreshFromSheet(); // ✅ sin await
 
     // si está abierto el modal de asistencias admin, recarga si coincide el docente
     // (opcional, no rompe nada)
@@ -2922,7 +2922,7 @@ async function register(type) {
       lng: geo.longitude
     });
 
-       await refreshFromSheet();
+refreshFromSheet(); // ✅ sin await: apaga loader apenas gsRegister termina
 
 if (type === "ENTRADA") {
   hasEntradaToday = true;
@@ -3178,6 +3178,7 @@ if (isAdminMode()) {
 
 </body>
 </html>
+
 
 
 
