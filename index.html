@@ -3036,36 +3036,19 @@ function discBackToList_(){
 
 
 /* ======= Google Sheets API (acciones) ======= */
-// ✅ DISCIPLINA: marcar nivel 1..4 (CORREGIDA)
 async function gsDisciplineMark(payload) {
-  const p = loadProfile() || {};
-
-  const body = {
-    action: "discipline_mark",
-    key: API_KEY,
-    month: payload.month,
-    student: payload.student,
-    level: payload.level,
-    teacher: payload.teacher || p.name || "",
-    email: (payload.email || p.email || "").toLowerCase(),
-    device_id: payload.device_id || p.device_id || ""
-  };
-
-  const res = await fetch(API_URL, {
+  const res = await fetch(GS_WEBAPP_URL, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body)
+    body: JSON.stringify({ action: "discipline_mark", ...payload, key: GS_API_KEY })
   });
 
-  const data = await res.json().catch(() => ({}));
+  let data = null;
+  try { data = await res.json(); }
+  catch { throw new Error("Respuesta inválida del servidor"); }
 
-  if (!data || data.ok !== true) {
-    throw new Error(data?.msg || data?.error || "Error al marcar disciplina");
-  }
-
-  return data;
+  if (!data.ok) throw new Error(data.msg || data.error || "discipline_mark_failed");
+  return data; // { report, list }
 }
-
 
 async function gsDisciplineList(month) {
   const res = await fetch(GS_WEBAPP_URL, {
@@ -3110,11 +3093,19 @@ async function discDoMarkLevel(level) {
   const lvl = Number(level || 0);
   if (lvl < 1 || lvl > 4) return;
 
-  const student = normalizeStudent_(__discCurrentStudent);
-  if (!student) {
-    discSetHint_("Primero selecciona un estudiante de la lista.");
-    return;
-  }
+// ✅ toma del seleccionado o del input (más robusto)
+const typed = discStudentEl ? normalizeStudent_(discStudentEl.value) : "";
+const student = normalizeStudent_(__discCurrentStudent) || typed;
+
+if (!student) {
+  discSetHint_("Primero selecciona o escribe un estudiante.");
+  return;
+}
+
+// ✅ asegura que quede “seleccionado” para el flujo
+__discCurrentStudent = student;
+if (discStudentEl) discStudentEl.value = student;
+
 
   const item = discFindInCache_(student);
   const currentMax = item ? Number(item.maxLevel || 0) : 0;
@@ -4177,24 +4168,5 @@ if (isAdminMode()) {
 
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
