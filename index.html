@@ -1849,22 +1849,12 @@ function getDeviceId() {
 
 function loadProfile() {
   try {
-    const profileStr = localStorage.getItem("profile") || "{}";
-    const profile = JSON.parse(profileStr);
-
-    if (profile.email) loginEmailEl.value = profile.email;
-    if (profile.name) loginNameEl.value = profile.name;
-    if (profile.course) loginCourseEl.value = profile.course;
-    if (profile.device_id) loginDeviceIdEl.value = profile.device_id;
-
-    // ✅ WhatsApp destino (si existe)
-    if (profile.whatsapp_to) loginPhoneEl.value = profile.whatsapp_to;
-
-  } catch (e) {
-    console.warn("loadProfile error:", e);
+    const raw = localStorage.getItem(LS_PROFILE_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
   }
 }
-
 
 function openAdminConfigModal() {
   if (!adminConfigModal) return;
@@ -1901,25 +1891,9 @@ function isValidHHMM(s) {
 }
 
 
-function saveProfile() {
-  try {
-    const profile = {
-      email: (loginEmailEl.value || "").trim(),
-      name: (loginNameEl.value || "").trim(),
-      course: (loginCourseEl.value || "").trim(),
-      device_id: (loginDeviceIdEl.value || "").trim(),
-
-      // ✅ guarda el WhatsApp destino
-      whatsapp_to: (loginPhoneEl.value || "").trim()
-    };
-    localStorage.setItem("profile", JSON.stringify(profile));
-    return profile;
-  } catch (e) {
-    console.warn("saveProfile error:", e);
-    return null;
-  }
+function saveProfile(profile) {
+  localStorage.setItem(LS_PROFILE_KEY, JSON.stringify(profile));
 }
-
 
 const LS_ADMIN_KEY = "asistencia_admin_session_v1";
 
@@ -3093,19 +3067,11 @@ async function discDoMarkLevel(level) {
   const lvl = Number(level || 0);
   if (lvl < 1 || lvl > 4) return;
 
-// ✅ toma del seleccionado o del input (más robusto)
-const typed = discStudentEl ? normalizeStudent_(discStudentEl.value) : "";
-const student = normalizeStudent_(__discCurrentStudent) || typed;
-
-if (!student) {
-  discSetHint_("Primero selecciona o escribe un estudiante.");
-  return;
-}
-
-// ✅ asegura que quede “seleccionado” para el flujo
-__discCurrentStudent = student;
-if (discStudentEl) discStudentEl.value = student;
-
+  const student = normalizeStudent_(__discCurrentStudent);
+  if (!student) {
+    discSetHint_("Primero selecciona un estudiante de la lista.");
+    return;
+  }
 
   const item = discFindInCache_(student);
   const currentMax = item ? Number(item.maxLevel || 0) : 0;
@@ -4168,5 +4134,4 @@ if (isAdminMode()) {
 
 </body>
 </html>
-
 
