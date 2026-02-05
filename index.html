@@ -1255,6 +1255,7 @@ const btnDiscReload = $("btnDiscReload");
 const discSelectedNameEl = $("discSelectedName");
 const discSelectedMetaEl = $("discSelectedMeta");
 const discLevelDotEl = $("discLevelDot");
+const discStudentEl = $("discStudent"); // ✅ input para escribir estudiante
 
 
 
@@ -2719,10 +2720,13 @@ function discUpdateSelectedBox_(studentName){
   const s = normalizeStudent_(studentName);
   __discCurrentStudent = s;
 
+  // ✅ mantener input sincronizado
+  if (discStudentEl) discStudentEl.value = s || "";
+
   if (!discSelectedNameEl || !discSelectedMetaEl) return;
 
   if (!s) {
-    discSelectedNameEl.textContent = "(Selecciona un estudiante de la lista)";
+    discSelectedNameEl.textContent = "(Selecciona o escribe un estudiante)";
     discSelectedMetaEl.textContent = "—";
     discSetDotByLevel_(0);
     discClearLevelUI_();
@@ -2737,22 +2741,22 @@ function discUpdateSelectedBox_(studentName){
 
   discSelectedNameEl.textContent = s;
 
-  if (maxLevel > 0) {
+  if (item) {
     discSelectedMetaEl.textContent = `Nivel ${maxLevel} • Llamados: ${total} • Docentes: ${teachersCount}`;
   } else {
-    discSelectedMetaEl.textContent = `Sin llamados este mes`;
+    discSelectedMetaEl.textContent = `Nuevo (sin reportes este mes aún)`;
   }
 
   discSetDotByLevel_(maxLevel);
   discApplyLevelUI_(maxLevel);
 
-  // mostrar quién lo marcó (si viene)
   if (item && Array.isArray(item.who) && item.who.length) {
     discRenderWho_(item.who);
   } else {
     if (discWhoList) discWhoList.textContent = "—";
   }
 }
+
 
 function discFindInCache_(studentName) {
   const key = normalizeKey(studentName);
@@ -2998,7 +3002,6 @@ function discStartPolling_() {
   if (__discPollTimer) return;
 
   __discPollTimer = setInterval(async () => {
-    // solo si hay sesión activa
     const p = loadProfile();
     const admin = isAdminMode();
     if (!p && !admin) return;
@@ -3007,25 +3010,21 @@ function discStartPolling_() {
       const items = await gsDisciplineList(discMonthKey_());
       __discCacheList = items;
 
-      // solo refrescar UI si el modal está abierto
+      // si modal abierto, refrescar lista y el seleccionado
       if (disciplineModal && disciplineModal.hidden === false) {
+        discRenderReportedList_(__discCacheList);
 
-        // ✅ si estoy viendo DETALLE, mantengo el detalle
-        if (__discView === "detail" && __discCurrentStudent) {
+        if (__discCurrentStudent) {
+          // refrescar box con datos de cache (si ya existe reportado)
           discUpdateSelectedBox_(__discCurrentStudent);
-          discRenderDetailView_();
-        } 
-        // ✅ si estoy en LISTA, solo refresco la lista
-        else {
-          discRenderReportedList_(items);
         }
       }
-
-    } catch (err) {
-      // polling silencioso (no mostrar errores)
+    } catch {
+      // silencioso
     }
-  }, 20000); // cada 20 segundos
+  }, 20000);
 }
+
 
 
 function openDisciplineModal() {
@@ -3063,13 +3062,37 @@ function discBindUI_() {
   if (btnDiscClose) btnDiscClose.addEventListener("click", closeDisciplineModal);
   if (btnDiscReload) btnDiscReload.addEventListener("click", () => discReloadReportedList(true));
 
+  // botones 1..4
   document.querySelectorAll(".disc-level").forEach(btn => {
     btn.addEventListener("click", () => {
       const lvl = Number(btn.getAttribute("data-level") || 0);
       discDoMarkLevel(lvl);
     });
   });
+
+  // ✅ escribir estudiante manualmente
+  if (discStudentEl) {
+    discStudentEl.addEventListener("input", () => {
+      const s = normalizeStudent_(discStudentEl.value);
+
+      // si borran
+      if (!s) {
+        __discCurrentStudent = "";
+        discUpdateSelectedBox_("");
+        discRenderReportedList_(__discCacheList);
+        return;
+      }
+
+      // actualizar seleccionado (aunque no exista aún en cache)
+      __discCurrentStudent = s;
+      discUpdateSelectedBox_(s);
+
+      // repintar lista para marcar selected si coincide
+      discRenderReportedList_(__discCacheList);
+    });
+  }
 }
+
 
 
 // ======= GEO =======
@@ -3870,6 +3893,7 @@ if (isAdminMode()) {
 
 </body>
 </html>
+
 
 
 
