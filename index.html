@@ -3036,19 +3036,36 @@ function discBackToList_(){
 
 
 /* ======= Google Sheets API (acciones) ======= */
+// ✅ DISCIPLINA: marcar nivel 1..4 (CORREGIDA)
 async function gsDisciplineMark(payload) {
-  const res = await fetch(GS_WEBAPP_URL, {
+  const p = loadProfile() || {};
+
+  const body = {
+    action: "discipline_mark",
+    key: API_KEY,
+    month: payload.month,
+    student: payload.student,
+    level: payload.level,
+    teacher: payload.teacher || p.name || "",
+    email: (payload.email || p.email || "").toLowerCase(),
+    device_id: payload.device_id || p.device_id || ""
+  };
+
+  const res = await fetch(API_URL, {
     method: "POST",
-    body: JSON.stringify({ action: "discipline_mark", ...payload, key: GS_API_KEY })
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body)
   });
 
-  let data = null;
-  try { data = await res.json(); }
-  catch { throw new Error("Respuesta inválida del servidor"); }
+  const data = await res.json().catch(() => ({}));
 
-  if (!data.ok) throw new Error(data.msg || data.error || "discipline_mark_failed");
-  return data; // { report, list }
+  if (!data || data.ok !== true) {
+    throw new Error(data?.msg || data?.error || "Error al marcar disciplina");
+  }
+
+  return data;
 }
+
 
 async function gsDisciplineList(month) {
   const res = await fetch(GS_WEBAPP_URL, {
@@ -4160,6 +4177,20 @@ if (isAdminMode()) {
 
 </body>
 </html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
