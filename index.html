@@ -3092,7 +3092,7 @@ async function discDoMarkLevel(level) {
       level: lvl,
       teacher: profile.name,
       email: profile.email,
-      device_id: getDeviceId() // ✅ NUEVO: requerido para WhatsApp
+      device_id: getDeviceId()
     });
 
     if (resp && Array.isArray(resp.list)) {
@@ -3106,22 +3106,26 @@ async function discDoMarkLevel(level) {
     discUpdateSelectedBox_(student);
     discRenderDetailView_();
 
-// ✅ Abrir WhatsApp automático si el server lo devuelve
-const waUrl =
-  (resp && resp.whatsapp && resp.whatsapp.url) ? resp.whatsapp.url :
-  (resp && resp.wa_url) ? resp.wa_url :
-  "";
+    // ✅ Abrir WhatsApp automático si el server lo devuelve
+  const waUrls =
+  (resp && resp.whatsapp && Array.isArray(resp.whatsapp.urls) && resp.whatsapp.urls.length) ? resp.whatsapp.urls :
+  (resp && Array.isArray(resp.wa_urls) && resp.wa_urls.length) ? resp.wa_urls :
+  (resp && resp.wa_url) ? [resp.wa_url] :
+  [];
 
-if (resp && resp.ok && resp.justReported && waUrl) {
-  window.open(waUrl, "_blank");
+if (resp && resp.ok && resp.justReported && waUrls.length) {
+  // Abre un chat por destinatario (uno por pestaña)
+  waUrls.forEach((u, i) => setTimeout(() => window.open(u, "_blank"), 200 * i));
 } else if (resp && resp.ok && resp.justReported && lvl >= 4) {
-  // si llegó a 4 pero no hay url (por falta de número u otra razón)
   alert("⚠️ Llegó a NIVEL 4, pero no hay número WhatsApp configurado. Inicia sesión y configúralo.");
 }
 
 
-    if (lvl >= 4) discSetHint_("Nivel 4 registrado. Notificación enviada ✅");
-    else discSetHint_("Registrado ✅");
+    if (lvl >= 4) {
+      discSetHint_(openedWa ? "Nivel 4 registrado. Notificación enviada ✅" : "Nivel 4 registrado ✅");
+    } else {
+      discSetHint_("Registrado ✅");
+    }
 
   } catch (e) {
     discSetHint_(String(e && e.message ? e.message : e));
@@ -3129,6 +3133,7 @@ if (resp && resp.ok && resp.justReported && waUrl) {
     setLoading(false);
   }
 }
+
 
 
 
