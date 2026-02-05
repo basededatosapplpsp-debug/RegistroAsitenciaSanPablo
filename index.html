@@ -1190,11 +1190,11 @@ body:not(.is-admin) #adminMonthSummary{
       <div id="discWhoList" class="disc-who-list">—</div>
     </div>
 
-    <div class="disc-reported">
-      <div class="row row-between" style="margin-top:12px;">
-        <div class="muted small">Reportados (mes actual)</div>
-        <button id="btnDiscReload" class="btn btn-ghost small" type="button">Recargar</button>
-      </div>
+   <div class="disc-reported">
+  <div class="row row-between" style="margin-top:12px;">
+    <div class="muted small">Reportados (mes actual)</div>
+  </div>
+
       <div id="discReportedList" style="
         margin-top:10px;
         max-height:min(50vh, 420px);
@@ -1209,9 +1209,16 @@ body:not(.is-admin) #adminMonthSummary{
 
     <div id="discHint" class="modal-hint muted small"></div>
 
-    <div class="modal-actions" style="justify-content:flex-end;">
-      <button id="btnDiscClose" type="button" class="btn btn-ghost">Cerrar</button>
-    </div>
+   <div class="modal-actions" style="justify-content:flex-end;">
+  <!-- Atrás (lo controlamos por JS, inicia oculto) -->
+  <button id="btnDiscBack" type="button" class="btn btn-ghost" hidden>← Atrás</button>
+
+  <!-- Recargar (mantenemos MISMO ID para no romper tu JS actual) -->
+  <button id="btnDiscReload" type="button" class="btn btn-ghost">Recargar</button>
+
+  <button id="btnDiscClose" type="button" class="btn btn-ghost">Cerrar</button>
+</div>
+
   </div>
 </div>
 
@@ -1290,6 +1297,8 @@ const discReportedList = $("discReportedList");
 const discHint = $("discHint");
 const btnDiscClose = $("btnDiscClose");
 const btnDiscReload = $("btnDiscReload");
+  const btnDiscBack = $("btnDiscBack");
+
 
 // ✅ NUEVO: UI del seleccionado (sin combo)
 const discSelectedNameEl = $("discSelectedName");
@@ -2879,16 +2888,29 @@ function discRenderReportedList_(items) {
   });
 }
 
-  function discOpenDetail_(studentName){
+function discOpenDetail_(studentName){
   __discView = "detail";
+
+  // fija seleccionado + refresca box (nivel/who/meta)
   discUpdateSelectedBox_(studentName);
+
+  // pinta vista detalle en el contenedor
   discRenderDetailView_();
+
+  // ✅ mostrar botón Atrás (abajo)
+  if (typeof btnDiscBack !== "undefined" && btnDiscBack) btnDiscBack.hidden = false;
 }
 
 function discBackToList_(){
   __discView = "list";
+
+  // vuelve a pintar la lista del mes (cache)
   discRenderReportedList_(__discCacheList);
+
   discSetHint_("");
+
+  // ✅ ocultar botón Atrás (abajo)
+  if (typeof btnDiscBack !== "undefined" && btnDiscBack) btnDiscBack.hidden = true;
 }
 
 
@@ -2902,27 +2924,22 @@ function discBackToList_(){
   const total = item ? Number(item.totalMarks || 0) : 0;
   const teachersCount = item ? Number(item.teachersCount || 0) : 0;
 
-  discReportedList.innerHTML = `
-    <div class="row row-between" style="margin-bottom:10px;">
-      <button id="btnDiscBack" type="button" class="btn btn-ghost small">← Atrás</button>
-      <div class="muted small">${escapeHtml(discMonthKey_())}</div>
+ discReportedList.innerHTML = `
+  <div class="record-card" style="margin-bottom:10px;">
+    <div class="top">
+      <span class="teacher">${escapeHtml(s || "—")}</span>
+      <span class="badge badge-neutral">${maxLevel ? `Nivel ${maxLevel}` : "Sin nivel"}</span>
     </div>
-
-    <div class="record-card" style="margin-bottom:10px;">
-      <div class="top">
-        <span class="teacher">${escapeHtml(s || "—")}</span>
-        <span class="badge badge-neutral">${maxLevel ? `Nivel ${maxLevel}` : "Sin nivel"}</span>
-      </div>
-      <div class="meta">
-        Llamados: <b>${total}</b> • Docentes: <b>${teachersCount}</b>
-      </div>
+    <div class="meta">
+      Llamados: <b>${total}</b> • Docentes: <b>${teachersCount}</b>
     </div>
+  </div>
 
-    <div class="muted small" style="margin-bottom:6px;">(Usa los botones de nivel arriba para registrar)</div>
-  `;
+  <div class="muted small" style="margin-bottom:6px;">(Usa los botones de nivel arriba para registrar)</div>
+`;
 
-  const backBtn = document.getElementById("btnDiscBack");
-  if (backBtn) backBtn.addEventListener("click", discBackToList_);
+
+
 
   // ✅ repinta UI de niveles y “who” usando lo que ya tienes
   discApplyLevelUI_(maxLevel);
@@ -3079,28 +3096,35 @@ function discStartPolling_() {
 
 function openDisciplineModal() {
   if (!disciplineModal) return;
+
   disciplineModal.hidden = false;
   discSetHint_("");
 
-  __discView = "list"; // ✅ siempre abre en lista
-  discUpdateSelectedBox_(""); // limpia box seleccionado
+  __discView = "list";               // ✅ siempre abre en lista
+  __discCurrentStudent = "";         // ✅ no debe quedar “pegado” el último
+  discUpdateSelectedBox_("");        // limpia box seleccionado
   discRenderReportedList_(__discCacheList);
 
+  // ✅ ocultar botón Atrás al abrir
+  if (typeof btnDiscBack !== "undefined" && btnDiscBack) btnDiscBack.hidden = true;
+
+  // si quieres que muestre el “Lista sincronizada ✅” al abrir:
   discReloadReportedList(true);
 }
 
-
 function closeDisciplineModal() {
   if (!disciplineModal) return;
+
   disciplineModal.hidden = true;
 
   __discView = "list";
   __discCurrentStudent = "";
   discSetHint_("");
   discUpdateSelectedBox_("");
+
+  // ✅ ocultar botón Atrás al cerrar
+  if (typeof btnDiscBack !== "undefined" && btnDiscBack) btnDiscBack.hidden = true;
 }
-
-
 function discBindUI_() {
   if (btnDiscipline) {
     btnDiscipline.addEventListener("click", () => {
@@ -3111,6 +3135,8 @@ function discBindUI_() {
 
   if (btnDiscClose) btnDiscClose.addEventListener("click", closeDisciplineModal);
   if (btnDiscReload) btnDiscReload.addEventListener("click", () => discReloadReportedList(true));
+  if (btnDiscBack) btnDiscBack.addEventListener("click", discBackToList_);
+
 
   // botones 1..4
   document.querySelectorAll(".disc-level").forEach(btn => {
@@ -3943,6 +3969,7 @@ if (isAdminMode()) {
 
 </body>
 </html>
+
 
 
 
