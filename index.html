@@ -1126,15 +1126,24 @@ body:not(.is-admin) #adminMonthSummary{
     <h2 class="modal-title">Llamado de atención</h2>
     <p class="modal-sub">Reporta uso de celular en clase. Marca el nivel (1 a 4). Al llegar a 4 se notifica a los docentes que participaron.</p>
 
-<!-- ✅ SOLO selección desde “Reportados del mes” -->
+<!-- ✅ Seleccionado (se mantiene) -->
 <label class="modal-label">Seleccionado</label>
 <div id="discSelectedBox" class="status" style="margin-top:6px;">
   <span class="dot" id="discLevelDot"></span>
   <div>
-    <div id="discSelectedName" style="font-weight:900;">(Selecciona un estudiante de la lista)</div>
+    <div id="discSelectedName" style="font-weight:900;">Selecciona un estudiante de la lista</div>
     <div class="muted" id="discSelectedMeta">—</div>
   </div>
 </div>
+
+<!-- ✅ INPUT para escribir estudiante (AGREGAR) -->
+<label class="modal-label" for="discStudent">Estudiante</label>
+<input id="discStudent" class="modal-input" type="text"
+       placeholder="Escribe el nombre del estudiante…" autocomplete="off" />
+<div class="muted small" style="margin-top:6px;">
+  Tip: también puedes tocar un nombre en “Reportados” para cargarlo arriba.
+</div>
+
 
 
 
@@ -3893,6 +3902,7 @@ if (isAdminMode()) {
 
 </body>
 </html>
+
 
 
 
