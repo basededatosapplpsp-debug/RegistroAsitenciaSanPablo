@@ -1849,12 +1849,22 @@ function getDeviceId() {
 
 function loadProfile() {
   try {
-    const raw = localStorage.getItem(LS_PROFILE_KEY);
-    return raw ? JSON.parse(raw) : null;
-  } catch {
-    return null;
+    const profileStr = localStorage.getItem("profile") || "{}";
+    const profile = JSON.parse(profileStr);
+
+    if (profile.email) loginEmailEl.value = profile.email;
+    if (profile.name) loginNameEl.value = profile.name;
+    if (profile.course) loginCourseEl.value = profile.course;
+    if (profile.device_id) loginDeviceIdEl.value = profile.device_id;
+
+    // ✅ WhatsApp destino (si existe)
+    if (profile.whatsapp_to) loginPhoneEl.value = profile.whatsapp_to;
+
+  } catch (e) {
+    console.warn("loadProfile error:", e);
   }
 }
+
 
 function openAdminConfigModal() {
   if (!adminConfigModal) return;
@@ -1891,9 +1901,25 @@ function isValidHHMM(s) {
 }
 
 
-function saveProfile(profile) {
-  localStorage.setItem(LS_PROFILE_KEY, JSON.stringify(profile));
+function saveProfile() {
+  try {
+    const profile = {
+      email: (loginEmailEl.value || "").trim(),
+      name: (loginNameEl.value || "").trim(),
+      course: (loginCourseEl.value || "").trim(),
+      device_id: (loginDeviceIdEl.value || "").trim(),
+
+      // ✅ guarda el WhatsApp destino
+      whatsapp_to: (loginPhoneEl.value || "").trim()
+    };
+    localStorage.setItem("profile", JSON.stringify(profile));
+    return profile;
+  } catch (e) {
+    console.warn("saveProfile error:", e);
+    return null;
+  }
 }
+
 
 const LS_ADMIN_KEY = "asistencia_admin_session_v1";
 
@@ -4134,19 +4160,6 @@ if (isAdminMode()) {
 
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
