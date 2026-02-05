@@ -1018,6 +1018,12 @@ body:not(.is-admin) #adminMonthSummary{
     <label class="modal-label">Correo</label>
     <input id="loginEmail" class="modal-input" type="email" placeholder="Ej: profesor@colegio.edu.co" />
 
+    <label class="modal-label">Celular (WhatsApp destino)</label>
+<input id="loginPhone" class="modal-input"
+       type="tel" inputmode="numeric"
+       placeholder="Ej: 3001234567" autocomplete="tel" />
+
+
     <label class="modal-label">Curso (Director de grupo)</label>
     <input id="loginCourse" class="modal-input" type="text" placeholder="Ej: 7A" />
 
@@ -1301,6 +1307,9 @@ const loginEmailEl = $("loginEmail");
 const loginCourseEl = $("loginCourse");
 const btnLoginSave = $("btnLoginSave");
 const loginHint = $("loginHint");
+
+  const loginPhoneEl = $("loginPhone");
+
 
 const deviceIdTextEl = $("deviceIdText");
 const btnCopyDevice = $("btnCopyDevice");
@@ -2195,12 +2204,22 @@ btnLoginSave.addEventListener("click", async () => {
   const email = (loginEmailEl.value || "").trim().toLowerCase();
   const course = (loginCourseEl.value || "").trim();
 
+  // ✅ NUEVO: celular opcional desde modal (si existe)
+  const phoneRaw = (loginPhoneEl && loginPhoneEl.value) ? loginPhoneEl.value : "";
+  const phone = String(phoneRaw || "").trim().replace(/\D/g, ""); // solo dígitos
+
   if (!name || !email || !course) {
     loginHint.textContent = "Faltan datos. Nombre, correo y curso son obligatorios.";
     return;
   }
   if (!/^\S+@\S+\.\S+$/.test(email)) {
     loginHint.textContent = "Correo inválido.";
+    return;
+  }
+
+  // ✅ Validación suave: solo valida si escribió algo
+  if (phone && phone.length < 10) {
+    loginHint.textContent = "Celular inválido. Ej: 3001234567";
     return;
   }
 
@@ -2214,51 +2233,52 @@ btnLoginSave.addEventListener("click", async () => {
       device_id: getDeviceId()
     });
 
-    // Normaliza por si alguna vez llegara como string (por cambios futuros)
     const authorized = (chk && (chk.authorized === true || String(chk.authorized).toLowerCase() === "true"));
 
     if (!authorized) {
       const msg = (chk && chk.msg) ? chk.msg : "Aún no autorizado. Usa 'Solicitar autorización' y espera aprobación.";
       loginHint.textContent = msg;
 
-      // ✅ Aviso visible (no solo hint)
       setStatus("bad", "No autorizado", msg);
-
-      // Mantener modal abierto
       loginModal.hidden = false;
       return;
     }
 
+    // ✅ validar nombre permitido
+    const allowedName = (chk && chk.allowed_name) ? String(chk.allowed_name).trim() : "";
+    if (allowedName && !samePersonName(name, allowedName)) {
+      const msg = `El nombre no corresponde a este dispositivo.\nAutorizado para: ${allowedName}`;
+      loginHint.textContent = msg;
+      setStatus("bad", "Nombre no válido", msg);
+      loginModal.hidden = false;
+      return;
+    }
 
-    // ✅ Si está autorizado, validar que el nombre corresponda al dispositivo
-const allowedName = (chk && chk.allowed_name) ? String(chk.allowed_name).trim() : "";
-if (allowedName && !samePersonName(name, allowedName)) {
-  const msg = `El nombre no corresponde a este dispositivo.\nAutorizado para: ${allowedName}`;
-  loginHint.textContent = msg;
-  setStatus("bad", "Nombre no válido", msg);
-  loginModal.hidden = false;
-  return;
-}
-
-
-    // ✅ Autorizado: guardar perfil y cerrar modal
+    // ✅ guardar perfil (sin romper nada)
     const profile = { name, email, course };
-    setAdminMode(false); // ✅ asegura que un docente jamás quede en modo admin
 
-saveProfile(profile);
+    // ✅ si el usuario escribió celular, lo guardamos también
+    if (phone) profile.whatsapp_to = phone;
 
-applySessionUI(profile);
-loginModal.hidden = true;
+    setAdminMode(false); // docente jamás queda admin
+    saveProfile(profile);
 
-await ensureWhatsAppToOnLogin_(profile.email, getDeviceId()); // ✅ NUEVO
+    applySessionUI(profile);
+    loginModal.hidden = true;
+
+    // ✅ si hay teléfono, lo guardamos inmediatamente (sin prompt)
+    if (phone) {
+      localStorage.setItem("disc_whatsapp_to", phone);
+      await gsSetWhatsAppTo_(profile.email, getDeviceId(), phone);
+    } else {
+      // si no lo escribió, mantiene tu comportamiento actual (prompt/server/local)
+      await ensureWhatsAppToOnLogin_(profile.email, getDeviceId());
+    }
 
     loginHint.textContent = "";
-    
-
     setStatus("", "Sesión iniciada", "Dispositivo autorizado ✅ Ya puedes registrar asistencia.");
 
-refreshFromSheet({ silent: true, useCache: false }); // ✅ no toca status, solo refresca datos
-
+    refreshFromSheet({ silent: true, useCache: false });
 
   } catch (e) {
     const msg = String(e && e.message ? e.message : e);
@@ -2268,6 +2288,7 @@ refreshFromSheet({ silent: true, useCache: false }); // ✅ no toca status, solo
     setLoading(false);
   }
 });
+
 
 
 function openAdminModal() {
@@ -3864,25 +3885,46 @@ async function gsSetWhatsAppTo_(email, deviceId, whatsappTo) {
 async function ensureWhatsAppToOnLogin_(email, deviceId) {
   try {
     const lsKey = "disc_whatsapp_to";
-    let waTo = (localStorage.getItem(lsKey) || "").trim();
 
-    // 1) si no hay local, intenta server
+    // helper: solo dígitos (ej: "300 123-4567" -> "3001234567")
+    const cleanPhone = (v) => String(v || "").trim().replace(/\D/g, "");
+
+    let waTo = "";
+
+    // 0) prioridad: perfil guardado (si ya lo guardaste)
+    const p = loadProfile();
+    if (p && p.whatsapp_to) waTo = cleanPhone(p.whatsapp_to);
+
+    // 1) si no hay en perfil, intenta localStorage
     if (!waTo) {
-      const r = await gsGetWhatsAppTo_(email, deviceId);
-      if (r && r.wa_to) waTo = String(r.wa_to).trim();
+      waTo = cleanPhone(localStorage.getItem(lsKey) || "");
     }
 
-    // 2) si sigue vacío, pedirlo
+    // 2) si no hay local, intenta server
     if (!waTo) {
-      waTo = prompt(
-        "Escribe el número destino para enviar reportes por WhatsApp (ej: 3001234567):",
-        ""
-      ) || "";
-      waTo = waTo.trim();
+      const r = await gsGetWhatsAppTo_(email, deviceId);
+      if (r && r.wa_to) waTo = cleanPhone(r.wa_to);
+    }
+
+    // 3) si sigue vacío, pedirlo (fallback actual)
+    if (!waTo) {
+      waTo = cleanPhone(
+        prompt(
+          "Escribe el número destino para enviar reportes por WhatsApp (ej: 3001234567):",
+          ""
+        ) || ""
+      );
       if (!waTo) return; // canceló
     }
 
-    // 3) guardar local + server
+    // Validación suave (no rompe tu flujo)
+    // Si quieres exigir 10 dígitos exactos, cambia la condición.
+    if (waTo.length < 10) {
+      console.warn("WhatsAppTo inválido (muy corto):", waTo);
+      return;
+    }
+
+    // 4) guardar local + server (idempotente)
     localStorage.setItem(lsKey, waTo);
     await gsSetWhatsAppTo_(email, deviceId, waTo);
 
@@ -3890,6 +3932,7 @@ async function ensureWhatsAppToOnLogin_(email, deviceId) {
     console.warn("WhatsAppTo login error:", e);
   }
 }
+
 
 
 
@@ -4091,6 +4134,7 @@ if (isAdminMode()) {
 
 </body>
 </html>
+
 
 
 
