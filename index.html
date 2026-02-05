@@ -2250,6 +2250,7 @@ saveProfile(profile);
 applySessionUI(profile);
 loginModal.hidden = true;
 
+await ensureWhatsAppToOnLogin_(profile.email, getDeviceId()); // ✅ NUEVO
 
     loginHint.textContent = "";
     
@@ -3068,7 +3069,8 @@ async function discDoMarkLevel(level) {
       student,
       level: lvl,
       teacher: profile.name,
-      email: profile.email
+      email: profile.email,
+      device_id: getDeviceId() // ✅ NUEVO: requerido para WhatsApp
     });
 
     if (resp && Array.isArray(resp.list)) {
@@ -3082,6 +3084,14 @@ async function discDoMarkLevel(level) {
     discUpdateSelectedBox_(student);
     discRenderDetailView_();
 
+    // ✅ Abrir WhatsApp automático si el server lo devuelve
+    if (resp && resp.ok && resp.justReported && resp.whatsapp && resp.whatsapp.url) {
+      window.open(resp.whatsapp.url, "_blank");
+    } else if (resp && resp.ok && resp.justReported && lvl >= 4) {
+      // si llegó a 4 pero no hay url (por falta de número u otra razón)
+      alert("⚠️ Llegó a NIVEL 4, pero no hay número WhatsApp configurado. Inicia sesión y configúralo.");
+    }
+
     if (lvl >= 4) discSetHint_("Nivel 4 registrado. Notificación enviada ✅");
     else discSetHint_("Registrado ✅");
 
@@ -3091,6 +3101,7 @@ async function discDoMarkLevel(level) {
     setLoading(false);
   }
 }
+
 
 
 /* ======= Poll para sincronizar entre celulares ======= */
@@ -3810,6 +3821,78 @@ if (type === "SALIDA") {
 }
 
 
+// ===== WhatsApp destino (para disciplina NIVEL 4) =====
+async function gsGetWhatsAppTo_(email, deviceId) {
+  const res = await fetch(GS_WEBAPP_URL, {
+    method: "POST",
+    body: JSON.stringify({
+      action: "get_whatsapp_to",
+      email,
+      device_id: deviceId,
+      key: GS_API_KEY
+    })
+  });
+
+  let data = null;
+  try { data = await res.json(); }
+  catch { throw new Error("Respuesta inválida del servidor"); }
+
+  if (!data.ok) throw new Error(data.msg || data.error || "get_whatsapp_to_failed");
+  return data; // { ok:true, wa_to:"..." }
+}
+
+async function gsSetWhatsAppTo_(email, deviceId, whatsappTo) {
+  const res = await fetch(GS_WEBAPP_URL, {
+    method: "POST",
+    body: JSON.stringify({
+      action: "set_whatsapp_to",
+      email,
+      device_id: deviceId,
+      whatsapp_to: whatsappTo,
+      key: GS_API_KEY
+    })
+  });
+
+  let data = null;
+  try { data = await res.json(); }
+  catch { throw new Error("Respuesta inválida del servidor"); }
+
+  if (!data.ok) throw new Error(data.msg || data.error || "set_whatsapp_to_failed");
+  return data;
+}
+
+async function ensureWhatsAppToOnLogin_(email, deviceId) {
+  try {
+    const lsKey = "disc_whatsapp_to";
+    let waTo = (localStorage.getItem(lsKey) || "").trim();
+
+    // 1) si no hay local, intenta server
+    if (!waTo) {
+      const r = await gsGetWhatsAppTo_(email, deviceId);
+      if (r && r.wa_to) waTo = String(r.wa_to).trim();
+    }
+
+    // 2) si sigue vacío, pedirlo
+    if (!waTo) {
+      waTo = prompt(
+        "Escribe el número destino para enviar reportes por WhatsApp (ej: 3001234567):",
+        ""
+      ) || "";
+      waTo = waTo.trim();
+      if (!waTo) return; // canceló
+    }
+
+    // 3) guardar local + server
+    localStorage.setItem(lsKey, waTo);
+    await gsSetWhatsAppTo_(email, deviceId, waTo);
+
+  } catch (e) {
+    console.warn("WhatsAppTo login error:", e);
+  }
+}
+
+
+
 
 // ======= CSV (desde lo que se ve en la app) =======
 function csvCell(v){
@@ -4008,6 +4091,7 @@ if (isAdminMode()) {
 
 </body>
 </html>
+
 
 
 
