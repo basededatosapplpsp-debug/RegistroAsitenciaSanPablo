@@ -810,6 +810,54 @@ body:not(.is-admin) #adminMonthSummary{
 }
 
 
+
+   /* ================================
+   MODAL LLAMADO DE ATENCIÓN: responsive + scroll en Reportados
+================================ */
+
+/* el backdrop ya centra; solo aseguramos que no “rompa” en pantallas pequeñas */
+#disciplineModal{
+  padding: max(12px, env(safe-area-inset-top)) 12px max(12px, env(safe-area-inset-bottom));
+}
+
+/* el card del modal se adapta a cualquier alto y permite layout interno */
+#disciplineModal .modal-card{
+  width: min(720px, 100%);
+  max-height: calc(100dvh - 24px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+  display: flex;
+  flex-direction: column;
+  overflow: hidden; /* evita doble scroll feo */
+}
+
+/* si el contenido crece, el card “cede” y el scroll lo toma Reportados */
+#disciplineModal .disc-reported{
+  display: flex;
+  flex-direction: column;
+  min-height: 0; /* ✅ CLAVE para que el hijo pueda scrollear */
+}
+
+/* la lista es la que scrollea cuando haga falta */
+#disciplineModal .disc-reported-list{
+  margin-top:10px;
+  flex: 1 1 auto;
+  min-height: 120px; /* evita que quede en 0 */
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+
+  border:1px solid var(--line);
+  border-radius:14px;
+  padding:10px;
+  background: rgba(0,0,0,.10);
+}
+
+/* opcional: compactar un poquito en pantallas muy bajas */
+@media (max-height: 640px){
+  #disciplineModal .modal-sub{ display:none; }
+  #disciplineModal .disc-who{ padding:8px; }
+  #disciplineModal .disc-level{ padding:10px 8px; }
+}
+
+
 </style>
 </head>
 
@@ -1032,7 +1080,7 @@ body:not(.is-admin) #adminMonthSummary{
 
 <!-- ======= MODAL VER ASISTENCIAS (ADMIN) ======= -->
 <div id="adminAssistModal" class="modal-backdrop" hidden>
-  <div class="modal-card" style="width:min(720px,100%);">
+<div class="modal-card">
     <h2 class="modal-title">Ver asistencias</h2>
     <p class="modal-sub">Selecciona un docente para ver sus registros del mes seleccionado.</p>
 
@@ -1195,17 +1243,8 @@ body:not(.is-admin) #adminMonthSummary{
     <div class="muted small">Reportados (mes actual)</div>
   </div>
 
-      <div id="discReportedList" style="
-        margin-top:10px;
-        max-height:min(50vh, 420px);
-        overflow:auto;
-        -webkit-overflow-scrolling:touch;
-        border:1px solid var(--line);
-        border-radius:14px;
-        padding:10px;
-        background: rgba(0,0,0,.10);
-      "></div>
-    </div>
+    <div id="discReportedList" class="disc-reported-list"></div>
+
 
     <div id="discHint" class="modal-hint muted small"></div>
 
@@ -3969,6 +4008,7 @@ if (isAdminMode()) {
 
 </body>
 </html>
+
 
 
 
