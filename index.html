@@ -3021,8 +3021,9 @@ async function gsDisciplineMark(payload) {
   catch { throw new Error("Respuesta inválida del servidor"); }
 
   if (!data.ok) throw new Error(data.msg || data.error || "discipline_mark_failed");
-  return data; // { report, list }
+  return data; // { report, list, justReported, wa_url/wa_to o whatsapp }
 }
+
 
 async function gsDisciplineList(month) {
   const res = await fetch(GS_WEBAPP_URL, {
@@ -3105,13 +3106,19 @@ async function discDoMarkLevel(level) {
     discUpdateSelectedBox_(student);
     discRenderDetailView_();
 
-    // ✅ Abrir WhatsApp automático si el server lo devuelve
-    if (resp && resp.ok && resp.justReported && resp.whatsapp && resp.whatsapp.url) {
-      window.open(resp.whatsapp.url, "_blank");
-    } else if (resp && resp.ok && resp.justReported && lvl >= 4) {
-      // si llegó a 4 pero no hay url (por falta de número u otra razón)
-      alert("⚠️ Llegó a NIVEL 4, pero no hay número WhatsApp configurado. Inicia sesión y configúralo.");
-    }
+// ✅ Abrir WhatsApp automático si el server lo devuelve
+const waUrl =
+  (resp && resp.whatsapp && resp.whatsapp.url) ? resp.whatsapp.url :
+  (resp && resp.wa_url) ? resp.wa_url :
+  "";
+
+if (resp && resp.ok && resp.justReported && waUrl) {
+  window.open(waUrl, "_blank");
+} else if (resp && resp.ok && resp.justReported && lvl >= 4) {
+  // si llegó a 4 pero no hay url (por falta de número u otra razón)
+  alert("⚠️ Llegó a NIVEL 4, pero no hay número WhatsApp configurado. Inicia sesión y configúralo.");
+}
+
 
     if (lvl >= 4) discSetHint_("Nivel 4 registrado. Notificación enviada ✅");
     else discSetHint_("Registrado ✅");
@@ -4134,10 +4141,3 @@ if (isAdminMode()) {
 
 </body>
 </html>
-
-
-
-
-
-
-
