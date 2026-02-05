@@ -2690,6 +2690,8 @@ if (!btnRequestAuth) {
 let __discPollTimer = null;
 let __discCurrentStudent = "";   // nombre seleccionado desde la lista
 let __discCacheList = [];        // lista del mes actual (para render rápido)
+  let __discView = "list"; // "list" | "detail"
+
 
 function discMonthKey_() {
   return monthKeyFromDate(new Date()); // YYYY-MM
@@ -2801,42 +2803,89 @@ function discRenderReportedList_(items) {
     String(a.student||"").localeCompare(String(b.student||""), "es", { sensitivity:"base" })
   );
 
-  const selectedKey = normalizeKey(__discCurrentStudent);
-
+  // ✅ LISTA: solo nombres como “títulos”
   discReportedList.innerHTML = sorted.map(it => {
     const student = String(it.student || "").trim();
     if (!student) return "";
 
     const maxLevel = Number(it.maxLevel || 0);
-    const total = Number(it.totalMarks || 0);
 
-    const clsSelected = (normalizeKey(student) === selectedKey) ? "selected" : "";
+    // punto color según nivel (si no hay nivel, lo dejamos neutro)
     const dotCls = maxLevel ? `lvl-dot lvl-${maxLevel}` : "lvl-dot";
 
     return `
       <button type="button"
-              class="disc-item ${clsSelected}"
+              class="disc-item"
               data-student="${escapeHtml(student)}">
         <div class="left">
           <span class="${dotCls}"></span>
           <span class="name">${escapeHtml(student)}</span>
         </div>
-        <div class="right muted small">
-          ${maxLevel ? `Nivel ${maxLevel}` : "—"} • ${total} llamados
-        </div>
+        <div class="right muted small">›</div>
       </button>
     `;
   }).join("");
 
-  // ✅ bind click (selección)
+  // ✅ click → abrir detalle
   discReportedList.querySelectorAll(".disc-item").forEach(btn => {
     btn.addEventListener("click", () => {
       const s = btn.getAttribute("data-student") || "";
-      discUpdateSelectedBox_(s);
-      discRenderReportedList_(__discCacheList); // repinta selección
+      discOpenDetail_(s);
     });
   });
 }
+
+  function discOpenDetail_(studentName){
+  __discView = "detail";
+  discUpdateSelectedBox_(studentName);
+  discRenderDetailView_();
+}
+
+function discBackToList_(){
+  __discView = "list";
+  discRenderReportedList_(__discCacheList);
+  discSetHint_("");
+}
+
+
+  function discRenderDetailView_(){
+  if (!discReportedList) return;
+
+  const s = normalizeStudent_(__discCurrentStudent);
+  const item = s ? discFindInCache_(s) : null;
+
+  const maxLevel = item ? Number(item.maxLevel || 0) : 0;
+  const total = item ? Number(item.totalMarks || 0) : 0;
+  const teachersCount = item ? Number(item.teachersCount || 0) : 0;
+
+  discReportedList.innerHTML = `
+    <div class="row row-between" style="margin-bottom:10px;">
+      <button id="btnDiscBack" type="button" class="btn btn-ghost small">← Atrás</button>
+      <div class="muted small">${escapeHtml(discMonthKey_())}</div>
+    </div>
+
+    <div class="record-card" style="margin-bottom:10px;">
+      <div class="top">
+        <span class="teacher">${escapeHtml(s || "—")}</span>
+        <span class="badge badge-neutral">${maxLevel ? `Nivel ${maxLevel}` : "Sin nivel"}</span>
+      </div>
+      <div class="meta">
+        Llamados: <b>${total}</b> • Docentes: <b>${teachersCount}</b>
+      </div>
+    </div>
+
+    <div class="muted small" style="margin-bottom:6px;">(Usa los botones de nivel arriba para registrar)</div>
+  `;
+
+  const backBtn = document.getElementById("btnDiscBack");
+  if (backBtn) backBtn.addEventListener("click", discBackToList_);
+
+  // ✅ repinta UI de niveles y “who” usando lo que ya tienes
+  discApplyLevelUI_(maxLevel);
+  if (item && Array.isArray(item.who) && item.who.length) discRenderWho_(item.who);
+  else if (discWhoList) discWhoList.textContent = "—";
+}
+
 
 /* ======= Google Sheets API (acciones) ======= */
 async function gsDisciplineMark(payload) {
@@ -2875,10 +2924,13 @@ async function discReloadReportedList(showHint=false) {
 
     __discCacheList = items;
 
-    discRenderReportedList_(items);
-
-    // si ya había seleccionado, refrescar box desde cache
-    if (__discCurrentStudent) discUpdateSelectedBox_(__discCurrentStudent);
+    // ✅ si estoy en detalle, refresco detalle
+    if (__discView === "detail" && __discCurrentStudent) {
+      discUpdateSelectedBox_(__discCurrentStudent);
+      discRenderDetailView_();
+    } else {
+      discRenderReportedList_(items);
+    }
 
     if (showHint) discSetHint_("Lista sincronizada ✅");
   } catch (e) {
@@ -2899,7 +2951,6 @@ async function discDoMarkLevel(level) {
     return;
   }
 
-  // regla: no saltar niveles
   const item = discFindInCache_(student);
   const currentMax = item ? Number(item.maxLevel || 0) : 0;
 
@@ -2920,17 +2971,16 @@ async function discDoMarkLevel(level) {
       email: profile.email
     });
 
-    // si backend manda lista actualizada
     if (resp && Array.isArray(resp.list)) {
       __discCacheList = resp.list;
-      discRenderReportedList_(__discCacheList);
     } else {
       await discReloadReportedList(false);
     }
 
-    // refrescar seleccionado desde cache nueva
+    // ✅ mantener y refrescar detalle
+    __discView = "detail";
     discUpdateSelectedBox_(student);
-    discRenderReportedList_(__discCacheList);
+    discRenderDetailView_();
 
     if (lvl >= 4) discSetHint_("Nivel 4 registrado. Notificación enviada ✅");
     else discSetHint_("Registrado ✅");
@@ -2942,11 +2992,13 @@ async function discDoMarkLevel(level) {
   }
 }
 
+
 /* ======= Poll para sincronizar entre celulares ======= */
 function discStartPolling_() {
   if (__discPollTimer) return;
 
   __discPollTimer = setInterval(async () => {
+    // solo si hay sesión activa
     const p = loadProfile();
     const admin = isAdminMode();
     if (!p && !admin) return;
@@ -2955,32 +3007,50 @@ function discStartPolling_() {
       const items = await gsDisciplineList(discMonthKey_());
       __discCacheList = items;
 
+      // solo refrescar UI si el modal está abierto
       if (disciplineModal && disciplineModal.hidden === false) {
-        discRenderReportedList_(items);
-        if (__discCurrentStudent) discUpdateSelectedBox_(__discCurrentStudent);
+
+        // ✅ si estoy viendo DETALLE, mantengo el detalle
+        if (__discView === "detail" && __discCurrentStudent) {
+          discUpdateSelectedBox_(__discCurrentStudent);
+          discRenderDetailView_();
+        } 
+        // ✅ si estoy en LISTA, solo refresco la lista
+        else {
+          discRenderReportedList_(items);
+        }
       }
-    } catch {}
-  }, 20000);
+
+    } catch (err) {
+      // polling silencioso (no mostrar errores)
+    }
+  }, 20000); // cada 20 segundos
 }
+
 
 function openDisciplineModal() {
   if (!disciplineModal) return;
   disciplineModal.hidden = false;
   discSetHint_("");
 
-  // reset selección visual al abrir
-  discUpdateSelectedBox_(__discCurrentStudent || "");
-
-  // render cache rápido + refresco real
+  __discView = "list"; // ✅ siempre abre en lista
+  discUpdateSelectedBox_(""); // limpia box seleccionado
   discRenderReportedList_(__discCacheList);
+
   discReloadReportedList(true);
 }
+
 
 function closeDisciplineModal() {
   if (!disciplineModal) return;
   disciplineModal.hidden = true;
+
+  __discView = "list";
+  __discCurrentStudent = "";
   discSetHint_("");
+  discUpdateSelectedBox_("");
 }
+
 
 function discBindUI_() {
   if (btnDiscipline) {
@@ -3800,6 +3870,7 @@ if (isAdminMode()) {
 
 </body>
 </html>
+
 
 
 
