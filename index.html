@@ -859,6 +859,44 @@ body:not(.is-admin) #adminMonthSummary{
 }
 
 
+
+/* ===== Botón trash pro en lista de disciplina ===== */
+.disc-trash{
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,.14);
+  background: rgba(255,255,255,.06);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  flex: 0 0 auto;
+  transition: transform .15s ease, filter .15s ease, background .15s ease, border-color .15s ease;
+}
+
+.disc-trash:hover{
+  filter: brightness(1.08);
+  background: rgba(239,68,68,.10);
+  border-color: rgba(239,68,68,.22);
+}
+
+.disc-trash:active{
+  transform: translateY(1px) scale(.99);
+}
+
+.disc-trash svg{
+  width: 18px;
+  height: 18px;
+  opacity: .92;
+}
+
+/* color del icono (rojo suave) */
+.disc-trash svg path{
+  fill: rgba(255,180,180,.95);
+}
+
+
+
 </style>
 </head>
 
@@ -2918,15 +2956,19 @@ function discRenderReportedList_(items) {
     String(a.student||"").localeCompare(String(b.student||""), "es", { sensitivity:"base" })
   );
 
-  // ✅ LISTA: solo nombres como “títulos”
   discReportedList.innerHTML = sorted.map(it => {
     const student = String(it.student || "").trim();
     if (!student) return "";
 
     const maxLevel = Number(it.maxLevel || 0);
-
-    // punto color según nivel (si no hay nivel, lo dejamos neutro)
     const dotCls = maxLevel ? `lvl-dot lvl-${maxLevel}` : "lvl-dot";
+
+    // icono trash (SVG estilo “Font Awesome”)
+    const trashSvg = `
+      <svg viewBox="0 0 448 512" aria-hidden="true" focusable="false">
+        <path d="M135.2 17.7C140.6 7.1 151.5 0 163.8 0H284.2c12.3 0 23.2 7.1 28.6 17.7L320 32h96c17.7 0 32 14.3 32 32s-14.3 32-32 32h-16l-21.2 339.2C377.2 480.8 348.5 512 312.6 512H135.4c-35.9 0-64.6-31.2-66.2-76.8L48 96H32C14.3 96 0 81.7 0 64s14.3-32 32-32h96l7.2-14.3zM192 64l-3.2 6.4h70.4L256 64h-64zM112 96l19.2 336.5c.2 4.2 2.2 7.5 4.2 7.5h177.2c2 0 4-3.3 4.2-7.5L336 96H112zm64 64c8.8 0 16 7.2 16 16v192c0 8.8-7.2 16-16 16s-16-7.2-16-16V176c0-8.8 7.2-16 16-16zm96 0c8.8 0 16 7.2 16 16v192c0 8.8-7.2 16-16 16s-16-7.2-16-16V176c0-8.8 7.2-16 16-16z"></path>
+      </svg>
+    `;
 
     return `
       <button type="button"
@@ -2936,19 +2978,41 @@ function discRenderReportedList_(items) {
           <span class="${dotCls}"></span>
           <span class="name">${escapeHtml(student)}</span>
         </div>
-        <div class="right muted small">›</div>
+
+        <div class="right" style="gap:10px;">
+          <button type="button"
+                  class="disc-trash"
+                  title="Eliminar estudiante"
+                  aria-label="Eliminar estudiante"
+                  data-del="${escapeHtml(student)}">
+            ${trashSvg}
+          </button>
+          <span class="muted small">›</span>
+        </div>
       </button>
     `;
   }).join("");
 
-  // ✅ click → abrir detalle
+  // ✅ click en item → abrir detalle
   discReportedList.querySelectorAll(".disc-item").forEach(btn => {
     btn.addEventListener("click", () => {
       const s = btn.getAttribute("data-student") || "";
       discOpenDetail_(s);
     });
   });
+
+  // ✅ click en trash → borrar (sin abrir detalle)
+  discReportedList.querySelectorAll("[data-del]").forEach(delBtn => {
+    delBtn.addEventListener("click", async (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+
+      const student = delBtn.getAttribute("data-del") || "";
+      await discDeleteStudent_(student);
+    });
+  });
 }
+
 
 function discOpenDetail_(studentName){
   __discView = "detail";
@@ -3026,6 +3090,21 @@ async function gsDisciplineMark(payload) {
 }
 
 
+async function gsDisciplineDeleteStudent(payload) {
+  const res = await fetch(GS_WEBAPP_URL, {
+    method: "POST",
+    body: JSON.stringify({ action: "discipline_delete_student", ...payload, key: GS_API_KEY })
+  });
+
+  let data = null;
+  try { data = await res.json(); }
+  catch { throw new Error("Respuesta inválida del servidor"); }
+
+  if (!data.ok) throw new Error(data.msg || data.error || "discipline_delete_failed");
+  return data; // { ok:true, msg, list:[...] }
+}
+
+
 async function gsDisciplineList(month) {
   const res = await fetch(GS_WEBAPP_URL, {
     method: "POST",
@@ -3061,6 +3140,54 @@ async function discReloadReportedList(showHint=false) {
     if (showHint) discSetHint_(String(e && e.message ? e.message : e));
   }
 }
+
+async function discDeleteStudent_(studentName){
+  const profile = requireLogin();
+  if (!profile) return;
+
+  const student = normalizeStudent_(studentName);
+  if (!student) return;
+
+  const ok = confirm(`¿Seguro que deseas eliminar a "${student}"?\n\nSe borrarán TODOS sus reportes del mes actual.`);
+  if (!ok) return;
+
+  try {
+    setLoading(true, "Eliminando…", "Borrando reportes del estudiante.");
+
+    const resp = await gsDisciplineDeleteStudent({
+      month: discMonthKey_(),
+      student,
+      teacher: profile.name,
+      email: profile.email,
+      device_id: getDeviceId()
+    });
+
+    // resp debe devolver lista actualizada
+    if (resp && Array.isArray(resp.list)) {
+      __discCacheList = resp.list;
+    } else {
+      await discReloadReportedList(false);
+    }
+
+    // si borraste el que estaba seleccionado, limpia vista
+    if (__discCurrentStudent && normalizeKey(__discCurrentStudent) === normalizeKey(student)) {
+      __discCurrentStudent = "";
+      discUpdateSelectedBox_("");
+      discBackToList_(); // vuelve a lista
+    } else {
+      // si estás en lista, repinta lista
+      if (__discView !== "detail") discRenderReportedList_(__discCacheList);
+    }
+
+    discSetHint_("Estudiante eliminado ✅");
+
+  } catch (e) {
+    discSetHint_(String(e && e.message ? e.message : e));
+  } finally {
+    setLoading(false);
+  }
+}
+
 
 
 async function shareTextNative_(text) {
