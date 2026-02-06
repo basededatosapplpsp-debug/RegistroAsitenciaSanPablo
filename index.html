@@ -3123,38 +3123,37 @@ async function discDoMarkLevel(level) {
 
     let openedWa = false;
 
-    // ✅ Solo cuando realmente llegó a reporte (nivel 4 por primera vez)
+    // ✅ Solo cuando es reporte por primera vez (nivel 4)
     if (resp && resp.ok && resp.justReported && lvl >= 4) {
-      // Mensaje (igual al del servidor, pero aquí lo armamos para pegar)
-      const msg =
-        `Hola profe,\n\n` +
-        `El estudiante "${student}" alcanzó el cuarto llamado de atención por el uso del celular.\n\n` +
-        `Mes: ${discMonthKey_()}\n\n` +
-        `Enviado desde la app.`;
+      const msg = String(resp.wa_msg || "").trim();
 
-      // 1) Abrir el grupo
-      if (typeof WHATSAPP_GROUP_LINK === "string" && WHATSAPP_GROUP_LINK.startsWith("https://chat.whatsapp.com/")) {
+      if (!WHATSAPP_GROUP_LINK || !String(WHATSAPP_GROUP_LINK).startsWith("https://chat.whatsapp.com/")) {
+        alert("⚠️ Falta configurar WHATSAPP_GROUP_LINK (link del grupo).");
+      } else {
+        // 1) Abrir el grupo
         window.open(WHATSAPP_GROUP_LINK, "_blank");
         openedWa = true;
-      } else {
-        alert("⚠️ No hay link de grupo configurado (WHATSAPP_GROUP_LINK).");
       }
 
-      // 2) Copiar el mensaje para pegar en el grupo
-      try {
-        if (navigator.clipboard && navigator.clipboard.writeText) {
-          await navigator.clipboard.writeText(msg);
-          alert("Mensaje copiado ✅ Abre el grupo y pégalo para enviarlo.");
-        } else {
+      // 2) Copiar mensaje (para pegar en el grupo)
+      if (msg) {
+        try {
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            await navigator.clipboard.writeText(msg);
+            alert("Mensaje copiado ✅ Abre el grupo y pégalo para enviarlo.");
+          } else {
+            window.prompt("Copia el mensaje y pégalo en el grupo:", msg);
+          }
+        } catch (e) {
           window.prompt("Copia el mensaje y pégalo en el grupo:", msg);
         }
-      } catch (e) {
-        window.prompt("Copia el mensaje y pégalo en el grupo:", msg);
+      } else {
+        alert("⚠️ No llegó el mensaje desde el servidor (wa_msg).");
       }
     }
 
     if (lvl >= 4) {
-      discSetHint_(openedWa ? "Nivel 4 registrado. Abriendo grupo ✅" : "Nivel 4 registrado ✅");
+      discSetHint_(openedWa ? "Nivel 4 registrado. Grupo abierto ✅" : "Nivel 4 registrado ✅");
     } else {
       discSetHint_("Registrado ✅");
     }
@@ -3165,6 +3164,7 @@ async function discDoMarkLevel(level) {
     setLoading(false);
   }
 }
+
 
 
 
