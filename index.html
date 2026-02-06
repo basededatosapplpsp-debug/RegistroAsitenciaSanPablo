@@ -3063,39 +3063,18 @@ async function discReloadReportedList(showHint=false) {
 
 
 async function shareTextNative_(text) {
-  const t = String(text || "").trim();
-  if (!t) return false;
-
-  // 1) Intentar share nativo
   try {
     if (navigator.share) {
-      await navigator.share({ text: t });
+      await navigator.share({ text: String(text || "") });
       return true;
     }
   } catch (e) {
-    // usuario canceló o el navegador bloqueó
+    // si el usuario cancela, no pasa nada
   }
-
-  // 2) Fallback: copiar al portapapeles
-  try {
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      await navigator.clipboard.writeText(t);
-      alert("Copiado ✅ Ahora pégalo en WhatsApp y envíalo a los contactos que quieras.");
-      return true;
-    }
-  } catch (e) {}
-
-  // 3) Último fallback: prompt para copiar manual
-  try {
-    window.prompt("Copia el mensaje y pégalo en WhatsApp:", t);
-    return true;
-  } catch (e) {}
-
   return false;
 }
 
-
-
+const WHATSAPP_GROUP_LINK = "https://chat.whatsapp.com/EztQUrHgqC6L7di7rvaNwu?mode=gi_t";
 
 async function discDoMarkLevel(level) {
   const profile = requireLogin();
@@ -3142,57 +3121,40 @@ async function discDoMarkLevel(level) {
     discUpdateSelectedBox_(student);
     discRenderDetailView_();
 
-    // ✅ WhatsApp: abrir 1 chat por número (multi-open suele bloquearse)
-    const waUrls =
-      (resp && Array.isArray(resp.wa_urls) && resp.wa_urls.length) ? resp.wa_urls :
-      (resp && resp.wa_url) ? [resp.wa_url] :
-      [];
-
     let openedWa = false;
 
-    if (resp && resp.ok && resp.justReported && waUrls.length) {
-      // Abre el primero (lo más confiable)
-      window.open(waUrls[0], "_blank");
-      openedWa = true;
+    // ✅ Solo cuando realmente llegó a reporte (nivel 4 por primera vez)
+    if (resp && resp.ok && resp.justReported && lvl >= 4) {
+      // Mensaje (igual al del servidor, pero aquí lo armamos para pegar)
+      const msg =
+        `Hola profe,\n\n` +
+        `El estudiante "${student}" alcanzó el cuarto llamado de atención por el uso del celular.\n\n` +
+        `Mes: ${discMonthKey_()}\n\n` +
+        `Enviado desde la app.`;
 
-      // Si hay más, pedir confirmación para abrir cada uno (evita bloqueo de popups)
-      for (let i = 1; i < waUrls.length; i++) {
-        const ok = confirm(`Hay ${waUrls.length} destinatarios.\n\n¿Abrir el chat #${i + 1} en WhatsApp?`);
-        if (!ok) break;
-        window.open(waUrls[i], "_blank");
+      // 1) Abrir el grupo
+      if (typeof WHATSAPP_GROUP_LINK === "string" && WHATSAPP_GROUP_LINK.startsWith("https://chat.whatsapp.com/")) {
+        window.open(WHATSAPP_GROUP_LINK, "_blank");
+        openedWa = true;
+      } else {
+        alert("⚠️ No hay link de grupo configurado (WHATSAPP_GROUP_LINK).");
       }
 
-      // ✅ OPCIÓN: abrir menú compartir (para que el usuario seleccione destinatarios)
-      if (lvl >= 4) {
-        const wantShare = confirm("¿Quieres abrir el menú de compartir para enviarlo a varios contactos?");
-        if (wantShare) {
-          // Usa el mensaje que ya viene en el link (lo extraemos) o uno genérico
-          const shareMsg =
-            `Hola profe,\n\n` +
-            `El estudiante "${student}" alcanzó el cuarto llamado de atención por el uso del celular.\n\n` +
-            `Enviado desde la app.`;
-
-          await shareTextNative_(shareMsg);
+      // 2) Copiar el mensaje para pegar en el grupo
+      try {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          await navigator.clipboard.writeText(msg);
+          alert("Mensaje copiado ✅ Abre el grupo y pégalo para enviarlo.");
+        } else {
+          window.prompt("Copia el mensaje y pégalo en el grupo:", msg);
         }
-      }
-
-    } else if (resp && resp.ok && resp.justReported && lvl >= 4) {
-      alert("⚠️ Llegó a NIVEL 4, pero no hay números WhatsApp destino configurados.");
-
-      // ✅ Incluso si no hay números, igual puedes compartir el texto
-      const wantShare = confirm("¿Quieres abrir el menú de compartir para enviar el mensaje manualmente?");
-      if (wantShare) {
-        const shareMsg =
-          `Hola profe,\n\n` +
-          `El estudiante "${student}" alcanzó el cuarto llamado de atención por el uso del celular.\n\n` +
-          `Enviado desde la app.`;
-
-        await shareTextNative_(shareMsg);
+      } catch (e) {
+        window.prompt("Copia el mensaje y pégalo en el grupo:", msg);
       }
     }
 
     if (lvl >= 4) {
-      discSetHint_(openedWa ? "Nivel 4 registrado. Notificación lista ✅" : "Nivel 4 registrado ✅");
+      discSetHint_(openedWa ? "Nivel 4 registrado. Abriendo grupo ✅" : "Nivel 4 registrado ✅");
     } else {
       discSetHint_("Registrado ✅");
     }
@@ -3203,7 +3165,6 @@ async function discDoMarkLevel(level) {
     setLoading(false);
   }
 }
-
 
 
 
