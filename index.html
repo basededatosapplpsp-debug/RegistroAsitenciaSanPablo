@@ -3061,6 +3061,21 @@ async function discReloadReportedList(showHint=false) {
   }
 }
 
+
+async function shareTextNative_(text) {
+  try {
+    if (navigator.share) {
+      await navigator.share({ text: String(text || "") });
+      return true;
+    }
+  } catch (e) {
+    // si el usuario cancela, no pasa nada
+  }
+  return false;
+}
+
+
+
 async function discDoMarkLevel(level) {
   const profile = requireLogin();
   if (!profile) return;
@@ -3106,7 +3121,7 @@ async function discDoMarkLevel(level) {
     discUpdateSelectedBox_(student);
     discRenderDetailView_();
 
-    // ✅ WhatsApp: abrir 1 chat por número (el navegador suele bloquear múltiples opens automáticos)
+    // ✅ WhatsApp: abrir 1 chat por número (multi-open suele bloquearse)
     const waUrls =
       (resp && Array.isArray(resp.wa_urls) && resp.wa_urls.length) ? resp.wa_urls :
       (resp && resp.wa_url) ? [resp.wa_url] :
@@ -3115,7 +3130,7 @@ async function discDoMarkLevel(level) {
     let openedWa = false;
 
     if (resp && resp.ok && resp.justReported && waUrls.length) {
-      // Abre el primero
+      // Abre el primero (lo más confiable)
       window.open(waUrls[0], "_blank");
       openedWa = true;
 
