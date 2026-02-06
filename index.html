@@ -3560,12 +3560,15 @@ function discBindUI_() {
   if (btnDiscBack) btnDiscBack.addEventListener("click", discBackToList_);
 
   // botones 1..4
-  document.querySelectorAll(".disc-level").forEach(btn => {
+if (disciplineModal) {
+  disciplineModal.querySelectorAll(".disc-level").forEach(btn => {
     btn.addEventListener("click", () => {
       const lvl = Number(btn.getAttribute("data-level") || 0);
       discDoMarkLevel(lvl);
     });
   });
+}
+
 
   // ✅ escribir estudiante manualmente (FIX: NO borrar espacios mientras escribe)
   if (discStudentEl) {
@@ -4985,11 +4988,44 @@ if (isAdminMode()) {
 
 
 
+// ✅ Arranque seguro (si hay un error arriba, esto te ayuda a detectarlo)
+window.addEventListener("error", (e) => {
+  console.error("❌ Error JS:", e.message, e.filename, e.lineno);
+});
+
+// ✅ Inicialización segura cuando el DOM ya está listo
+window.addEventListener("DOMContentLoaded", () => {
+  console.log("✅ DOM listo");
+
+  // Re-buscar por si algo cambió
+  const _btnPiercing = document.getElementById("btnPiercing");
+  const _piercingModal = document.getElementById("piercingModal");
+
+  console.log("btnPiercing:", _btnPiercing);
+  console.log("piercingModal:", _piercingModal);
+
+  if (_btnPiercing) {
+    _btnPiercing.addEventListener("click", () => {
+      console.log("✅ Click en Piercing");
+      setMenuOpen(false);
+      openPiercingModal();
+    });
+  } else {
+    console.warn("⚠️ No se encontró #btnPiercing");
+  }
+
+  // Bind normales
+  discBindUI_();
+  discStartPolling_();
+  piercBindUI_();
+  piercStartPolling_();
+});
 
 </script>
 
 </body>
 </html>
+
 
 
 
