@@ -896,6 +896,44 @@ body:not(.is-admin) #adminMonthSummary{
 }
 
 
+/* =========================================================
+   ✅ FIX: Nombre con "..." SIN mover/tapar el bote (Reportados)
+   ========================================================= */
+
+.disc-item{
+  /* ya lo tienes, esto asegura layout correcto en todos */
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+}
+
+.disc-item .left{
+  display:flex;
+  align-items:center;
+  gap:12px;
+
+  /* ✅ CLAVE: permite que el texto se encoja dentro del flex */
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.disc-item .name{
+  /* ✅ CLAVE: elipsis real dentro de flex */
+  min-width: 0;
+  flex: 1 1 auto;
+
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.disc-item .right{
+  /* ✅ el bote nunca se encoge ni se mueve */
+  flex: 0 0 auto;
+}
+
+
 
 </style>
 </head>
@@ -2944,6 +2982,7 @@ function discRenderWho_(whoArr) {
 // ✅ LISTA “Reportados del mes” = solo nombres ordenados, click selecciona
 function discRenderReportedList_(items) {
   if (!discReportedList) return;
+
   const list = Array.isArray(items) ? items : [];
 
   if (!list.length) {
@@ -2952,57 +2991,80 @@ function discRenderReportedList_(items) {
   }
 
   // ordenar por nombre
-  const sorted = [...list].sort((a,b) =>
-    String(a.student||"").localeCompare(String(b.student||""), "es", { sensitivity:"base" })
+  const sorted = [...list].sort((a, b) =>
+    String(a.student || "").localeCompare(String(b.student || ""), "es", { sensitivity: "base" })
   );
 
-  discReportedList.innerHTML = sorted.map(it => {
-    const student = String(it.student || "").trim();
-    if (!student) return "";
+  // icono trash (SVG)
+  const trashSvg = `
+    <svg viewBox="0 0 448 512" aria-hidden="true" focusable="false">
+      <path d="M135.2 17.7C140.6 7.1 151.5 0 163.8 0H284.2c12.3 0 23.2 7.1 28.6 17.7L320 32h96c17.7 0 32 14.3 32 32s-14.3 32-32 32h-16l-21.2 339.2C377.2 480.8 348.5 512 312.6 512H135.4c-35.9 0-64.6-31.2-66.2-76.8L48 96H32C14.3 96 0 81.7 0 64s14.3-32 32-32h96l7.2-14.3zM192 64l-3.2 6.4h70.4L256 64h-64zM112 96l19.2 336.5c.2 4.2 2.2 7.5 4.2 7.5h177.2c2 0 4-3.3 4.2-7.5L336 96H112zm64 64c8.8 0 16 7.2 16 16v192c0 8.8-7.2 16-16 16s-16-7.2-16-16V176c0-8.8 7.2-16 16-16zm96 0c8.8 0 16 7.2 16 16v192c0 8.8-7.2 16-16 16s-16-7.2-16-16V176c0-8.8 7.2-16 16-16z"></path>
+    </svg>
+  `;
 
-    const maxLevel = Number(it.maxLevel || 0);
-    const dotCls = maxLevel ? `lvl-dot lvl-${maxLevel}` : "lvl-dot";
+  const selectedKey = normalizeKey(__discCurrentStudent || "");
 
-    // icono trash (SVG estilo “Font Awesome”)
-    const trashSvg = `
-      <svg viewBox="0 0 448 512" aria-hidden="true" focusable="false">
-        <path d="M135.2 17.7C140.6 7.1 151.5 0 163.8 0H284.2c12.3 0 23.2 7.1 28.6 17.7L320 32h96c17.7 0 32 14.3 32 32s-14.3 32-32 32h-16l-21.2 339.2C377.2 480.8 348.5 512 312.6 512H135.4c-35.9 0-64.6-31.2-66.2-76.8L48 96H32C14.3 96 0 81.7 0 64s14.3-32 32-32h96l7.2-14.3zM192 64l-3.2 6.4h70.4L256 64h-64zM112 96l19.2 336.5c.2 4.2 2.2 7.5 4.2 7.5h177.2c2 0 4-3.3 4.2-7.5L336 96H112zm64 64c8.8 0 16 7.2 16 16v192c0 8.8-7.2 16-16 16s-16-7.2-16-16V176c0-8.8 7.2-16 16-16zm96 0c8.8 0 16 7.2 16 16v192c0 8.8-7.2 16-16 16s-16-7.2-16-16V176c0-8.8 7.2-16 16-16z"></path>
-      </svg>
-    `;
+  // ✅ OJO: ahora el contenedor NO es button, es div clickable
+  discReportedList.innerHTML = sorted
+    .map((it) => {
+      const student = String(it.student || "").trim();
+      if (!student) return "";
 
-    return `
-      <button type="button"
-              class="disc-item"
-              data-student="${escapeHtml(student)}">
-        <div class="left">
-          <span class="${dotCls}"></span>
-          <span class="name">${escapeHtml(student)}</span>
+      const maxLevel = Number(it.maxLevel || 0);
+      const dotCls = maxLevel ? `lvl-dot lvl-${maxLevel}` : "lvl-dot";
+
+      const isSelected = selectedKey && normalizeKey(student) === selectedKey;
+      const selectedCls = isSelected ? " selected" : "";
+
+      return `
+        <div class="disc-item${selectedCls}"
+             role="button"
+             tabindex="0"
+             data-student="${escapeHtml(student)}">
+
+          <div class="left">
+            <span class="${dotCls}"></span>
+            <span class="name">${escapeHtml(student)}</span>
+          </div>
+
+          <div class="right" style="gap:10px;">
+            <button type="button"
+                    class="disc-trash"
+                    title="Eliminar estudiante"
+                    aria-label="Eliminar estudiante"
+                    data-del="${escapeHtml(student)}">
+              ${trashSvg}
+            </button>
+            <span class="muted small" aria-hidden="true">›</span>
+          </div>
         </div>
+      `;
+    })
+    .join("");
 
-        <div class="right" style="gap:10px;">
-          <button type="button"
-                  class="disc-trash"
-                  title="Eliminar estudiante"
-                  aria-label="Eliminar estudiante"
-                  data-del="${escapeHtml(student)}">
-            ${trashSvg}
-          </button>
-          <span class="muted small">›</span>
-        </div>
-      </button>
-    `;
-  }).join("");
-
-  // ✅ click en item → abrir detalle
-  discReportedList.querySelectorAll(".disc-item").forEach(btn => {
-    btn.addEventListener("click", () => {
-      const s = btn.getAttribute("data-student") || "";
+  // ✅ Abrir detalle (click + enter/space)
+  discReportedList.querySelectorAll(".disc-item[data-student]").forEach((row) => {
+    const open = () => {
+      const s = row.getAttribute("data-student") || "";
       discOpenDetail_(s);
+    };
+
+    row.addEventListener("click", (e) => {
+      // si el click viene del trash, no abrir
+      if (e.target && e.target.closest && e.target.closest("[data-del]")) return;
+      open();
+    });
+
+    row.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        open();
+      }
     });
   });
 
-  // ✅ click en trash → borrar (sin abrir detalle)
-  discReportedList.querySelectorAll("[data-del]").forEach(delBtn => {
+  // ✅ Trash: borrar SIN abrir detalle
+  discReportedList.querySelectorAll("[data-del]").forEach((delBtn) => {
     delBtn.addEventListener("click", async (e) => {
       e.preventDefault();
       e.stopPropagation();
@@ -3012,6 +3074,7 @@ function discRenderReportedList_(items) {
     });
   });
 }
+
 
 
 function discOpenDetail_(studentName){
