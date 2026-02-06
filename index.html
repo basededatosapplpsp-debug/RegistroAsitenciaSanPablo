@@ -3227,11 +3227,18 @@ async function discReloadReportedList(showHint=false) {
 
     __discCacheList = items;
 
+    // ✅ SI hay seleccionado y NO estás escribiendo, refresca el box SIEMPRE
+    // (esto arregla: punto de arriba + cards 1..4 + who)
+    const isTyping = (discStudentEl && document.activeElement === discStudentEl);
+    if (__discCurrentStudent && !isTyping) {
+      discUpdateSelectedBox_(__discCurrentStudent);
+    }
+
     // ✅ si estoy en detalle, refresco detalle
     if (__discView === "detail" && __discCurrentStudent) {
-      discUpdateSelectedBox_(__discCurrentStudent);
       discRenderDetailView_();
     } else {
+      // ✅ en lista, repinta lista (para que cambie el punto/orden)
       discRenderReportedList_(items);
     }
 
@@ -3240,6 +3247,7 @@ async function discReloadReportedList(showHint=false) {
     if (showHint) discSetHint_(String(e && e.message ? e.message : e));
   }
 }
+
 
 async function discDeleteStudent_(studentName){
   const profile = requireLogin();
@@ -3408,23 +3416,30 @@ function discStartPolling_() {
       const items = await gsDisciplineList(discMonthKey_());
       __discCacheList = items;
 
-      // ✅ SI hay estudiante seleccionado, NO re-renderizamos la lista
-      // (eso es lo que te "saca" o te mueve la vista)
-    // ✅ Si estoy en detalle, no tocar la lista, solo refrescar el seleccionado
-if (__discView === "detail" && __discCurrentStudent) {
-  discUpdateSelectedBox_(__discCurrentStudent);
-  return;
-}
+      // ✅ Si el usuario está escribiendo en el input, NO pisar su texto
+      const isTyping = (discStudentEl && document.activeElement === discStudentEl);
 
-// ✅ En lista, siempre repintar lista (aunque haya seleccionado)
-discRenderReportedList_(items);
+      // ✅ SI hay estudiante seleccionado (aunque estés en LISTA),
+      // refresca “Seleccionado” (punto arriba + niveles + who)
+      if (__discCurrentStudent && !isTyping) {
+        discUpdateSelectedBox_(__discCurrentStudent);
+      }
 
-      // sin hints, sin mensajes
+      // ✅ Si estoy en detalle: refresco la tarjeta detalle
+      if (__discView === "detail") {
+        if (__discCurrentStudent) discRenderDetailView_();
+        return;
+      }
+
+      // ✅ En lista: repintar lista (para que cambie el punto/orden)
+      discRenderReportedList_(items);
+
     } catch {
       // silencioso
     }
-  }, 20000);
+  }, 15000);
 }
+
 
 
 
@@ -4423,6 +4438,7 @@ if (isAdminMode()) {
 
 </body>
 </html>
+
 
 
 
