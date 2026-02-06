@@ -3332,10 +3332,15 @@ async function discDoMarkLevel(level) {
       await discReloadReportedList(false);
     }
 
-    // ✅ mantener y refrescar detalle
-    __discView = "detail";
-    discUpdateSelectedBox_(student);
-    discRenderDetailView_();
+  // ✅ actualizar seleccionado (arriba) + volver a lista actualizada
+discUpdateSelectedBox_(student);
+
+__discView = "list";
+discRenderReportedList_(__discCacheList);
+
+// ocultar Atrás porque estamos en lista
+if (btnDiscBack) btnDiscBack.hidden = true;
+
 
     let openedWa = false;
 
@@ -3393,13 +3398,15 @@ function discStartPolling_() {
 
       // ✅ SI hay estudiante seleccionado, NO re-renderizamos la lista
       // (eso es lo que te "saca" o te mueve la vista)
-      if (__discCurrentStudent) {
-        discUpdateSelectedBox_(__discCurrentStudent); // refresca nivel/who/meta sin brincar
-        return;
-      }
+    // ✅ Si estoy en detalle, no tocar la lista, solo refrescar el seleccionado
+if (__discView === "detail" && __discCurrentStudent) {
+  discUpdateSelectedBox_(__discCurrentStudent);
+  return;
+}
 
-      // ✅ Solo si NO hay seleccionado, refrescamos la lista visible
-      discRenderReportedList_(items);
+// ✅ En lista, siempre repintar lista (aunque haya seleccionado)
+discRenderReportedList_(items);
+
       // sin hints, sin mensajes
     } catch {
       // silencioso
@@ -4404,6 +4411,7 @@ if (isAdminMode()) {
 
 </body>
 </html>
+
 
 
 
