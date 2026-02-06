@@ -3106,9 +3106,8 @@ async function discDoMarkLevel(level) {
     discUpdateSelectedBox_(student);
     discRenderDetailView_();
 
-    // ✅ Abrir WhatsApp automático si el server lo devuelve
+    // ✅ WhatsApp: abrir 1 chat por número (el navegador suele bloquear múltiples opens automáticos)
     const waUrls =
-      (resp && resp.whatsapp && Array.isArray(resp.whatsapp.urls) && resp.whatsapp.urls.length) ? resp.whatsapp.urls :
       (resp && Array.isArray(resp.wa_urls) && resp.wa_urls.length) ? resp.wa_urls :
       (resp && resp.wa_url) ? [resp.wa_url] :
       [];
@@ -3116,9 +3115,17 @@ async function discDoMarkLevel(level) {
     let openedWa = false;
 
     if (resp && resp.ok && resp.justReported && waUrls.length) {
-      // Abre un chat por destinatario (uno por pestaña)
-      waUrls.forEach((u, i) => setTimeout(() => window.open(u, "_blank"), 200 * i));
+      // Abre el primero
+      window.open(waUrls[0], "_blank");
       openedWa = true;
+
+      // Si hay más, pedir confirmación para abrir cada uno (evita bloqueo de popups)
+      for (let i = 1; i < waUrls.length; i++) {
+        const ok = confirm(`Hay ${waUrls.length} destinatarios.\n\n¿Abrir el chat #${i + 1} en WhatsApp?`);
+        if (!ok) break;
+        window.open(waUrls[i], "_blank");
+      }
+
     } else if (resp && resp.ok && resp.justReported && lvl >= 4) {
       alert("⚠️ Llegó a NIVEL 4, pero no hay números WhatsApp destino configurados.");
     }
