@@ -3124,33 +3124,17 @@ async function discDoMarkLevel(level) {
     let openedWa = false;
 
     // ✅ Solo cuando es reporte por primera vez (nivel 4)
-    if (resp && resp.ok && resp.justReported && lvl >= 4) {
-      const msg = String(resp.wa_msg || "").trim();
+   if (resp && resp.ok && resp.justReported && lvl >= 4) {
+  const waUrl = String(resp.wa_url || "").trim();
 
-      if (!WHATSAPP_GROUP_LINK || !String(WHATSAPP_GROUP_LINK).startsWith("https://chat.whatsapp.com/")) {
-        alert("⚠️ Falta configurar WHATSAPP_GROUP_LINK (link del grupo).");
-      } else {
-        // 1) Abrir el grupo
-        window.open(WHATSAPP_GROUP_LINK, "_blank");
-        openedWa = true;
-      }
+  if (waUrl) {
+    window.open(waUrl, "_blank"); // abre chat de la coordinadora con el mensaje listo
+    openedWa = true;
+  } else {
+    alert("⚠️ No llegó el link de WhatsApp desde el servidor (wa_url).");
+  }
+}
 
-      // 2) Copiar mensaje (para pegar en el grupo)
-      if (msg) {
-        try {
-          if (navigator.clipboard && navigator.clipboard.writeText) {
-            await navigator.clipboard.writeText(msg);
-            alert("Mensaje copiado ✅ Abre el grupo y pégalo para enviarlo.");
-          } else {
-            window.prompt("Copia el mensaje y pégalo en el grupo:", msg);
-          }
-        } catch (e) {
-          window.prompt("Copia el mensaje y pégalo en el grupo:", msg);
-        }
-      } else {
-        alert("⚠️ No llegó el mensaje desde el servidor (wa_msg).");
-      }
-    }
 
     if (lvl >= 4) {
       discSetHint_(openedWa ? "Nivel 4 registrado. Grupo abierto ✅" : "Nivel 4 registrado ✅");
