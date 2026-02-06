@@ -3107,22 +3107,24 @@ async function discDoMarkLevel(level) {
     discRenderDetailView_();
 
     // ✅ Abrir WhatsApp automático si el server lo devuelve
-  const waUrls =
-  (resp && resp.whatsapp && Array.isArray(resp.whatsapp.urls) && resp.whatsapp.urls.length) ? resp.whatsapp.urls :
-  (resp && Array.isArray(resp.wa_urls) && resp.wa_urls.length) ? resp.wa_urls :
-  (resp && resp.wa_url) ? [resp.wa_url] :
-  [];
+    const waUrls =
+      (resp && resp.whatsapp && Array.isArray(resp.whatsapp.urls) && resp.whatsapp.urls.length) ? resp.whatsapp.urls :
+      (resp && Array.isArray(resp.wa_urls) && resp.wa_urls.length) ? resp.wa_urls :
+      (resp && resp.wa_url) ? [resp.wa_url] :
+      [];
 
-if (resp && resp.ok && resp.justReported && waUrls.length) {
-  // Abre un chat por destinatario (uno por pestaña)
-  waUrls.forEach((u, i) => setTimeout(() => window.open(u, "_blank"), 200 * i));
-} else if (resp && resp.ok && resp.justReported && lvl >= 4) {
-  alert("⚠️ Llegó a NIVEL 4, pero no hay número WhatsApp configurado. Inicia sesión y configúralo.");
-}
+    let openedWa = false;
 
+    if (resp && resp.ok && resp.justReported && waUrls.length) {
+      // Abre un chat por destinatario (uno por pestaña)
+      waUrls.forEach((u, i) => setTimeout(() => window.open(u, "_blank"), 200 * i));
+      openedWa = true;
+    } else if (resp && resp.ok && resp.justReported && lvl >= 4) {
+      alert("⚠️ Llegó a NIVEL 4, pero no hay números WhatsApp destino configurados.");
+    }
 
     if (lvl >= 4) {
-      discSetHint_(openedWa ? "Nivel 4 registrado. Notificación enviada ✅" : "Nivel 4 registrado ✅");
+      discSetHint_(openedWa ? "Nivel 4 registrado. Notificación lista ✅" : "Nivel 4 registrado ✅");
     } else {
       discSetHint_("Registrado ✅");
     }
@@ -3133,6 +3135,7 @@ if (resp && resp.ok && resp.justReported && waUrls.length) {
     setLoading(false);
   }
 }
+
 
 
 
