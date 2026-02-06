@@ -3015,10 +3015,22 @@ function discRenderReportedList_(items) {
     return;
   }
 
-  // ordenar por nombre
-  const sorted = [...list].sort((a, b) =>
-    String(a.student || "").localeCompare(String(b.student || ""), "es", { sensitivity: "base" })
-  );
+// ✅ ordenar por más reciente (arriba) → más antiguo (abajo)
+const sorted = [...list].sort((a, b) => {
+  const ta = Date.parse(a.lastIso || a.updated_at || a.updatedAt || a.ts || a.lastAt || "");
+  const tb = Date.parse(b.lastIso || b.updated_at || b.updatedAt || b.ts || b.lastAt || "");
+
+  // si ambos tienen fecha válida: más reciente primero
+  if (!isNaN(ta) && !isNaN(tb)) return tb - ta;
+
+  // si solo uno tiene fecha válida: el que tiene fecha va arriba
+  if (!isNaN(ta) && isNaN(tb)) return -1;
+  if (isNaN(ta) && !isNaN(tb)) return 1;
+
+  // fallback: por nombre (estable)
+  return String(a.student || "").localeCompare(String(b.student || ""), "es", { sensitivity: "base" });
+});
+
 
   // icono trash (SVG)
   const trashSvg = `
@@ -4411,6 +4423,7 @@ if (isAdminMode()) {
 
 </body>
 </html>
+
 
 
 
