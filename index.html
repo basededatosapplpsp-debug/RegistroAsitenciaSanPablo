@@ -3519,20 +3519,22 @@ function discStartPolling_() {
 function openDisciplineModal() {
   if (!disciplineModal) return;
 
+  // 🔥 Cerrar piercing si está abierto
+  if (piercingModal) piercingModal.hidden = true;
+
   disciplineModal.hidden = false;
   discSetHint_("");
 
-  __discView = "list";               // ✅ siempre abre en lista
-  __discCurrentStudent = "";         // ✅ no debe quedar “pegado” el último
-  discUpdateSelectedBox_("");        // limpia box seleccionado
+  __discView = "list";
+  __discCurrentStudent = "";
+  discUpdateSelectedBox_("");
   discRenderReportedList_(__discCacheList);
 
-  // ✅ ocultar botón Atrás al abrir
   if (typeof btnDiscBack !== "undefined" && btnDiscBack) btnDiscBack.hidden = true;
 
-  // si quieres que muestre el “Lista sincronizada ✅” al abrir:
   discReloadReportedList(true);
 }
+
 
 function closeDisciplineModal() {
   if (!disciplineModal) return;
@@ -4014,6 +4016,9 @@ function piercStartPolling_() {
 function openPiercingModal() {
   if (!piercingModal) return;
 
+  // 🔥 Cerrar disciplina si está abierto
+  if (disciplineModal) disciplineModal.hidden = true;
+
   piercingModal.hidden = false;
   piercSetHint_("");
   __piercView = "list";
@@ -4024,6 +4029,7 @@ function openPiercingModal() {
 
   piercReloadReportedList(true);
 }
+
 
 function closePiercingModal() {
   if (!piercingModal) return;
@@ -4997,7 +5003,22 @@ window.addEventListener("error", (e) => {
 window.addEventListener("DOMContentLoaded", () => {
   console.log("✅ DOM listo");
 
+  // Re-buscar por si algo cambió
+  const _btnPiercing = document.getElementById("btnPiercing");
+  const _piercingModal = document.getElementById("piercingModal");
 
+  console.log("btnPiercing:", _btnPiercing);
+  console.log("piercingModal:", _piercingModal);
+
+  if (_btnPiercing) {
+    _btnPiercing.addEventListener("click", () => {
+      console.log("✅ Click en Piercing");
+      setMenuOpen(false);
+      openPiercingModal();
+    });
+  } else {
+    console.warn("⚠️ No se encontró #btnPiercing");
+  }
 
   // Bind normales
   discBindUI_();
