@@ -4964,7 +4964,11 @@ btnExport.addEventListener("click", exportCSV);
 refreshFromSheet({ useCache: true, silent: true });
 setStatus("warn", "Listo", "Para registrar, activa ubicación.");
 
-
+  // DISCIPLINA: bind + polling para sincronizar entre celulares
+discBindUI_();
+discStartPolling_();
+  piercBindUI_();
+piercStartPolling_();
 
 
 
@@ -4993,22 +4997,7 @@ window.addEventListener("error", (e) => {
 window.addEventListener("DOMContentLoaded", () => {
   console.log("✅ DOM listo");
 
-  // Re-buscar por si algo cambió
-  const _btnPiercing = document.getElementById("btnPiercing");
-  const _piercingModal = document.getElementById("piercingModal");
 
-  console.log("btnPiercing:", _btnPiercing);
-  console.log("piercingModal:", _piercingModal);
-
-  if (_btnPiercing) {
-    _btnPiercing.addEventListener("click", () => {
-      console.log("✅ Click en Piercing");
-      setMenuOpen(false);
-      openPiercingModal();
-    });
-  } else {
-    console.warn("⚠️ No se encontró #btnPiercing");
-  }
 
   // Bind normales
   discBindUI_();
@@ -5021,8 +5010,6 @@ window.addEventListener("DOMContentLoaded", () => {
 
 </body>
 </html>
-
-
 
 
 
