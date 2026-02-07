@@ -4961,43 +4961,43 @@ if ("serviceWorker" in navigator) {
 // ======= EVENTOS =======
 btnEntrada.addEventListener("click", () => register("ENTRADA"));
 btnSalida.addEventListener("click",  () => register("SALIDA"));
-
 btnExport.addEventListener("click", exportCSV);
 
-
+// 🔥 Bind directo y seguro del botón Piercing (UNA sola vez)
+if (btnPiercing) {
+  btnPiercing.addEventListener("click", () => {
+    setMenuOpen(false);
+    openPiercingModal();
+  });
+}
 
 // Inicial: rápido (cache) + refresh silencioso
 refreshFromSheet({ useCache: true, silent: true });
 setStatus("warn", "Listo", "Para registrar, activa ubicación.");
 
-  // DISCIPLINA: bind + polling para sincronizar entre celulares
+// DISCIPLINA + PIERCING (bind + polling)
 discBindUI_();
 discStartPolling_();
-  piercBindUI_();
+piercBindUI_();
 piercStartPolling_();
-
-
 
 document.body.classList.toggle("is-admin", isAdminMode());
 
-
 // ✅ Mostrar login al abrir (si no hay perfil guardado)
 if (isAdminMode()) {
-  setAdminMode(true); // aplica UI admin (cierra modal y pone ADMINISTRADOR)
+  setAdminMode(true);
 } else {
-  initAdminRecordsPanelUI(); // ✅ fuerza ocultar combos + resumen si NO es admin
+  initAdminRecordsPanelUI();
   const _p = requireLogin();
   if (_p) applySessionUI(_p);
   else applySessionUI(null);
 }
 
-
-
-
-// ✅ Arranque seguro (si hay un error arriba, esto te ayuda a detectarlo)
+// ✅ Arranque seguro
 window.addEventListener("error", (e) => {
   console.error("❌ Error JS:", e.message, e.filename, e.lineno);
 });
+
 
 // ✅ Inicialización segura cuando el DOM ya está listo
 window.addEventListener("DOMContentLoaded", () => {
