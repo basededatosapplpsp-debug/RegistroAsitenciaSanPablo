@@ -959,87 +959,6 @@ body:not(.is-admin) #adminMonthSummary{
   text-overflow: ellipsis;
 }
 
-/* ✅ Modales SIEMPRE encima del menú */
-.modal-backdrop{ z-index: 20000; }
-
-/* opcional: si quieres priorizar uno sobre otro */
-#disciplineModal{ z-index: 20000; }
-#piercingModal{ z-index: 20001; }
-#loginModal{ z-index: 30000; }
-#appLoader{ z-index: 40000; }
-
-/* ===== FIX DEFINITIVO MODALES ===== */
-.modal-backdrop {
-  position: fixed;
-  inset: 0;              /* top:0 right:0 bottom:0 left:0 */
-  width: 100vw;
-  height: 100vh;
-
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  background: rgba(0,0,0,.45);
-}
-/* ===== FIX DEFINITIVO PIERCING ===== */
-#piercingModal .modal-card {
-  width: min(92vw, 520px);
-  min-height: 200px;        /* 🔥 clave */
-  max-height: 90vh;
-
-  background: #fff;
-  border-radius: 14px;
-  box-shadow: 0 10px 40px rgba(0,0,0,.35);
-
-  display: flex;
-  flex-direction: column;
-}
-
-/* ===== FIX PIERCING: asegurar que se vea SI o SI ===== */
-#piercingModal{
-  z-index: 10050;              /* por encima del menú (10000) */
-}
-
-#piercingModal:not([hidden]){
-  display: flex !important;    /* por si algo lo pisa */
-}
-
-#piercingModal .modal-card{
-  width: min(720px, 100%) !important;
-  min-height: 260px;           /* evita 0x0 */
-  max-height: calc(100dvh - 24px);
-  overflow: auto;
-
-  /* por si alguna regla rara lo deja transparente */
-  background: #0b1220;
-}
-
-   /* ===== FIX DEFINITIVO: MODAL PIERCING ===== */
-#piercingModal {
-  position: fixed;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 20000;
-}
-
-/* 🔥 ESTO ES LO CLAVE */
-#piercingModal .modal-card {
-  display: flex !important;     /* pisa display: contents */
-  flex-direction: column;
-
-  width: min(720px, 92vw);
-  min-height: 260px;
-  max-height: 90vh;
-
-  background: #0b1220;
-  border-radius: 16px;
-  box-shadow: 0 10px 40px rgba(0,0,0,.4);
-
-  overflow-y: auto;
-}
-
 
 </style>
 </head>
@@ -3629,19 +3548,12 @@ function closeDisciplineModal() {
   if (typeof btnDiscBack !== "undefined" && btnDiscBack) btnDiscBack.hidden = true;
 }
 function discBindUI_() {
-if (btnDiscipline) {
-  btnDiscipline.addEventListener("click", () => {
-    console.log("✅ Click: Llamado de atención");
-    setMenuOpen(false);
-
-    // ✅ aseguro exclusividad
-    closePiercingModal();
-
-    openDisciplineModal();
-    requestAnimationFrame(validateModalExclusivity_);
-  });
-}
-
+  if (btnDiscipline) {
+    btnDiscipline.addEventListener("click", () => {
+      setMenuOpen(false);
+      openDisciplineModal();
+    });
+  }
 
   if (btnDiscClose) btnDiscClose.addEventListener("click", closeDisciplineModal);
   if (btnDiscReload) btnDiscReload.addEventListener("click", () => discReloadReportedList(true));
@@ -4100,20 +4012,23 @@ function piercStartPolling_() {
 }
 
 function openPiercingModal() {
-  if (!piercingModal) return;
+  const modal = document.getElementById("piercingModal");
+  if (!modal) return;
 
-  // ✅ Cierra el otro modal para evitar stacking raro
+  // 🔥 FIX: si está anidado dentro de disciplineModal, sácalo al <body>
+  if (modal.parentElement !== document.body) {
+    document.body.appendChild(modal);
+    console.warn("✅ PiercingModal movido al <body> (estaba anidado).");
+  }
+
+  // Cierra disciplina y menú
   if (disciplineModal) disciplineModal.hidden = true;
-
-  // ✅ Cierra menú
   setMenuOpen(false);
 
-  // ✅ Fuerza apertura
-  piercingModal.hidden = false;
-  piercingModal.removeAttribute("hidden");
-  piercingModal.style.display = "flex";
-  piercingModal.style.visibility = "visible";
-  piercingModal.style.opacity = "1";
+  // Abre piercing
+  modal.hidden = false;
+  modal.removeAttribute("hidden");
+  modal.style.display = "flex";
 
   // Reset UI
   piercSetHint_("");
@@ -4123,15 +4038,7 @@ function openPiercingModal() {
   piercRenderReportedList_(__piercCacheList);
   if (btnPiercBack) btnPiercBack.hidden = true;
 
-  // ✅ Debug visible REAL
-  requestAnimationFrame(() => {
-    const card = piercingModal.querySelector(".modal-card");
-    const r = card ? card.getBoundingClientRect() : null;
-    console.log("🧪 Piercing modal display:", getComputedStyle(piercingModal).display);
-    console.log("🧪 Piercing modal rect:", r);
-  });
-
-  // carga lista
+  // Cargar lista
   piercReloadReportedList(true);
 }
 
@@ -4148,19 +4055,12 @@ function closePiercingModal() {
 }
 
 function piercBindUI_() {
- if (btnPiercing) {
-  btnPiercing.addEventListener("click", () => {
-    console.log("✅ Click: Piercing");
-    setMenuOpen(false);
-
-    // ✅ aseguro exclusividad
-    closeDisciplineModal();
-
-    openPiercingModal();
-    requestAnimationFrame(validateModalExclusivity_);
-  });
-}
-
+  if (btnPiercing) {
+    btnPiercing.addEventListener("click", () => {
+      setMenuOpen(false);
+      openPiercingModal();
+    });
+  }
 
   if (btnPiercClose) btnPiercClose.addEventListener("click", closePiercingModal);
   if (btnPiercReload) btnPiercReload.addEventListener("click", () => piercReloadReportedList(true));
@@ -5083,29 +4983,10 @@ refreshFromSheet({ useCache: true, silent: true });
 setStatus("warn", "Listo", "Para registrar, activa ubicación.");
 
   // DISCIPLINA: bind + polling para sincronizar entre celulares
-// =====================
-// BINDS ÚNICOS + VALIDACIÓN
-// =====================
 discBindUI_();
-piercBindUI_();
-
 discStartPolling_();
+  piercBindUI_();
 piercStartPolling_();
-
-// ✅ Validación: que cada botón abra SOLO su modal
-function validateModalExclusivity_() {
-  const discOpen = disciplineModal && !disciplineModal.hidden;
-  const piercOpen = piercingModal && !piercingModal.hidden;
-
-  console.log("🔎 VALIDACIÓN MODALES:", { discOpen, piercOpen });
-
-  // si se abren ambos, cerramos el que NO corresponde
-  if (discOpen && piercOpen) {
-    console.warn("⚠️ Se abrieron ambos modales. Corrigiendo: cierro PIERCING.");
-    closePiercingModal();
-  }
-}
-
 
 
 
