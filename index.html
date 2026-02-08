@@ -3550,17 +3550,7 @@ function closeDisciplineModal() {
   if (typeof btnDiscBack !== "undefined" && btnDiscBack) btnDiscBack.hidden = true;
 }
 function discBindUI_() {
-  if (btnDiscipline) {
- btnDiscipline.addEventListener("click", (e) => {
-  e.preventDefault();
-  e.stopPropagation();
-  setMenuOpen(false);
-  // ✅ asegura que solo quede 1 modal abierto
-  if (typeof closePiercingModal === "function") closePiercingModal();
-  openDisciplineModal();
-});
 
-  }
 
   if (btnDiscClose) btnDiscClose.addEventListener("click", closeDisciplineModal);
   if (btnDiscReload) btnDiscReload.addEventListener("click", () => discReloadReportedList(true));
@@ -4048,17 +4038,7 @@ function closePiercingModal() {
 }
 
 function piercBindUI_() {
-  if (btnPiercing) {
- btnPiercing.addEventListener("click", (e) => {
-  e.preventDefault();
-  e.stopPropagation();
-  setMenuOpen(false);
-  // ✅ asegura que solo quede 1 modal abierto
-  if (typeof closeDisciplineModal === "function") closeDisciplineModal();
-  openPiercingModal();
-});
-
-  }
+  // ✅ NO binds aquí al menú. El menú lo bindamos una sola vez fuera (ver punto 3)
 
   if (btnPiercClose) btnPiercClose.addEventListener("click", closePiercingModal);
   if (btnPiercReload) btnPiercReload.addEventListener("click", () => piercReloadReportedList(true));
@@ -4112,6 +4092,7 @@ function piercBindUI_() {
     });
   }
 }
+
 
 
 // ======= GEO =======
@@ -4974,6 +4955,26 @@ btnSalida.addEventListener("click",  () => register("SALIDA"));
 btnExport.addEventListener("click", exportCSV);
 
 
+// ✅ Menú: abrir modales (UNA sola vez)
+if (btnDiscipline) {
+  btnDiscipline.addEventListener("click", (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setMenuOpen(false);
+    closePiercingModal();
+    openDisciplineModal();
+  });
+}
+
+if (btnPiercing) {
+  btnPiercing.addEventListener("click", (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setMenuOpen(false);
+    closeDisciplineModal();
+    openPiercingModal();
+  });
+}
 
 // Inicial: rápido (cache) + refresh silencioso
 refreshFromSheet({ useCache: true, silent: true });
@@ -5003,12 +5004,6 @@ window.addEventListener("error", (e) => {
 });
 
 
-// ✅ Inicialización segura cuando el DOM ya está listo
-window.addEventListener("DOMContentLoaded", () => {
-  console.log("✅ DOM listo");
-  console.log("btnPiercing:", document.getElementById("btnPiercing"));
-  console.log("piercingModal:", document.getElementById("piercingModal"));
-});
 
 
 </script>
