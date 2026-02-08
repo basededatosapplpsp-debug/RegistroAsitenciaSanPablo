@@ -4219,6 +4219,39 @@ function forcePiercingOpenOnCapture_() {
   }, true); // 👈 TRUE = CAPTURA
 }
 
+function debugModalState_(id) {
+  const el = document.getElementById(id);
+  const loader = document.getElementById("appLoader");
+
+  if (!el) { alert(`❌ DEBUG: no existe #${id}`); return; }
+
+  const cs = window.getComputedStyle(el);
+  const r = el.getBoundingClientRect();
+
+  console.log("=== DEBUG MODAL ===");
+  console.log("id:", id);
+  console.log("hidden prop:", el.hidden, "has [hidden]:", el.hasAttribute("hidden"));
+  console.log("display:", cs.display, "visibility:", cs.visibility, "opacity:", cs.opacity, "zIndex:", cs.zIndex);
+  console.log("rect:", { x:r.x, y:r.y, w:r.width, h:r.height });
+
+  if (loader) {
+    console.log("--- loader ---");
+    console.log("loader hidden:", loader.hidden, "has [hidden]:", loader.hasAttribute("hidden"));
+    console.log("loader zIndex:", window.getComputedStyle(loader).zIndex);
+  }
+
+  // ¿Qué elemento está arriba en el centro de la pantalla?
+  const cx = Math.floor(window.innerWidth / 2);
+  const cy = Math.floor(window.innerHeight / 2);
+  const topEl = document.elementFromPoint(cx, cy);
+  console.log("elementFromPoint(center):", topEl);
+
+  alert(`DEBUG #${id}
+hidden=${el.hidden} attrHidden=${el.hasAttribute("hidden")}
+display=${cs.display} z=${cs.zIndex}
+loaderHidden=${loader ? loader.hidden : "NA"}
+Mira consola (F12)`);
+}
 
 
 // ======= GEO =======
