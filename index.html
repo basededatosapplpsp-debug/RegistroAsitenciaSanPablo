@@ -3548,12 +3548,19 @@ function closeDisciplineModal() {
   if (typeof btnDiscBack !== "undefined" && btnDiscBack) btnDiscBack.hidden = true;
 }
 function discBindUI_() {
-  if (btnDiscipline) {
-    btnDiscipline.addEventListener("click", () => {
-      setMenuOpen(false);
-      openDisciplineModal();
-    });
-  }
+if (btnDiscipline) {
+  btnDiscipline.addEventListener("click", () => {
+    console.log("✅ Click: Llamado de atención");
+    setMenuOpen(false);
+
+    // ✅ aseguro exclusividad
+    closePiercingModal();
+
+    openDisciplineModal();
+    requestAnimationFrame(validateModalExclusivity_);
+  });
+}
+
 
   if (btnDiscClose) btnDiscClose.addEventListener("click", closeDisciplineModal);
   if (btnDiscReload) btnDiscReload.addEventListener("click", () => discReloadReportedList(true));
@@ -4037,12 +4044,19 @@ function closePiercingModal() {
 }
 
 function piercBindUI_() {
-  if (btnPiercing) {
-    btnPiercing.addEventListener("click", () => {
-      setMenuOpen(false);
-      openPiercingModal();
-    });
-  }
+ if (btnPiercing) {
+  btnPiercing.addEventListener("click", () => {
+    console.log("✅ Click: Piercing");
+    setMenuOpen(false);
+
+    // ✅ aseguro exclusividad
+    closeDisciplineModal();
+
+    openPiercingModal();
+    requestAnimationFrame(validateModalExclusivity_);
+  });
+}
+
 
   if (btnPiercClose) btnPiercClose.addEventListener("click", closePiercingModal);
   if (btnPiercReload) btnPiercReload.addEventListener("click", () => piercReloadReportedList(true));
@@ -4965,10 +4979,29 @@ refreshFromSheet({ useCache: true, silent: true });
 setStatus("warn", "Listo", "Para registrar, activa ubicación.");
 
   // DISCIPLINA: bind + polling para sincronizar entre celulares
+// =====================
+// BINDS ÚNICOS + VALIDACIÓN
+// =====================
 discBindUI_();
+piercBindUI_();
+
 discStartPolling_();
-  piercBindUI_();
 piercStartPolling_();
+
+// ✅ Validación: que cada botón abra SOLO su modal
+function validateModalExclusivity_() {
+  const discOpen = disciplineModal && !disciplineModal.hidden;
+  const piercOpen = piercingModal && !piercingModal.hidden;
+
+  console.log("🔎 VALIDACIÓN MODALES:", { discOpen, piercOpen });
+
+  // si se abren ambos, cerramos el que NO corresponde
+  if (discOpen && piercOpen) {
+    console.warn("⚠️ Se abrieron ambos modales. Corrigiendo: cierro PIERCING.");
+    closePiercingModal();
+  }
+}
+
 
 
 
@@ -4993,33 +5026,7 @@ window.addEventListener("error", (e) => {
   console.error("❌ Error JS:", e.message, e.filename, e.lineno);
 });
 
-// ✅ Inicialización segura cuando el DOM ya está listo
-window.addEventListener("DOMContentLoaded", () => {
-  console.log("✅ DOM listo");
 
-  // Re-buscar por si algo cambió
-  const _btnPiercing = document.getElementById("btnPiercing");
-  const _piercingModal = document.getElementById("piercingModal");
-
-  console.log("btnPiercing:", _btnPiercing);
-  console.log("piercingModal:", _piercingModal);
-
-  if (_btnPiercing) {
-    _btnPiercing.addEventListener("click", () => {
-      console.log("✅ Click en Piercing");
-      setMenuOpen(false);
-      openPiercingModal();
-    });
-  } else {
-    console.warn("⚠️ No se encontró #btnPiercing");
-  }
-
-  // Bind normales
-  discBindUI_();
-  discStartPolling_();
-  piercBindUI_();
-  piercStartPolling_();
-});
 
 </script>
 
