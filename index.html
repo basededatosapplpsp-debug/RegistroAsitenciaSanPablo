@@ -3048,17 +3048,22 @@ function discFindInCache_(studentName) {
 }
 
 function discClearLevelUI_() {
-  document.querySelectorAll(".disc-level").forEach(b => b.classList.remove("active"));
+  if (!disciplineModal) return;
+  disciplineModal.querySelectorAll(".disc-level").forEach(b => b.classList.remove("active"));
 }
+
 
 function discApplyLevelUI_(level) {
   discClearLevelUI_();
   const lv = Number(level || 0);
-  for (let i=1;i<=lv;i++){
-    const btn = document.querySelector(`.disc-level[data-level="${i}"]`);
+  if (!disciplineModal) return;
+
+  for (let i = 1; i <= lv; i++) {
+    const btn = disciplineModal.querySelector(`.disc-level[data-level="${i}"]`);
     if (btn) btn.classList.add("active");
   }
 }
+
 
 function discRenderWho_(whoArr) {
   if (!discWhoList) return;
@@ -3518,6 +3523,9 @@ function discStartPolling_() {
 
 function openDisciplineModal() {
   if (!disciplineModal) return;
+
+  // ✅ asegura exclusividad
+  if (typeof closePiercingModal === "function") closePiercingModal();
 
   disciplineModal.hidden = false;
   discSetHint_("");
@@ -4013,6 +4021,9 @@ function piercStartPolling_() {
 
 function openPiercingModal() {
   if (!piercingModal) return;
+
+  // ✅ asegura exclusividad
+  if (typeof closeDisciplineModal === "function") closeDisciplineModal();
 
   piercingModal.hidden = false;
   piercSetHint_("");
@@ -4993,33 +5004,6 @@ window.addEventListener("error", (e) => {
   console.error("❌ Error JS:", e.message, e.filename, e.lineno);
 });
 
-// ✅ Inicialización segura cuando el DOM ya está listo
-window.addEventListener("DOMContentLoaded", () => {
-  console.log("✅ DOM listo");
-
-  // Re-buscar por si algo cambió
-  const _btnPiercing = document.getElementById("btnPiercing");
-  const _piercingModal = document.getElementById("piercingModal");
-
-  console.log("btnPiercing:", _btnPiercing);
-  console.log("piercingModal:", _piercingModal);
-
-  if (_btnPiercing) {
-    _btnPiercing.addEventListener("click", () => {
-      console.log("✅ Click en Piercing");
-      setMenuOpen(false);
-      openPiercingModal();
-    });
-  } else {
-    console.warn("⚠️ No se encontró #btnPiercing");
-  }
-
-  // Bind normales
-  discBindUI_();
-  discStartPolling_();
-  piercBindUI_();
-  piercStartPolling_();
-});
 
 </script>
 
