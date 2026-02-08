@@ -1420,44 +1420,47 @@ body:not(.is-admin) #adminMonthSummary{
   </div>
 </div>
 
-
 <!-- ======= MODAL: PORTE DEL UNIFORME ======= -->
 <div id="uniformModal" class="modal-backdrop" hidden>
   <div class="modal-card" style="width:min(720px,100%);">
     <h2 class="modal-title">Porte del uniforme</h2>
-    <p class="modal-sub">Registro por niveles (1 a 4) • sincroniza entre celulares</p>
+    <p class="modal-sub">
+      Reporta porte incorrecto del uniforme. Marca el nivel (1 a 4). Al llegar a 4 se notifica por WhatsApp.
+    </p>
 
+    <!-- ✅ Seleccionado -->
     <label class="modal-label">Seleccionado</label>
     <div id="uniSelectedBox" class="status" style="margin-top:6px;">
       <span class="dot" id="uniLevelDot"></span>
       <div>
-        <div id="uniSelectedName" style="font-weight:900;">(Selecciona o escribe un estudiante)</div>
+        <div id="uniSelectedName" style="font-weight:900;">Selecciona un estudiante de la lista</div>
         <div class="muted" id="uniSelectedMeta">—</div>
       </div>
     </div>
 
+    <!-- ✅ Input -->
+    <label class="modal-label" for="uniStudent">Estudiante</label>
+    <input id="uniStudent" class="modal-input" type="text"
+           placeholder="Escribe el nombre del estudiante…" autocomplete="off" />
+    <div class="muted small" style="margin-top:6px;">
+      Tip: también puedes tocar un nombre en “Reportados” para cargarlo arriba.
+    </div>
+
+    <!-- ✅ Niveles (igual que los otros) -->
+    <div class="disc-levels">
+      <button type="button" class="disc-level" data-level="1">1 • Leve</button>
+      <button type="button" class="disc-level" data-level="2">2</button>
+      <button type="button" class="disc-level" data-level="3">3</button>
+      <button type="button" class="disc-level danger" data-level="4">4 • Grave</button>
+    </div>
+
+    <!-- ✅ Who list (mismo diseño) -->
     <div class="disc-who">
-      <div class="muted small" style="margin-bottom:6px;">Docentes</div>
+      <div class="muted small" style="margin-bottom:6px;">Docentes que han marcado niveles</div>
       <div id="uniWhoList" class="disc-who-list">—</div>
     </div>
 
-    <label class="modal-label" for="uniStudent">Estudiante</label>
-    <input id="uniStudent" class="modal-input" type="text"
-           placeholder="Escribe o selecciona un estudiante…" autocomplete="off" />
-
-    <div class="row" style="margin-top:10px;">
-      <button id="btnUniReload" type="button" class="btn btn-primary" style="width:100%;">Actualizar</button>
-    </div>
-
-    <div class="disc-levels" style="margin-top:10px;">
-      <button type="button" class="disc-level" data-level="1">Nivel 1</button>
-      <button type="button" class="disc-level" data-level="2">Nivel 2</button>
-      <button type="button" class="disc-level" data-level="3">Nivel 3</button>
-      <button type="button" class="disc-level danger" data-level="4">Nivel 4</button>
-    </div>
-
-    <div id="uniHint" class="modal-hint muted small"></div>
-
+    <!-- ✅ Reportados (mismo diseño) -->
     <div class="disc-reported">
       <div class="row row-between" style="margin-top:12px;">
         <div class="muted small">Reportados (mes actual)</div>
@@ -1465,8 +1468,12 @@ body:not(.is-admin) #adminMonthSummary{
 
       <div id="uniReportedList" class="disc-reported-list"></div>
 
+      <div id="uniHint" class="modal-hint muted small"></div>
+
+      <!-- ✅ Botones (igual que los otros) -->
       <div class="modal-actions" style="justify-content:flex-end;">
         <button id="btnUniBack" type="button" class="btn btn-ghost" hidden>← Atrás</button>
+        <button id="btnUniReload" type="button" class="btn btn-ghost">Recargar</button>
         <button id="btnUniClose" type="button" class="btn btn-ghost">Cerrar</button>
       </div>
     </div>
@@ -4333,6 +4340,14 @@ function uniRenderReportedList_(items){
     });
   });
 }
+
+// ✅ Reusar el mismo ícono de basura en Disciplina / Piercing / Uniforme
+window.trashSvg = `
+  <svg viewBox="0 0 448 512" aria-hidden="true" focusable="false">
+    <path d="M135.2 17.7C140.6 7.1 151.5 0 163.8 0H284.2c12.3 0 23.2 7.1 28.6 17.7L320 32h96c17.7 0 32 14.3 32 32s-14.3 32-32 32h-16l-21.2 339.2C377.2 480.8 348.5 512 312.6 512H135.4c-35.9 0-64.6-31.2-66.2-76.8L48 96H32C14.3 96 0 81.7 0 64s14.3-32 32-32h96l7.2-14.3zM192 64l-3.2 6.4h70.4L256 64h-64zM112 96l19.2 336.5c.2 4.2 2.2 7.5 4.2 7.5h177.2c2 0 4-3.3 4.2-7.5L336 96H112zm64 64c8.8 0 16 7.2 16 16v192c0 8.8-7.2 16-16 16s-16-7.2-16-16V176c0-8.8 7.2-16 16-16zm96 0c8.8 0 16 7.2 16 16v192c0 8.8-7.2 16-16 16s-16-7.2-16-16V176c0-8.8 7.2-16 16-16z"></path>
+  </svg>
+`;
+
 
 /* ======= selected box ======= */
 function uniUpdateSelectedBox_(studentName){
