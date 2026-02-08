@@ -987,6 +987,10 @@ body:not(.is-admin) #adminMonthSummary{
 <button id="btnAdminApproveDevices" class="menu-item" type="button" role="menuitem" hidden>Aprobar dispositivos</button>
 <button id="btnDiscipline" class="menu-item" type="button" role="menuitem">Llamado de atención</button>
       <button id="btnPiercing" class="menu-item" type="button" role="menuitem">Piercing y perforaciones</button>
+      <button id="btnUniform" class="menu-item">
+  Porte del uniforme
+</button>
+
 
 
       <button id="btnLogout" class="menu-item danger" type="button" role="menuitem">Cerrar sesión</button>
@@ -1425,6 +1429,61 @@ body:not(.is-admin) #adminMonthSummary{
 
   </div>
 </div>
+
+
+<!-- ======= MODAL: PORTE DEL UNIFORME ======= -->
+<div class="modal" id="uniformModal" hidden>
+  <div class="modal-card">
+    <div class="modal-head">
+      <div>
+        <div class="modal-title">Porte del uniforme</div>
+        <div class="modal-sub">Registro por niveles (1 a 4) • sincroniza entre celulares</div>
+      </div>
+      <button class="icon-btn" id="btnUniClose" title="Cerrar">✕</button>
+    </div>
+
+    <div class="modal-body">
+      <!-- Seleccionado -->
+      <div class="record-card" id="uniSelectedBox">
+        <div class="top">
+          <div class="left">
+            <span class="lvl-dot" id="uniLevelDot"></span>
+            <span class="teacher" id="uniSelectedName">(Selecciona o escribe un estudiante)</span>
+          </div>
+          <span class="badge badge-neutral" id="uniSelectedMeta">—</span>
+        </div>
+        <div class="meta">
+          Docentes:
+          <span id="uniWhoList">—</span>
+        </div>
+      </div>
+
+      <!-- Input -->
+      <div class="row" style="gap:10px; margin-top:10px;">
+        <input id="uniStudent" class="input" placeholder="Escribe o selecciona un estudiante…" autocomplete="off" />
+        <button class="btn btn-secondary" id="btnUniReload" type="button">Actualizar</button>
+      </div>
+
+      <!-- Niveles -->
+      <div class="row" style="gap:10px; margin-top:10px; flex-wrap:wrap;">
+        <button class="btn disc-level" data-level="1" type="button">Nivel 1</button>
+        <button class="btn disc-level" data-level="2" type="button">Nivel 2</button>
+        <button class="btn disc-level" data-level="3" type="button">Nivel 3</button>
+        <button class="btn disc-level" data-level="4" type="button">Nivel 4</button>
+      </div>
+
+      <div class="muted small" id="uniHint" style="margin-top:8px;"></div>
+
+      <!-- Lista -->
+      <div class="list" id="uniReportedList" style="margin-top:10px;"></div>
+
+      <div class="row" style="margin-top:12px; justify-content:flex-end;">
+        <button class="btn btn-secondary" id="btnUniBack" type="button" hidden>← Atrás</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 
 
 
@@ -3258,9 +3317,8 @@ async function gsDisciplineMark(payload) {
   catch { throw new Error("Respuesta inválida del servidor"); }
 
   if (!data.ok) throw new Error(data.msg || data.error || "discipline_mark_failed");
-  return data; // { report, list, justReported, wa_url/wa_to o whatsapp }
+  return data;
 }
-
 
 async function gsDisciplineDeleteStudent(payload) {
   const res = await fetch(GS_WEBAPP_URL, {
@@ -3273,7 +3331,7 @@ async function gsDisciplineDeleteStudent(payload) {
   catch { throw new Error("Respuesta inválida del servidor"); }
 
   if (!data.ok) throw new Error(data.msg || data.error || "discipline_delete_failed");
-  return data; // { ok:true, msg, list:[...] }
+  return data;
 }
 
 
@@ -3852,8 +3910,11 @@ async function gsPiercingMark(payload) {
     method: "POST",
     body: JSON.stringify({ action: "piercing_mark", ...payload, key: GS_API_KEY })
   });
+
   let data = null;
-  try { data = await res.json(); } catch { throw new Error("Respuesta inválida del servidor"); }
+  try { data = await res.json(); }
+  catch { throw new Error("Respuesta inválida del servidor"); }
+
   if (!data.ok) throw new Error(data.msg || data.error || "piercing_mark_failed");
   return data;
 }
@@ -3863,8 +3924,11 @@ async function gsPiercingDeleteStudent(payload) {
     method: "POST",
     body: JSON.stringify({ action: "piercing_delete_student", ...payload, key: GS_API_KEY })
   });
+
   let data = null;
-  try { data = await res.json(); } catch { throw new Error("Respuesta inválida del servidor"); }
+  try { data = await res.json(); }
+  catch { throw new Error("Respuesta inválida del servidor"); }
+
   if (!data.ok) throw new Error(data.msg || data.error || "piercing_delete_failed");
   return data;
 }
@@ -4113,6 +4177,482 @@ function piercBindUI_() {
       piercRenderReportedList_(__piercCacheList);
     });
   }
+}
+
+
+/************ UNIFORME (UI) ************/
+const btnUniform = document.getElementById("btnUniform");
+const uniformModal = document.getElementById("uniformModal");
+const btnUniClose = document.getElementById("btnUniClose");
+const btnUniReload = document.getElementById("btnUniReload");
+const btnUniBack = document.getElementById("btnUniBack");
+
+const uniSelectedNameEl = document.getElementById("uniSelectedName");
+const uniSelectedMetaEl = document.getElementById("uniSelectedMeta");
+const uniLevelDotEl = document.getElementById("uniLevelDot");
+const uniWhoList = document.getElementById("uniWhoList");
+const uniStudentEl = document.getElementById("uniStudent");
+const uniReportedList = document.getElementById("uniReportedList");
+const uniHintEl = document.getElementById("uniHint");
+
+let __uniCacheList = [];
+let __uniCurrentStudent = "";
+let __uniView = "list";
+let __uniPollTimer = null;
+
+/* ======= Google Sheets API: Uniforme ======= */
+async function gsUniformList(month) {
+  const res = await fetch(GS_WEBAPP_URL, {
+    method: "POST",
+    body: JSON.stringify({ action: "uniform_list", month, key: GS_API_KEY })
+  });
+  let data = null;
+  try { data = await res.json(); } catch { throw new Error("Respuesta inválida del servidor"); }
+  if (!data.ok) throw new Error(data.msg || data.error || "uniform_list_failed");
+  return data.items || [];
+}
+
+async function gsUniformMark(payload) {
+  const res = await fetch(GS_WEBAPP_URL, {
+    method: "POST",
+    body: JSON.stringify({ action: "uniform_mark", ...payload, key: GS_API_KEY })
+  });
+  let data = null;
+  try { data = await res.json(); } catch { throw new Error("Respuesta inválida del servidor"); }
+  if (!data.ok) throw new Error(data.msg || data.error || "uniform_mark_failed");
+  return data;
+}
+
+async function gsUniformDeleteStudent(payload) {
+  const res = await fetch(GS_WEBAPP_URL, {
+    method: "POST",
+    body: JSON.stringify({ action: "uniform_delete_student", ...payload, key: GS_API_KEY })
+  });
+  let data = null;
+  try { data = await res.json(); } catch { throw new Error("Respuesta inválida del servidor"); }
+  if (!data.ok) throw new Error(data.msg || data.error || "uniform_delete_failed");
+  return data;
+}
+
+/* ======= helpers ======= */
+function uniMonthKey_() {
+  // usa la misma lógica del mes actual que ya usas en disciplina/piercing
+  // si ya tienes discMonthKey_ / piercMonthKey_, esto mantiene el mismo mes
+  return (typeof discMonthKey_ === "function") ? discMonthKey_() : (typeof piercMonthKey_ === "function" ? piercMonthKey_() : "");
+}
+
+function uniNormalizeStudent_(s) {
+  return String(s || "").trim().replace(/\s+/g, " ");
+}
+function uniSetHint_(t){ if (uniHintEl) uniHintEl.textContent = String(t||""); }
+function uniSetDotByLevel_(lvl){
+  if (!uniLevelDotEl) return;
+  uniLevelDotEl.className = (lvl ? `lvl-dot lvl-${lvl}` : "lvl-dot");
+}
+function uniClearLevelUI_(){
+  if (!uniformModal) return;
+  uniformModal.querySelectorAll(".disc-level").forEach(btn=>{
+    btn.classList.remove("active");
+    btn.disabled = false;
+  });
+}
+function uniApplyLevelUI_(maxLevel){
+  if (!uniformModal) return;
+  uniClearLevelUI_();
+  uniformModal.querySelectorAll(".disc-level").forEach(btn=>{
+    const lvl = Number(btn.getAttribute("data-level") || 0);
+    if (!lvl) return;
+    if (lvl <= maxLevel) btn.classList.add("active");
+    if (lvl > maxLevel + 1) btn.disabled = true;
+  });
+}
+function uniRenderWho_(whoArr){
+  if (!uniWhoList) return;
+  if (!Array.isArray(whoArr) || !whoArr.length) { uniWhoList.textContent = "—"; return; }
+  uniWhoList.textContent = whoArr.map(x => `${x.teacher} (N${x.level})`).join(" • ");
+}
+function uniFindInCache_(student){
+  const key = normalizeKey(student);
+  return (__uniCacheList || []).find(it => normalizeKey(it.student) === key) || null;
+}
+
+/* ======= render list ======= */
+function uniRenderReportedList_(items){
+  if (!uniReportedList) return;
+
+  const list = Array.isArray(items) ? items : [];
+  const selectedKey = __uniCurrentStudent ? normalizeKey(uniNormalizeStudent_(__uniCurrentStudent)) : "";
+
+  const trashSvg = (typeof window.trashSvg !== "undefined")
+    ? window.trashSvg
+    : `<svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M3 6h18" stroke="currentColor" stroke-width="2"/><path d="M8 6V4h8v2" stroke="currentColor" stroke-width="2"/><path d="M6 6l1 16h10l1-16" stroke="currentColor" stroke-width="2"/></svg>`;
+
+  uniReportedList.innerHTML = list.map(it=>{
+    const student = String(it.student || "");
+    const maxLevel = Number(it.maxLevel || 0);
+    const dotCls = maxLevel ? `lvl-dot lvl-${maxLevel}` : "lvl-dot";
+
+    const isSelected = selectedKey && normalizeKey(student) === selectedKey;
+    const selectedCls = isSelected ? " selected" : "";
+
+    return `
+      <div class="disc-item${selectedCls}"
+           role="button"
+           tabindex="0"
+           data-student="${escapeHtml(student)}">
+
+        <div class="left">
+          <span class="${dotCls}"></span>
+          <span class="name">${escapeHtml(student)}</span>
+        </div>
+
+        <div class="right" style="gap:10px;">
+          <button type="button"
+                  class="disc-trash"
+                  title="Eliminar estudiante"
+                  aria-label="Eliminar estudiante"
+                  data-del="${escapeHtml(student)}">
+            ${trashSvg}
+          </button>
+          <span class="muted small" aria-hidden="true">›</span>
+        </div>
+      </div>
+    `;
+  }).join("");
+
+  // abrir detalle
+  uniReportedList.querySelectorAll(".disc-item[data-student]").forEach(row=>{
+    const open = ()=>{
+      const s = row.getAttribute("data-student") || "";
+      uniOpenDetail_(s);
+    };
+    row.addEventListener("click",(e)=>{
+      if (e.target && e.target.closest && e.target.closest("[data-del]")) return;
+      open();
+    });
+    row.addEventListener("keydown",(e)=>{
+      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); open(); }
+    });
+  });
+
+  // borrar
+  uniReportedList.querySelectorAll("[data-del]").forEach(btn=>{
+    btn.addEventListener("click", async (e)=>{
+      e.preventDefault(); e.stopPropagation();
+      const s = btn.getAttribute("data-del") || "";
+      await uniDeleteStudent_(s);
+    });
+  });
+}
+
+/* ======= selected box ======= */
+function uniUpdateSelectedBox_(studentName){
+  const s = uniNormalizeStudent_(studentName);
+  __uniCurrentStudent = s || "";
+
+  if (!s) {
+    if (uniStudentEl) uniStudentEl.value = "";
+    if (uniSelectedNameEl) uniSelectedNameEl.textContent = "(Selecciona o escribe un estudiante)";
+    if (uniSelectedMetaEl) uniSelectedMetaEl.textContent = "—";
+    uniSetDotByLevel_(0);
+    uniClearLevelUI_();
+    if (uniWhoList) uniWhoList.textContent = "—";
+    return;
+  }
+
+  if (uniStudentEl) uniStudentEl.value = s;
+
+  const item = uniFindInCache_(s);
+  const maxLevel = item ? Number(item.maxLevel || 0) : 0;
+  const total = item ? Number(item.totalMarks || 0) : 0;
+  const teachersCount = item ? Number(item.teachersCount || 0) : 0;
+
+  if (uniSelectedNameEl) uniSelectedNameEl.textContent = s;
+  if (uniSelectedMetaEl) {
+    uniSelectedMetaEl.textContent = item
+      ? `Nivel ${maxLevel} • Llamados: ${total} • Docentes: ${teachersCount}`
+      : `Nuevo (sin reportes este mes aún)`;
+  }
+
+  uniSetDotByLevel_(maxLevel);
+  uniApplyLevelUI_(maxLevel);
+
+  if (item && Array.isArray(item.who) && item.who.length) uniRenderWho_(item.who);
+  else if (uniWhoList) uniWhoList.textContent = "—";
+}
+
+/* ======= views ======= */
+function uniOpenDetail_(studentName){
+  __uniView = "detail";
+  uniUpdateSelectedBox_(studentName);
+  uniRenderDetailView_();
+  if (btnUniBack) btnUniBack.hidden = false;
+}
+function uniBackToList_(){
+  __uniView = "list";
+  uniRenderReportedList_(__uniCacheList);
+  uniSetHint_("");
+  if (btnUniBack) btnUniBack.hidden = true;
+}
+function uniRenderDetailView_(){
+  // igual que disciplina: deja arriba el box y debajo info
+  // aquí simplemente reusamos la lista, pero mostrando “seleccionado”
+  if (!uniReportedList) return;
+  const s = uniNormalizeStudent_(__uniCurrentStudent);
+  const item = s ? uniFindInCache_(s) : null;
+
+  const maxLevel = item ? Number(item.maxLevel || 0) : 0;
+  const total = item ? Number(item.totalMarks || 0) : 0;
+  const teachersCount = item ? Number(item.teachersCount || 0) : 0;
+
+  uniReportedList.innerHTML = `
+    <div class="record-card" style="margin-bottom:10px;">
+      <div class="top">
+        <span class="teacher">${escapeHtml(s || "—")}</span>
+        <span class="badge badge-neutral">${maxLevel ? `Nivel ${maxLevel}` : "Sin nivel"}</span>
+      </div>
+      <div class="meta">
+        Llamados: <b>${total}</b> • Docentes: <b>${teachersCount}</b>
+      </div>
+    </div>
+    <div class="muted small" style="margin-bottom:6px;">(Usa los botones de nivel arriba para registrar)</div>
+  `;
+
+  uniApplyLevelUI_(maxLevel);
+  if (item && Array.isArray(item.who) && item.who.length) uniRenderWho_(item.who);
+  else if (uniWhoList) uniWhoList.textContent = "—";
+}
+
+/* ======= actions ======= */
+async function uniReloadReportedList(showHint=false){
+  try {
+    const items = await gsUniformList(uniMonthKey_());
+    __uniCacheList = items;
+
+    const isTyping = (uniStudentEl && document.activeElement === uniStudentEl);
+    if (__uniCurrentStudent && !isTyping) uniUpdateSelectedBox_(__uniCurrentStudent);
+
+    if (__uniView === "detail" && __uniCurrentStudent) uniRenderDetailView_();
+    else uniRenderReportedList_(items);
+
+    if (showHint) uniSetHint_("Lista sincronizada ✅");
+  } catch (e) {
+    if (showHint) uniSetHint_(String(e && e.message ? e.message : e));
+  }
+}
+
+async function uniDeleteStudent_(studentName){
+  const profile = requireLogin();
+  if (!profile) return;
+
+  const student = uniNormalizeStudent_(studentName);
+  if (!student) return;
+
+  const ok = confirm(`¿Seguro que deseas eliminar a "${student}"?\n\nSe borrarán TODOS sus reportes del mes actual.`);
+  if (!ok) return;
+
+  try {
+    setLoading(true, "Eliminando…", "Borrando reportes del estudiante.");
+
+    const resp = await gsUniformDeleteStudent({
+      month: uniMonthKey_(),
+      student,
+      teacher: profile.name,
+      email: profile.email,
+      device_id: getDeviceId()
+    });
+
+    if (resp && Array.isArray(resp.list)) __uniCacheList = resp.list;
+    else await uniReloadReportedList(false);
+
+    if (__uniCurrentStudent && normalizeKey(__uniCurrentStudent) === normalizeKey(student)) {
+      __uniCurrentStudent = "";
+      uniUpdateSelectedBox_("");
+      uniBackToList_();
+    } else {
+      if (__uniView !== "detail") uniRenderReportedList_(__uniCacheList);
+    }
+
+    uniSetHint_("Estudiante eliminado ✅");
+  } catch (e) {
+    uniSetHint_(String(e && e.message ? e.message : e));
+  } finally {
+    setLoading(false);
+  }
+}
+
+async function uniDoMarkLevel(level) {
+  const profile = requireLogin();
+  if (!profile) return;
+
+  const lvl = Number(level || 0);
+  if (lvl < 1 || lvl > 4) return;
+
+  const student = uniNormalizeStudent_(__uniCurrentStudent);
+  if (!student) { uniSetHint_("Primero selecciona un estudiante de la lista."); return; }
+
+  const item = uniFindInCache_(student);
+  const currentMax = item ? Number(item.maxLevel || 0) : 0;
+
+  if (lvl > currentMax + 1) {
+    uniSetHint_(`Debes marcar primero el nivel ${currentMax + 1}.`);
+    uniApplyLevelUI_(currentMax);
+    return;
+  }
+
+  try {
+    setLoading(true, "Guardando…", "Registrando porte del uniforme.");
+
+    const resp = await gsUniformMark({
+      month: uniMonthKey_(),
+      student,
+      level: lvl,
+      teacher: profile.name,
+      email: profile.email,
+      device_id: getDeviceId()
+    });
+
+    if (resp && Array.isArray(resp.list)) __uniCacheList = resp.list;
+    else await uniReloadReportedList(false);
+
+    uniUpdateSelectedBox_(student);
+    __uniView = "list";
+    uniRenderReportedList_(__uniCacheList);
+    if (btnUniBack) btnUniBack.hidden = true;
+
+    if (resp && resp.ok && resp.justReported && lvl >= 4) {
+      const waUrl = String(resp.wa_url || "").trim();
+      if (waUrl) window.open(waUrl, "_blank");
+    }
+
+    uniSetHint_(lvl >= 4 ? "Nivel 4 registrado ✅" : "Registrado ✅");
+  } catch (e) {
+    uniSetHint_(String(e && e.message ? e.message : e));
+  } finally {
+    setLoading(false);
+  }
+}
+
+/* ======= modal open/close/bind ======= */
+function openUniformModal() {
+  if (!uniformModal) return;
+  uniformModal.hidden = false;
+
+  uniSetHint_("");
+  __uniView = "list";
+  __uniCurrentStudent = "";
+  uniUpdateSelectedBox_("");
+  uniRenderReportedList_(__uniCacheList);
+
+  if (btnUniBack) btnUniBack.hidden = true;
+  uniReloadReportedList(true);
+}
+
+function closeUniformModal() {
+  if (!uniformModal) return;
+  uniformModal.hidden = true;
+
+  __uniView = "list";
+  __uniCurrentStudent = "";
+  uniSetHint_("");
+  uniUpdateSelectedBox_("");
+  if (btnUniBack) btnUniBack.hidden = true;
+}
+
+function uniBindUI_() {
+  if (btnUniform) {
+    btnUniform.addEventListener("click", () => {
+      setMenuOpen(false);
+      openUniformModal();
+    });
+  }
+
+  if (btnUniClose) btnUniClose.addEventListener("click", closeUniformModal);
+  if (btnUniReload) btnUniReload.addEventListener("click", () => uniReloadReportedList(true));
+  if (btnUniBack) btnUniBack.addEventListener("click", uniBackToList_);
+
+  if (uniformModal) {
+    uniformModal.querySelectorAll(".disc-level").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const lvl = Number(btn.getAttribute("data-level") || 0);
+        uniDoMarkLevel(lvl);
+      });
+    });
+  }
+
+  if (uniStudentEl) {
+    uniStudentEl.addEventListener("input", () => {
+      const raw = String(uniStudentEl.value || "");
+      __uniCurrentStudent = raw;
+
+      const s = uniNormalizeStudent_(raw);
+      if (!s) {
+        __uniCurrentStudent = "";
+        if (uniSelectedNameEl) uniSelectedNameEl.textContent = "(Selecciona o escribe un estudiante)";
+        if (uniSelectedMetaEl) uniSelectedMetaEl.textContent = "—";
+        uniSetDotByLevel_(0);
+        uniClearLevelUI_();
+        if (uniWhoList) uniWhoList.textContent = "—";
+        uniRenderReportedList_(__uniCacheList);
+        return;
+      }
+
+      const item = uniFindInCache_(s);
+      const maxLevel = item ? Number(item.maxLevel || 0) : 0;
+      const total = item ? Number(item.totalMarks || 0) : 0;
+      const teachersCount = item ? Number(item.teachersCount || 0) : 0;
+
+      if (uniSelectedNameEl) uniSelectedNameEl.textContent = s;
+      if (uniSelectedMetaEl) {
+        uniSelectedMetaEl.textContent = item
+          ? `Nivel ${maxLevel} • Llamados: ${total} • Docentes: ${teachersCount}`
+          : `Nuevo (sin reportes este mes aún)`;
+      }
+
+      uniSetDotByLevel_(maxLevel);
+      uniApplyLevelUI_(maxLevel);
+
+      if (item && Array.isArray(item.who) && item.who.length) uniRenderWho_(item.who);
+      else if (uniWhoList) uniWhoList.textContent = "—";
+
+      uniRenderReportedList_(__uniCacheList);
+    });
+  }
+}
+
+/* ======= Poll ======= */
+function uniStartPolling_() {
+  if (__uniPollTimer) return;
+
+  __uniPollTimer = setInterval(async () => {
+    const p = loadProfile();
+    const admin = isAdminMode();
+    if (!p && !admin) return;
+
+    if (!uniformModal || uniformModal.hidden === true) {
+      try { __uniCacheList = await gsUniformList(uniMonthKey_()); } catch {}
+      return;
+    }
+
+    try {
+      const items = await gsUniformList(uniMonthKey_());
+      __uniCacheList = items;
+
+      const isTyping = (uniStudentEl && document.activeElement === uniStudentEl);
+
+      if (__uniCurrentStudent && !isTyping) uniUpdateSelectedBox_(__uniCurrentStudent);
+
+      if (__uniView === "detail") {
+        if (__uniCurrentStudent) uniRenderDetailView_();
+        return;
+      }
+
+      uniRenderReportedList_(items);
+
+    } catch {
+      // silencioso
+    }
+  }, 15000);
 }
 
 
@@ -4987,6 +5527,9 @@ discBindUI_();
 discStartPolling_();
   piercBindUI_();
 piercStartPolling_();
+
+uniBindUI_();
+uniStartPolling_();
 
 
 
