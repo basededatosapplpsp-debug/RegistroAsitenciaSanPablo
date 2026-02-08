@@ -313,7 +313,7 @@ h2{font-size:16px; margin:0 0 12px}
   align-items: center;
   justify-content: center;
   padding: 18px;
-  z-index: 20000;
+  z-index: 9999;
 }
 .modal-card{
   width: min(420px, 100%);
@@ -697,15 +697,13 @@ body:not(.is-admin) #adminMonthSummary{
   background: rgba(34,197,94,.12);
 }
 .disc-level.active[data-level="2"]{
-  border-color: rgba(248, 244, 5, 0.45);   /* amarillo */
-  background: rgba(248, 244, 5, 0.18);     /* amarillo claro */
+  border-color: rgba(248, 244, 5, 0.45);
+  background: rgba(245,158,11,.12);
 }
-
 .disc-level.active[data-level="3"]{
-  border-color: rgba(245, 158, 11, 0.6);   /* naranja */
-  background: rgba(245, 158, 11, 0.28);    /* naranja más fuerte */
+  border-color: rgba(245,158,11,.45);
+  background: rgba(245,158,11,.12);
 }
-
 
 .disc-level.danger.active,
 .disc-level.active[data-level="4"]{
@@ -801,15 +799,9 @@ body:not(.is-admin) #adminMonthSummary{
   box-shadow: 0 0 0 8px rgba(255,255,255,.05);
 }
 .lvl-1{ background:#22c55e; box-shadow:0 0 0 8px rgba(34,197,94,.12); }
-
-/* ✅ NIVEL 2: AMARILLO */
-.lvl-2{ background:#f8f405; box-shadow:0 0 0 8px rgba(248,244,5,.18); }
-
-/* ✅ NIVEL 3: NARANJA */
-.lvl-3{ background:#f59e0b; box-shadow:0 0 0 8px rgba(245,158,11,.18); }
-
+.lvl-2{ background:#f59e0b; box-shadow:0 0 0 8px rgba(245,158,11,.12); }
+.lvl-3{ background:#3b82f6; box-shadow:0 0 0 8px rgba(59,130,246,.12); }
 .lvl-4{ background:#ef4444; box-shadow:0 0 0 8px rgba(239,68,68,.12); }
-
 
 
 /* ✅ resaltado del seleccionado */
@@ -986,8 +978,6 @@ body:not(.is-admin) #adminMonthSummary{
 
 <button id="btnAdminApproveDevices" class="menu-item" type="button" role="menuitem" hidden>Aprobar dispositivos</button>
 <button id="btnDiscipline" class="menu-item" type="button" role="menuitem">Llamado de atención</button>
-      <button id="btnPiercing" class="menu-item" type="button" role="menuitem">Piercing y perforaciones</button>
-
 
       <button id="btnLogout" class="menu-item danger" type="button" role="menuitem">Cerrar sesión</button>
     </div>
@@ -1371,69 +1361,15 @@ body:not(.is-admin) #adminMonthSummary{
   </div>
 </div>
 
-<!-- ======= MODAL PIERCING Y PERFORACIONES ======= -->
-<div id="piercingModal" class="modal-backdrop" hidden>
-  <div class="modal-card" style="width:min(720px,100%);">
-    <h2 class="modal-title">Piercing y perforaciones</h2>
-    <p class="modal-sub">
-      Reporta piercing/perforaciones no permitidas. Marca el nivel (1 a 4). Al llegar a 4 se notifica por WhatsApp.
-    </p>
-
-    <label class="modal-label">Seleccionado</label>
-    <div id="piercSelectedBox" class="status" style="margin-top:6px;">
-      <span class="dot" id="piercLevelDot"></span>
-      <div>
-        <div id="piercSelectedName" style="font-weight:900;">Selecciona un estudiante de la lista</div>
-        <div class="muted" id="piercSelectedMeta">—</div>
-      </div>
-    </div>
-
-    <label class="modal-label" for="piercStudent">Estudiante</label>
-    <input id="piercStudent" class="modal-input" type="text"
-           placeholder="Escribe el nombre del estudiante…" autocomplete="off" />
-    <div class="muted small" style="margin-top:6px;">
-      Tip: también puedes tocar un nombre en “Reportados” para cargarlo arriba.
-    </div>
-
-    <div class="disc-levels">
-      <button type="button" class="disc-level" data-level="1">1 • Leve</button>
-      <button type="button" class="disc-level" data-level="2">2</button>
-      <button type="button" class="disc-level" data-level="3">3</button>
-      <button type="button" class="disc-level danger" data-level="4">4 • Grave</button>
-    </div>
-
-    <div class="disc-who">
-      <div class="muted small" style="margin-bottom:6px;">Docentes que han marcado niveles</div>
-      <div id="piercWhoList" class="disc-who-list">—</div>
-    </div>
-
-    <div class="disc-reported">
-      <div class="row row-between" style="margin-top:12px;">
-        <div class="muted small">Reportados (mes actual)</div>
-      </div>
-
-      <div id="piercReportedList" class="disc-reported-list"></div>
-
-      <div id="piercHint" class="modal-hint muted small"></div>
-
-      <div class="modal-actions" style="justify-content:flex-end;">
-        <button id="btnPiercBack" type="button" class="btn btn-ghost" hidden>← Atrás</button>
-        <button id="btnPiercReload" type="button" class="btn btn-ghost">Recargar</button>
-        <button id="btnPiercClose" type="button" class="btn btn-ghost">Cerrar</button>
-      </div>
-    </div>
-
-  </div>
-</div>
 
 
 
 <script>
 // ======= CONFIG DEL COLEGIO (CAMBIA ESTO) =======
-const SCHOOL_LAT = 4.55445;;
-const SCHOOL_LNG =-74.11165;
-let SCHOOL_RADIUS_METERS = 60;
-let REQUIRED_ACCURACY_METERS = 30;
+const SCHOOL_LAT = 4.5545060;
+const SCHOOL_LNG =-74.1116298;
+let SCHOOL_RADIUS_METERS = 120;
+let REQUIRED_ACCURACY_METERS = 50;
 
 
 // ======= GOOGLE SHEETS (CAMBIA ESTO) =======
@@ -1511,22 +1447,6 @@ const discSelectedNameEl = $("discSelectedName");
 const discSelectedMetaEl = $("discSelectedMeta");
 const discLevelDotEl = $("discLevelDot");
 const discStudentEl = $("discStudent"); // ✅ input para escribir estudiante
-// ======= PIERCING (LLAMADO DE ATENCIÓN) =======
-const btnPiercing = $("btnPiercing");
-const piercingModal = $("piercingModal");
-
-const piercWhoList = $("piercWhoList");
-const piercReportedList = $("piercReportedList");
-const piercHint = $("piercHint");
-
-const btnPiercClose = $("btnPiercClose");
-const btnPiercReload = $("btnPiercReload");
-const btnPiercBack = $("btnPiercBack");
-
-const piercSelectedNameEl = $("piercSelectedName");
-const piercSelectedMetaEl = $("piercSelectedMeta");
-const piercLevelDotEl = $("piercLevelDot");
-const piercStudentEl = $("piercStudent");
 
 
 
@@ -3087,22 +3007,10 @@ function discRenderReportedList_(items) {
     return;
   }
 
-// ✅ ordenar por más reciente (arriba) → más antiguo (abajo)
-const sorted = [...list].sort((a, b) => {
-  const ta = Date.parse(a.lastIso || a.updated_at || a.updatedAt || a.ts || a.lastAt || "");
-  const tb = Date.parse(b.lastIso || b.updated_at || b.updatedAt || b.ts || b.lastAt || "");
-
-  // si ambos tienen fecha válida: más reciente primero
-  if (!isNaN(ta) && !isNaN(tb)) return tb - ta;
-
-  // si solo uno tiene fecha válida: el que tiene fecha va arriba
-  if (!isNaN(ta) && isNaN(tb)) return -1;
-  if (isNaN(ta) && !isNaN(tb)) return 1;
-
-  // fallback: por nombre (estable)
-  return String(a.student || "").localeCompare(String(b.student || ""), "es", { sensitivity: "base" });
-});
-
+  // ordenar por nombre
+  const sorted = [...list].sort((a, b) =>
+    String(a.student || "").localeCompare(String(b.student || ""), "es", { sensitivity: "base" })
+  );
 
   // icono trash (SVG)
   const trashSvg = `
@@ -3299,18 +3207,11 @@ async function discReloadReportedList(showHint=false) {
 
     __discCacheList = items;
 
-    // ✅ SI hay seleccionado y NO estás escribiendo, refresca el box SIEMPRE
-    // (esto arregla: punto de arriba + cards 1..4 + who)
-    const isTyping = (discStudentEl && document.activeElement === discStudentEl);
-    if (__discCurrentStudent && !isTyping) {
-      discUpdateSelectedBox_(__discCurrentStudent);
-    }
-
     // ✅ si estoy en detalle, refresco detalle
     if (__discView === "detail" && __discCurrentStudent) {
+      discUpdateSelectedBox_(__discCurrentStudent);
       discRenderDetailView_();
     } else {
-      // ✅ en lista, repinta lista (para que cambie el punto/orden)
       discRenderReportedList_(items);
     }
 
@@ -3319,7 +3220,6 @@ async function discReloadReportedList(showHint=false) {
     if (showHint) discSetHint_(String(e && e.message ? e.message : e));
   }
 }
-
 
 async function discDeleteStudent_(studentName){
   const profile = requireLogin();
@@ -3424,15 +3324,10 @@ async function discDoMarkLevel(level) {
       await discReloadReportedList(false);
     }
 
-  // ✅ actualizar seleccionado (arriba) + volver a lista actualizada
-discUpdateSelectedBox_(student);
-
-__discView = "list";
-discRenderReportedList_(__discCacheList);
-
-// ocultar Atrás porque estamos en lista
-if (btnDiscBack) btnDiscBack.hidden = true;
-
+    // ✅ mantener y refrescar detalle
+    __discView = "detail";
+    discUpdateSelectedBox_(student);
+    discRenderDetailView_();
 
     let openedWa = false;
 
@@ -3488,30 +3383,21 @@ function discStartPolling_() {
       const items = await gsDisciplineList(discMonthKey_());
       __discCacheList = items;
 
-      // ✅ Si el usuario está escribiendo en el input, NO pisar su texto
-      const isTyping = (discStudentEl && document.activeElement === discStudentEl);
-
-      // ✅ SI hay estudiante seleccionado (aunque estés en LISTA),
-      // refresca “Seleccionado” (punto arriba + niveles + who)
-      if (__discCurrentStudent && !isTyping) {
-        discUpdateSelectedBox_(__discCurrentStudent);
-      }
-
-      // ✅ Si estoy en detalle: refresco la tarjeta detalle
-      if (__discView === "detail") {
-        if (__discCurrentStudent) discRenderDetailView_();
+      // ✅ SI hay estudiante seleccionado, NO re-renderizamos la lista
+      // (eso es lo que te "saca" o te mueve la vista)
+      if (__discCurrentStudent) {
+        discUpdateSelectedBox_(__discCurrentStudent); // refresca nivel/who/meta sin brincar
         return;
       }
 
-      // ✅ En lista: repintar lista (para que cambie el punto/orden)
+      // ✅ Solo si NO hay seleccionado, refrescamos la lista visible
       discRenderReportedList_(items);
-
+      // sin hints, sin mensajes
     } catch {
       // silencioso
     }
-  }, 15000);
+  }, 20000);
 }
-
 
 
 
@@ -3519,22 +3405,20 @@ function discStartPolling_() {
 function openDisciplineModal() {
   if (!disciplineModal) return;
 
-  // 🔥 Cerrar piercing si está abierto
-  if (piercingModal) piercingModal.hidden = true;
-
   disciplineModal.hidden = false;
   discSetHint_("");
 
-  __discView = "list";
-  __discCurrentStudent = "";
-  discUpdateSelectedBox_("");
+  __discView = "list";               // ✅ siempre abre en lista
+  __discCurrentStudent = "";         // ✅ no debe quedar “pegado” el último
+  discUpdateSelectedBox_("");        // limpia box seleccionado
   discRenderReportedList_(__discCacheList);
 
+  // ✅ ocultar botón Atrás al abrir
   if (typeof btnDiscBack !== "undefined" && btnDiscBack) btnDiscBack.hidden = true;
 
+  // si quieres que muestre el “Lista sincronizada ✅” al abrir:
   discReloadReportedList(true);
 }
-
 
 function closeDisciplineModal() {
   if (!disciplineModal) return;
@@ -3550,22 +3434,24 @@ function closeDisciplineModal() {
   if (typeof btnDiscBack !== "undefined" && btnDiscBack) btnDiscBack.hidden = true;
 }
 function discBindUI_() {
-
+  if (btnDiscipline) {
+    btnDiscipline.addEventListener("click", () => {
+      setMenuOpen(false);
+      openDisciplineModal();
+    });
+  }
 
   if (btnDiscClose) btnDiscClose.addEventListener("click", closeDisciplineModal);
   if (btnDiscReload) btnDiscReload.addEventListener("click", () => discReloadReportedList(true));
   if (btnDiscBack) btnDiscBack.addEventListener("click", discBackToList_);
 
   // botones 1..4
-if (disciplineModal) {
-  disciplineModal.querySelectorAll(".disc-level").forEach(btn => {
+  document.querySelectorAll(".disc-level").forEach(btn => {
     btn.addEventListener("click", () => {
       const lvl = Number(btn.getAttribute("data-level") || 0);
       discDoMarkLevel(lvl);
     });
   });
-}
-
 
   // ✅ escribir estudiante manualmente (FIX: NO borrar espacios mientras escribe)
   if (discStudentEl) {
@@ -3615,483 +3501,6 @@ if (disciplineModal) {
   }
 }
 
-
-// ==============================
-// PIERCING Y PERFORACIONES — “REPORTADOS DEL MES”
-// ==============================
-
-let __piercPollTimer = null;
-let __piercCurrentStudent = "";
-let __piercCacheList = [];
-let __piercView = "list"; // "list" | "detail"
-
-function piercMonthKey_() {
-  return monthKeyFromDate(new Date()); // YYYY-MM
-}
-
-function piercNormalizeStudent_(s){
-  return String(s || "").trim().replace(/\s+/g, " ");
-}
-
-function piercSetHint_(msg) {
-  if (!piercHint) return;
-  piercHint.textContent = msg || "";
-  piercHint.className = "modal-hint muted small";
-}
-
-function piercSetDotByLevel_(level){
-  if (!piercLevelDotEl) return;
-  const lv = Number(level || 0);
-  piercLevelDotEl.className = "dot" + (lv ? ` lvl-${lv}` : "");
-}
-
-function piercFindInCache_(studentName) {
-  const key = normalizeKey(studentName);
-  return (__piercCacheList || []).find(x => normalizeKey(x.student) === key) || null;
-}
-
-function piercClearLevelUI_() {
-  if (!piercingModal) return;
-  piercingModal.querySelectorAll(".disc-level").forEach(b => b.classList.remove("active"));
-}
-
-function piercApplyLevelUI_(level) {
-  piercClearLevelUI_();
-  const lv = Number(level || 0);
-  for (let i=1;i<=lv;i++){
-    const btn = piercingModal.querySelector(`.disc-level[data-level="${i}"]`);
-    if (btn) btn.classList.add("active");
-  }
-}
-
-function piercRenderWho_(whoArr) {
-  if (!piercWhoList) return;
-  const list = Array.isArray(whoArr) ? whoArr : [];
-  if (!list.length) { piercWhoList.textContent = "—"; return; }
-
-  piercWhoList.innerHTML = list.map(x => {
-    const name = escapeHtml(x.teacher || "");
-    const lvl = escapeHtml(String(x.level || ""));
-    return `<span class="disc-pill">${name} • Nivel ${lvl}</span>`;
-  }).join("");
-}
-
-function piercUpdateSelectedBox_(studentName){
-  const s = piercNormalizeStudent_(studentName);
-  __piercCurrentStudent = s;
-
-  if (piercStudentEl) piercStudentEl.value = s || "";
-
-  if (!piercSelectedNameEl || !piercSelectedMetaEl) return;
-
-  if (!s) {
-    piercSelectedNameEl.textContent = "(Selecciona o escribe un estudiante)";
-    piercSelectedMetaEl.textContent = "—";
-    piercSetDotByLevel_(0);
-    piercClearLevelUI_();
-    if (piercWhoList) piercWhoList.textContent = "—";
-    return;
-  }
-
-  const item = piercFindInCache_(s);
-  const maxLevel = item ? Number(item.maxLevel || 0) : 0;
-  const total = item ? Number(item.totalMarks || 0) : 0;
-  const teachersCount = item ? Number(item.teachersCount || 0) : 0;
-
-  piercSelectedNameEl.textContent = s;
-
-  piercSelectedMetaEl.textContent = item
-    ? `Nivel ${maxLevel} • Llamados: ${total} • Docentes: ${teachersCount}`
-    : `Nuevo (sin reportes este mes aún)`;
-
-  piercSetDotByLevel_(maxLevel);
-  piercApplyLevelUI_(maxLevel);
-
-  if (item && Array.isArray(item.who) && item.who.length) piercRenderWho_(item.who);
-  else if (piercWhoList) piercWhoList.textContent = "—";
-}
-
-function piercRenderReportedList_(items) {
-  if (!piercReportedList) return;
-  const list = Array.isArray(items) ? items : [];
-
-  if (!list.length) {
-    piercReportedList.innerHTML = `<div class="muted small">No hay reportes este mes.</div>`;
-    return;
-  }
-
-  const sorted = [...list].sort((a, b) => {
-    const ta = Date.parse(a.updatedAt || "");
-    const tb = Date.parse(b.updatedAt || "");
-    if (!isNaN(ta) && !isNaN(tb)) return tb - ta;
-    if (!isNaN(ta) && isNaN(tb)) return -1;
-    if (isNaN(ta) && !isNaN(tb)) return 1;
-    return String(a.student || "").localeCompare(String(b.student || ""), "es", { sensitivity: "base" });
-  });
-
-  const trashSvg = `
-    <svg viewBox="0 0 448 512" aria-hidden="true" focusable="false">
-      <path d="M135.2 17.7C140.6 7.1 151.5 0 163.8 0H284.2c12.3 0 23.2 7.1 28.6 17.7L320 32h96c17.7 0 32 14.3 32 32s-14.3 32-32 32h-16l-21.2 339.2C377.2 480.8 348.5 512 312.6 512H135.4c-35.9 0-64.6-31.2-66.2-76.8L48 96H32C14.3 96 0 81.7 0 64s14.3-32 32-32h96l7.2-14.3zM192 64l-3.2 6.4h70.4L256 64h-64zM112 96l19.2 336.5c.2 4.2 2.2 7.5 4.2 7.5h177.2c2 0 4-3.3 4.2-7.5L336 96H112zm64 64c8.8 0 16 7.2 16 16v192c0 8.8-7.2 16-16 16s-16-7.2-16-16V176c0-8.8 7.2-16 16-16zm96 0c8.8 0 16 7.2 16 16v192c0 8.8-7.2 16-16 16s-16-7.2-16-16V176c0-8.8 7.2-16 16-16z"></path>
-    </svg>
-  `;
-
-  const selectedKey = normalizeKey(__piercCurrentStudent || "");
-
-  piercReportedList.innerHTML = sorted.map(it => {
-    const student = String(it.student || "").trim();
-    if (!student) return "";
-
-    const maxLevel = Number(it.maxLevel || 0);
-    const dotCls = maxLevel ? `lvl-dot lvl-${maxLevel}` : "lvl-dot";
-    const isSelected = selectedKey && normalizeKey(student) === selectedKey;
-    const selectedCls = isSelected ? " selected" : "";
-
-    return `
-      <div class="disc-item${selectedCls}" role="button" tabindex="0" data-student="${escapeHtml(student)}">
-        <div class="left">
-          <span class="${dotCls}"></span>
-          <span class="name">${escapeHtml(student)}</span>
-        </div>
-        <div class="right" style="gap:10px;">
-          <button type="button" class="disc-trash" title="Eliminar estudiante" aria-label="Eliminar estudiante" data-del="${escapeHtml(student)}">
-            ${trashSvg}
-          </button>
-          <span class="muted small" aria-hidden="true">›</span>
-        </div>
-      </div>
-    `;
-  }).join("");
-
-  piercReportedList.querySelectorAll(".disc-item[data-student]").forEach(row => {
-    const open = () => {
-      const s = row.getAttribute("data-student") || "";
-      piercOpenDetail_(s);
-    };
-
-    row.addEventListener("click", (e) => {
-      if (e.target && e.target.closest && e.target.closest("[data-del]")) return;
-      open();
-    });
-
-    row.addEventListener("keydown", (e) => {
-      if (e.key === "Enter" || e.key === " ") {
-        e.preventDefault();
-        open();
-      }
-    });
-  });
-
-  piercReportedList.querySelectorAll("[data-del]").forEach(btn => {
-    btn.addEventListener("click", async (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      const student = btn.getAttribute("data-del") || "";
-      await piercDeleteStudent_(student);
-    });
-  });
-}
-
-function piercRenderDetailView_(){
-  if (!piercReportedList) return;
-  const s = piercNormalizeStudent_(__piercCurrentStudent);
-  const item = s ? piercFindInCache_(s) : null;
-
-  const maxLevel = item ? Number(item.maxLevel || 0) : 0;
-  const total = item ? Number(item.totalMarks || 0) : 0;
-  const teachersCount = item ? Number(item.teachersCount || 0) : 0;
-
-  piercReportedList.innerHTML = `
-    <div class="record-card" style="margin-bottom:10px;">
-      <div class="top">
-        <span class="teacher">${escapeHtml(s || "—")}</span>
-        <span class="badge badge-neutral">${maxLevel ? `Nivel ${maxLevel}` : "Sin nivel"}</span>
-      </div>
-      <div class="meta">
-        Llamados: <b>${total}</b> • Docentes: <b>${teachersCount}</b>
-      </div>
-    </div>
-    <div class="muted small" style="margin-bottom:6px;">(Usa los botones de nivel arriba para registrar)</div>
-  `;
-
-  piercApplyLevelUI_(maxLevel);
-  if (item && Array.isArray(item.who) && item.who.length) piercRenderWho_(item.who);
-  else if (piercWhoList) piercWhoList.textContent = "—";
-}
-
-function piercOpenDetail_(studentName){
-  __piercView = "detail";
-  piercUpdateSelectedBox_(studentName);
-  piercRenderDetailView_();
-  if (btnPiercBack) btnPiercBack.hidden = false;
-}
-
-function piercBackToList_(){
-  __piercView = "list";
-  piercRenderReportedList_(__piercCacheList);
-  piercSetHint_("");
-  if (btnPiercBack) btnPiercBack.hidden = true;
-}
-
-/* ======= Google Sheets API: Piercing ======= */
-async function gsPiercingList(month) {
-  const res = await fetch(GS_WEBAPP_URL, {
-    method: "POST",
-    body: JSON.stringify({ action: "piercing_list", month, key: GS_API_KEY })
-  });
-  let data = null;
-  try { data = await res.json(); } catch { throw new Error("Respuesta inválida del servidor"); }
-  if (!data.ok) throw new Error(data.msg || data.error || "piercing_list_failed");
-  return data.items || [];
-}
-
-async function gsPiercingMark(payload) {
-  const res = await fetch(GS_WEBAPP_URL, {
-    method: "POST",
-    body: JSON.stringify({ action: "piercing_mark", ...payload, key: GS_API_KEY })
-  });
-  let data = null;
-  try { data = await res.json(); } catch { throw new Error("Respuesta inválida del servidor"); }
-  if (!data.ok) throw new Error(data.msg || data.error || "piercing_mark_failed");
-  return data;
-}
-
-async function gsPiercingDeleteStudent(payload) {
-  const res = await fetch(GS_WEBAPP_URL, {
-    method: "POST",
-    body: JSON.stringify({ action: "piercing_delete_student", ...payload, key: GS_API_KEY })
-  });
-  let data = null;
-  try { data = await res.json(); } catch { throw new Error("Respuesta inválida del servidor"); }
-  if (!data.ok) throw new Error(data.msg || data.error || "piercing_delete_failed");
-  return data;
-}
-
-/* ======= UI actions ======= */
-async function piercReloadReportedList(showHint=false) {
-  try {
-    const month = piercMonthKey_();
-    const items = await gsPiercingList(month);
-    __piercCacheList = items;
-
-    const isTyping = (piercStudentEl && document.activeElement === piercStudentEl);
-    if (__piercCurrentStudent && !isTyping) piercUpdateSelectedBox_(__piercCurrentStudent);
-
-    if (__piercView === "detail" && __piercCurrentStudent) piercRenderDetailView_();
-    else piercRenderReportedList_(items);
-
-    if (showHint) piercSetHint_("Lista sincronizada ✅");
-  } catch (e) {
-    if (showHint) piercSetHint_(String(e && e.message ? e.message : e));
-  }
-}
-
-async function piercDeleteStudent_(studentName){
-  const profile = requireLogin();
-  if (!profile) return;
-
-  const student = piercNormalizeStudent_(studentName);
-  if (!student) return;
-
-  const ok = confirm(`¿Seguro que deseas eliminar a "${student}"?\n\nSe borrarán TODOS sus reportes del mes actual.`);
-  if (!ok) return;
-
-  try {
-    setLoading(true, "Eliminando…", "Borrando reportes del estudiante.");
-    const resp = await gsPiercingDeleteStudent({
-      month: piercMonthKey_(),
-      student,
-      teacher: profile.name,
-      email: profile.email,
-      device_id: getDeviceId()
-    });
-
-    if (resp && Array.isArray(resp.list)) __piercCacheList = resp.list;
-    else await piercReloadReportedList(false);
-
-    if (__piercCurrentStudent && normalizeKey(__piercCurrentStudent) === normalizeKey(student)) {
-      __piercCurrentStudent = "";
-      piercUpdateSelectedBox_("");
-      piercBackToList_();
-    } else {
-      if (__piercView !== "detail") piercRenderReportedList_(__piercCacheList);
-    }
-
-    piercSetHint_("Estudiante eliminado ✅");
-  } catch (e) {
-    piercSetHint_(String(e && e.message ? e.message : e));
-  } finally {
-    setLoading(false);
-  }
-}
-
-async function piercDoMarkLevel(level) {
-  const profile = requireLogin();
-  if (!profile) return;
-
-  const lvl = Number(level || 0);
-  if (lvl < 1 || lvl > 4) return;
-
-  const student = piercNormalizeStudent_(__piercCurrentStudent);
-  if (!student) { piercSetHint_("Primero selecciona un estudiante de la lista."); return; }
-
-  const item = piercFindInCache_(student);
-  const currentMax = item ? Number(item.maxLevel || 0) : 0;
-
-  if (lvl > currentMax + 1) {
-    piercSetHint_(`Debes marcar primero el nivel ${currentMax + 1}.`);
-    piercApplyLevelUI_(currentMax);
-    return;
-  }
-
-  try {
-    setLoading(true, "Guardando…", "Registrando reporte de piercing/perforaciones.");
-
-    const resp = await gsPiercingMark({
-      month: piercMonthKey_(),
-      student,
-      level: lvl,
-      teacher: profile.name,
-      email: profile.email,
-      device_id: getDeviceId()
-    });
-
-    if (resp && Array.isArray(resp.list)) __piercCacheList = resp.list;
-    else await piercReloadReportedList(false);
-
-    piercUpdateSelectedBox_(student);
-    __piercView = "list";
-    piercRenderReportedList_(__piercCacheList);
-    if (btnPiercBack) btnPiercBack.hidden = true;
-
-    if (resp && resp.ok && resp.justReported && lvl >= 4) {
-      const waUrl = String(resp.wa_url || "").trim();
-      if (waUrl) window.open(waUrl, "_blank");
-    }
-
-    piercSetHint_(lvl >= 4 ? "Nivel 4 registrado ✅" : "Registrado ✅");
-
-  } catch (e) {
-    piercSetHint_(String(e && e.message ? e.message : e));
-  } finally {
-    setLoading(false);
-  }
-}
-
-/* ======= Poll ======= */
-function piercStartPolling_() {
-  if (__piercPollTimer) return;
-
-  __piercPollTimer = setInterval(async () => {
-    const p = loadProfile();
-    const admin = isAdminMode();
-    if (!p && !admin) return;
-
-    if (!piercingModal || piercingModal.hidden === true) {
-      try { __piercCacheList = await gsPiercingList(piercMonthKey_()); } catch {}
-      return;
-    }
-
-    try {
-      const items = await gsPiercingList(piercMonthKey_());
-      __piercCacheList = items;
-
-      const isTyping = (piercStudentEl && document.activeElement === piercStudentEl);
-      if (__piercCurrentStudent && !isTyping) piercUpdateSelectedBox_(__piercCurrentStudent);
-
-      if (__piercView === "detail") {
-        if (__piercCurrentStudent) piercRenderDetailView_();
-        return;
-      }
-
-      piercRenderReportedList_(items);
-    } catch {}
-  }, 15000);
-}
-
-function openPiercingModal() {
-  if (!piercingModal) return;
-
-  // 🔥 Cerrar disciplina si está abierto
-  if (disciplineModal) disciplineModal.hidden = true;
-
-  piercingModal.hidden = false;
-  piercSetHint_("");
-  __piercView = "list";
-  __piercCurrentStudent = "";
-  piercUpdateSelectedBox_("");
-  piercRenderReportedList_(__piercCacheList);
-  if (btnPiercBack) btnPiercBack.hidden = true;
-
-  piercReloadReportedList(true);
-}
-
-
-function closePiercingModal() {
-  if (!piercingModal) return;
-
-  piercingModal.hidden = true;
-  __piercView = "list";
-  __piercCurrentStudent = "";
-  piercSetHint_("");
-  piercUpdateSelectedBox_("");
-  if (btnPiercBack) btnPiercBack.hidden = true;
-}
-
-function piercBindUI_() {
-  // ✅ NO binds aquí al menú. El menú lo bindamos una sola vez fuera (ver punto 3)
-
-  if (btnPiercClose) btnPiercClose.addEventListener("click", closePiercingModal);
-  if (btnPiercReload) btnPiercReload.addEventListener("click", () => piercReloadReportedList(true));
-  if (btnPiercBack) btnPiercBack.addEventListener("click", piercBackToList_);
-
-  if (piercingModal) {
-    piercingModal.querySelectorAll(".disc-level").forEach(btn => {
-      btn.addEventListener("click", () => {
-        const lvl = Number(btn.getAttribute("data-level") || 0);
-        piercDoMarkLevel(lvl);
-      });
-    });
-  }
-
-  if (piercStudentEl) {
-    piercStudentEl.addEventListener("input", () => {
-      const raw = String(piercStudentEl.value || "");
-      __piercCurrentStudent = raw;
-
-      const s = piercNormalizeStudent_(raw);
-      if (!s) {
-        __piercCurrentStudent = "";
-        if (piercSelectedNameEl) piercSelectedNameEl.textContent = "(Selecciona o escribe un estudiante)";
-        if (piercSelectedMetaEl) piercSelectedMetaEl.textContent = "—";
-        piercSetDotByLevel_(0);
-        piercClearLevelUI_();
-        if (piercWhoList) piercWhoList.textContent = "—";
-        piercRenderReportedList_(__piercCacheList);
-        return;
-      }
-
-      const item = piercFindInCache_(s);
-      const maxLevel = item ? Number(item.maxLevel || 0) : 0;
-      const total = item ? Number(item.totalMarks || 0) : 0;
-      const teachersCount = item ? Number(item.teachersCount || 0) : 0;
-
-      if (piercSelectedNameEl) piercSelectedNameEl.textContent = s;
-      if (piercSelectedMetaEl) {
-        piercSelectedMetaEl.textContent = item
-          ? `Nivel ${maxLevel} • Llamados: ${total} • Docentes: ${teachersCount}`
-          : `Nuevo (sin reportes este mes aún)`;
-      }
-
-      piercSetDotByLevel_(maxLevel);
-      piercApplyLevelUI_(maxLevel);
-
-      if (item && Array.isArray(item.who) && item.who.length) piercRenderWho_(item.who);
-      else if (piercWhoList) piercWhoList.textContent = "—";
-
-      piercRenderReportedList_(__piercCacheList);
-    });
-  }
-}
 
 
 
@@ -4952,56 +4361,33 @@ if ("serviceWorker" in navigator) {
 // ======= EVENTOS =======
 btnEntrada.addEventListener("click", () => register("ENTRADA"));
 btnSalida.addEventListener("click",  () => register("SALIDA"));
+
 btnExport.addEventListener("click", exportCSV);
 
 
-// ✅ Menú: abrir modales (UNA sola vez)
-if (btnDiscipline) {
-  btnDiscipline.addEventListener("click", (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setMenuOpen(false);
-    closePiercingModal();
-    openDisciplineModal();
-  });
-}
-
-if (btnPiercing) {
-  btnPiercing.addEventListener("click", (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setMenuOpen(false);
-    closeDisciplineModal();
-    openPiercingModal();
-  });
-}
 
 // Inicial: rápido (cache) + refresh silencioso
 refreshFromSheet({ useCache: true, silent: true });
 setStatus("warn", "Listo", "Para registrar, activa ubicación.");
 
-// DISCIPLINA + PIERCING (bind + polling)
+  // DISCIPLINA: bind + polling para sincronizar entre celulares
 discBindUI_();
 discStartPolling_();
-piercBindUI_();
-piercStartPolling_();
+
 
 document.body.classList.toggle("is-admin", isAdminMode());
 
+
 // ✅ Mostrar login al abrir (si no hay perfil guardado)
 if (isAdminMode()) {
-  setAdminMode(true);
+  setAdminMode(true); // aplica UI admin (cierra modal y pone ADMINISTRADOR)
 } else {
-  initAdminRecordsPanelUI();
+  initAdminRecordsPanelUI(); // ✅ fuerza ocultar combos + resumen si NO es admin
   const _p = requireLogin();
   if (_p) applySessionUI(_p);
   else applySessionUI(null);
 }
 
-// ✅ Arranque seguro
-window.addEventListener("error", (e) => {
-  console.error("❌ Error JS:", e.message, e.filename, e.lineno);
-});
 
 
 
@@ -5010,9 +4396,3 @@ window.addEventListener("error", (e) => {
 
 </body>
 </html>
-
-
-
-
-
-
