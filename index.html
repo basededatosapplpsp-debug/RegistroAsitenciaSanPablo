@@ -960,6 +960,17 @@ body:not(.is-admin) #adminMonthSummary{
 }
 
 
+
+.menu-subpanel{
+  margin-top: 6px;
+  padding: 6px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: rgba(0,0,0,.10);
+}
+
+
+
 </style>
 </head>
 
@@ -977,25 +988,33 @@ body:not(.is-admin) #adminMonthSummary{
       <span id="userInitials">?</span>
     </button>
 
-    <div id="userMenu" class="menu-panel" role="menu" hidden>
-      <button id="btnRefreshSW" class="menu-item" type="button" role="menuitem">Actualizar</button>
-      <button id="btnAdminViewAssist" class="menu-item" type="button" role="menuitem" hidden>Ver asistencias</button>
-      <button id="btnAdminManual" class="menu-item" type="button" role="menuitem" hidden>Registro manual</button>
+<div id="userMenu" class="menu-panel" role="menu" hidden>
+  <button id="btnRefreshSW" class="menu-item" type="button" role="menuitem">Actualizar</button>
+  <button id="btnAdminViewAssist" class="menu-item" type="button" role="menuitem" hidden>Ver asistencias</button>
+  <button id="btnAdminManual" class="menu-item" type="button" role="menuitem" hidden>Registro manual</button>
 
-      <button id="btnAdminConfig" class="menu-item" type="button" role="menuitem" hidden>Configuración</button>
+  <button id="btnAdminConfig" class="menu-item" type="button" role="menuitem" hidden>Configuración</button>
 
-<button id="btnAdminApproveDevices" class="menu-item" type="button" role="menuitem" hidden>Aprobar dispositivos</button>
-<button id="btnDiscipline" class="menu-item" type="button" role="menuitem">Llamado de atención</button>
-      <button id="btnPiercing" class="menu-item" type="button" role="menuitem">Piercing y perforaciones</button>
-   <button id="btnUniform" class="menu-item" type="button" role="menuitem">
-  Porte del uniforme
-</button>
+  <button id="btnAdminApproveDevices" class="menu-item" type="button" role="menuitem" hidden>Aprobar dispositivos</button>
 
+  <!-- ✅ NUEVO: Botón que abre el submenú -->
+  <button id="btnFaltasMenu" class="menu-item" type="button" role="menuitem" aria-haspopup="true" aria-expanded="false">
+    Faltas <span class="muted small" aria-hidden="true">›</span>
+  </button>
 
+  <!-- ✅ Submenú de Faltas (aquí van los botones que ya tienes) -->
+  <div id="faltasSubMenu" class="menu-subpanel" hidden>
+    <div class="muted small" style="padding:6px 8px;">Faltas</div>
 
+    <!-- ✅ MISMOS IDs => tu JS no se rompe -->
+    <button id="btnDiscipline" class="menu-item" type="button" role="menuitem">Llamado de atención</button>
+    <button id="btnPiercing" class="menu-item" type="button" role="menuitem">Piercing y perforaciones</button>
+    <button id="btnUniform" class="menu-item" type="button" role="menuitem">Porte del uniforme</button>
+  </div>
 
-      <button id="btnLogout" class="menu-item danger" type="button" role="menuitem">Cerrar sesión</button>
-    </div>
+  <button id="btnLogout" class="menu-item danger" type="button" role="menuitem">Cerrar sesión</button>
+</div>
+
   </div>
 
   <button id="btnInstall" class="btn btn-ghost" hidden>Instalar</button>
@@ -2223,6 +2242,47 @@ if (recordsTeacherSelect) {
   });
 }
 
+// ===== Submenú Faltas =====
+const btnFaltasMenu = document.getElementById("btnFaltasMenu");
+const faltasSubMenu = document.getElementById("faltasSubMenu");
+
+function closeFaltasSubMenu_(){
+  if (!faltasSubMenu) return;
+  faltasSubMenu.hidden = true;
+  if (btnFaltasMenu) btnFaltasMenu.setAttribute("aria-expanded", "false");
+}
+
+function toggleFaltasSubMenu_(){
+  if (!faltasSubMenu) return;
+  const willOpen = !!faltasSubMenu.hidden;
+  faltasSubMenu.hidden = !willOpen;
+  if (btnFaltasMenu) btnFaltasMenu.setAttribute("aria-expanded", willOpen ? "true" : "false");
+}
+
+if (btnFaltasMenu) {
+  btnFaltasMenu.addEventListener("click", (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    toggleFaltasSubMenu_();
+  });
+}
+
+// ✅ Si el usuario toca cualquier opción dentro del submenú, lo cerramos
+if (faltasSubMenu) {
+  faltasSubMenu.addEventListener("click", () => {
+    closeFaltasSubMenu_();
+  });
+}
+
+// ✅ Si tienes una función setMenuOpen(false), el menú se cierra:
+// pero el submenú puede quedar "abierto" en estado => lo reseteamos
+document.addEventListener("click", (e) => {
+  // Si el menú está abierto y haces click fuera, probablemente tu código ya lo cierra.
+  // Aquí solo aseguramos cerrar el submenú si el click fue fuera del bloque.
+  if (!faltasSubMenu || !btnFaltasMenu) return;
+  const inside = (e.target && (faltasSubMenu.contains(e.target) || btnFaltasMenu.contains(e.target)));
+  if (!inside) closeFaltasSubMenu_();
+});
 
 
 // Estado inicial
