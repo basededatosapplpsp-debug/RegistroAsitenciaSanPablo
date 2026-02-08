@@ -4264,9 +4264,21 @@ function uniApplyLevelUI_(maxLevel){
 }
 function uniRenderWho_(whoArr){
   if (!uniWhoList) return;
-  if (!Array.isArray(whoArr) || !whoArr.length) { uniWhoList.textContent = "—"; return; }
-  uniWhoList.textContent = whoArr.map(x => `${x.teacher} (N${x.level})`).join(" • ");
+
+  const list = Array.isArray(whoArr) ? whoArr : [];
+  if (!list.length) {
+    uniWhoList.textContent = "—";
+    return;
+  }
+
+  // ✅ Igual que Disciplina/Piercing: Docente • Nivel X (en pills)
+  uniWhoList.innerHTML = list.map(x => {
+    const name = escapeHtml(x.teacher || "");
+    const lvl  = escapeHtml(String(x.level || ""));
+    return `<span class="disc-pill">${name} • Nivel ${lvl}</span>`;
+  }).join("");
 }
+
 function uniFindInCache_(student){
   const key = normalizeKey(student);
   return (__uniCacheList || []).find(it => normalizeKey(it.student) === key) || null;
