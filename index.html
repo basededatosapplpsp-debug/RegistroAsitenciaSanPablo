@@ -960,22 +960,6 @@ body:not(.is-admin) #adminMonthSummary{
 }
 
 
-
-/* FIX DEFINITIVO: asegurar tamaño de modales */
-.modal-backdrop {
-  position: fixed;
-  inset: 0;              /* top:0 right:0 bottom:0 left:0 */
-  width: 100vw;
-  height: 100vh;
-
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  pointer-events: auto;
-}
-
-
 </style>
 </head>
 
@@ -3064,22 +3048,17 @@ function discFindInCache_(studentName) {
 }
 
 function discClearLevelUI_() {
-  if (!disciplineModal) return;
-  disciplineModal.querySelectorAll(".disc-level").forEach(b => b.classList.remove("active"));
+  document.querySelectorAll(".disc-level").forEach(b => b.classList.remove("active"));
 }
-
 
 function discApplyLevelUI_(level) {
   discClearLevelUI_();
   const lv = Number(level || 0);
-  if (!disciplineModal) return;
-
-  for (let i = 1; i <= lv; i++) {
-    const btn = disciplineModal.querySelector(`.disc-level[data-level="${i}"]`);
+  for (let i=1;i<=lv;i++){
+    const btn = document.querySelector(`.disc-level[data-level="${i}"]`);
     if (btn) btn.classList.add("active");
   }
 }
-
 
 function discRenderWho_(whoArr) {
   if (!discWhoList) return;
@@ -3540,9 +3519,6 @@ function discStartPolling_() {
 function openDisciplineModal() {
   if (!disciplineModal) return;
 
-  // ✅ asegura exclusividad
-  if (typeof closePiercingModal === "function") closePiercingModal();
-
   disciplineModal.hidden = false;
   discSetHint_("");
 
@@ -3874,14 +3850,8 @@ async function gsPiercingList(month) {
 async function gsPiercingMark(payload) {
   const res = await fetch(GS_WEBAPP_URL, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      action: "piercing_mark",
-      ...(payload || {}),
-      key: GS_API_KEY
-    })
+    body: JSON.stringify({ action: "piercing_mark", ...payload, key: GS_API_KEY })
   });
-
   let data = null;
   try { data = await res.json(); } catch { throw new Error("Respuesta inválida del servidor"); }
   if (!data.ok) throw new Error(data.msg || data.error || "piercing_mark_failed");
@@ -3891,21 +3861,13 @@ async function gsPiercingMark(payload) {
 async function gsPiercingDeleteStudent(payload) {
   const res = await fetch(GS_WEBAPP_URL, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      action: "piercing_delete_student",
-      ...(payload || {}),
-      key: GS_API_KEY
-    })
+    body: JSON.stringify({ action: "piercing_delete_student", ...payload, key: GS_API_KEY })
   });
-
   let data = null;
   try { data = await res.json(); } catch { throw new Error("Respuesta inválida del servidor"); }
   if (!data.ok) throw new Error(data.msg || data.error || "piercing_delete_failed");
   return data;
 }
-
-
 
 /* ======= UI actions ======= */
 async function piercReloadReportedList(showHint=false) {
@@ -4052,24 +4014,7 @@ function piercStartPolling_() {
 function openPiercingModal() {
   if (!piercingModal) return;
 
-  // ✅ asegurar exclusividad
-  if (typeof closeDisciplineModal === "function") closeDisciplineModal();
-
-  // ✅ QUITAR hidden SIEMPRE (prop + atributo)
   piercingModal.hidden = false;
-  piercingModal.removeAttribute("hidden");
-
-  // ✅ asegurar que tenga caja (por si algún CSS raro lo pisa)
-  piercingModal.style.display = "flex";
-  piercingModal.style.position = "fixed";
-  piercingModal.style.inset = "0";
-  piercingModal.style.width = "100vw";
-  piercingModal.style.height = "100vh";
-  piercingModal.style.zIndex = "9999";
-  piercingModal.style.visibility = "visible";
-  piercingModal.style.opacity = "1";
-
-  // ✅ reset UI como ya hacías
   piercSetHint_("");
   __piercView = "list";
   __piercCurrentStudent = "";
@@ -4077,27 +4022,13 @@ function openPiercingModal() {
   piercRenderReportedList_(__piercCacheList);
   if (btnPiercBack) btnPiercBack.hidden = true;
 
-  // ✅ valida visualmente si de verdad quedó visible
-  validatePiercingModalOpen_();
-
-  // ✅ carga datos
   piercReloadReportedList(true);
 }
-
-
 
 function closePiercingModal() {
   if (!piercingModal) return;
 
-  // ✅ PONER hidden (prop + atributo)
   piercingModal.hidden = true;
-  piercingModal.setAttribute("hidden", "");
-
-  // (limpiar inline styles opcional, pero sano)
-  piercingModal.style.display = "";
-  piercingModal.style.visibility = "";
-  piercingModal.style.opacity = "";
-
   __piercView = "list";
   __piercCurrentStudent = "";
   piercSetHint_("");
@@ -4105,67 +4036,11 @@ function closePiercingModal() {
   if (btnPiercBack) btnPiercBack.hidden = true;
 }
 
-
-function validatePiercingModalOpen_() {
-  if (!piercingModal) {
-    console.error("❌ validatePiercingModalOpen_: piercingModal NO existe");
-    return;
-  }
-
-  requestAnimationFrame(() => {
-    const cs = getComputedStyle(piercingModal);
-    const r = piercingModal.getBoundingClientRect();
-
-    console.log("=== VALIDACIÓN PIERCING ===");
-    console.log("hidden prop:", piercingModal.hidden);
-    console.log("has [hidden] attr:", piercingModal.hasAttribute("hidden"));
-    console.log("computed display:", cs.display);
-    console.log("computed visibility:", cs.visibility);
-    console.log("computed opacity:", cs.opacity);
-    console.log("rect:", { x: r.x, y: r.y, w: r.width, h: r.height });
-
-    // ✅ si sigue en 0x0, lo marcamos en pantalla
-    if (r.width === 0 || r.height === 0 || cs.display === "none") {
-      piercingModal.style.outline = "4px solid red";
-      console.error("❌ PIERCING sigue sin mostrarse: probablemente aún tiene [hidden] o display:none por CSS.");
-    } else {
-      piercingModal.style.outline = "4px solid lime";
-      console.log("✅ PIERCING visible correctamente");
-    }
-  });
-}
-
-
-
 function piercBindUI_() {
-  // ✅ 1) Click directo al botón (si existe)
   if (btnPiercing) {
-    btnPiercing.addEventListener("click", (e) => {
-      // clave: evitar que el click burbujee y se "mezcle" con cierres globales
-      e.preventDefault();
-      e.stopPropagation();
-
-      // cerrar menú primero
+    btnPiercing.addEventListener("click", () => {
       setMenuOpen(false);
-
-      // abrir modal en el siguiente frame (evita glitch iOS/PWA)
-      requestAnimationFrame(() => openPiercingModal());
-    });
-  }
-
-  // ✅ 2) Fallback por delegación: si por alguna razón btnPiercing no se engancha
-  // (ej: reemplazos dinámicos, duplicados raros, etc.)
-  if (userMenu) {
-    userMenu.addEventListener("click", (e) => {
-      const t = e.target;
-      const hit = t && t.closest ? t.closest("#btnPiercing") : null;
-      if (!hit) return;
-
-      e.preventDefault();
-      e.stopPropagation();
-
-      setMenuOpen(false);
-      requestAnimationFrame(() => openPiercingModal());
+      openPiercingModal();
     });
   }
 
@@ -4173,7 +4048,6 @@ function piercBindUI_() {
   if (btnPiercReload) btnPiercReload.addEventListener("click", () => piercReloadReportedList(true));
   if (btnPiercBack) btnPiercBack.addEventListener("click", piercBackToList_);
 
-  // botones 1..4 dentro del modal
   if (piercingModal) {
     piercingModal.querySelectorAll(".disc-level").forEach(btn => {
       btn.addEventListener("click", () => {
@@ -4183,7 +4057,6 @@ function piercBindUI_() {
     });
   }
 
-  // escribir estudiante
   if (piercStudentEl) {
     piercStudentEl.addEventListener("input", () => {
       const raw = String(piercStudentEl.value || "");
@@ -4222,106 +4095,6 @@ function piercBindUI_() {
       piercRenderReportedList_(__piercCacheList);
     });
   }
-}
-
-function debugPiercingWiring_() {
-  const btn = document.getElementById("btnPiercing");
-  const modal = document.getElementById("piercingModal");
-
-  // ✅ Validación visible
-  if (!btn) {
-    alert("❌ DEBUG: NO existe #btnPiercing en el DOM");
-    console.error("❌ DEBUG: NO existe #btnPiercing");
-    return;
-  }
-  if (!modal) {
-    alert("❌ DEBUG: NO existe #piercingModal en el DOM");
-    console.error("❌ DEBUG: NO existe #piercingModal");
-    return;
-  }
-
-  console.log("✅ DEBUG: btnPiercing encontrado:", btn);
-  console.log("✅ DEBUG: piercingModal encontrado:", modal);
-
-  // ✅ Listener de prueba (NO reemplaza el tuyo, solo confirma click)
-  btn.addEventListener("click", (e) => {
-    console.log("✅ DEBUG: CLICK en btnPiercing (llegó)", e);
-    alert("✅ DEBUG: CLICK en Piercing SÍ llega. Intentando abrir modal…");
-  });
-}
-
-function forcePiercingOpenOnCapture_() {
-  // Captura: se ejecuta ANTES que los listeners normales
-  document.addEventListener("click", (e) => {
-    const hit = e.target && e.target.closest ? e.target.closest("#btnPiercing") : null;
-    if (!hit) return;
-
-    console.log("🧲 DEBUG: Capturé click en #btnPiercing (modo fuerza)");
-
-    // Cortar todo lo demás
-    e.preventDefault();
-    e.stopPropagation();
-    if (typeof e.stopImmediatePropagation === "function") e.stopImmediatePropagation();
-
-    // Cierra menú (por si está abierto)
-    try { setMenuOpen(false); } catch {}
-
-    // Abrir modal “hard”
-    const modal = document.getElementById("piercingModal");
-    if (!modal) {
-      alert("❌ DEBUG: No existe #piercingModal al intentar abrir");
-      return;
-    }
-
-    // Asegurar que hidden se quite
-    modal.hidden = false;
-
-    // Por si algún CSS raro lo deja oculto:
-    modal.style.display = "flex";
-    modal.style.visibility = "visible";
-    modal.style.opacity = "1";
-
-    // Y llamamos tu flujo normal también (si existe)
-    if (typeof openPiercingModal === "function") {
-      requestAnimationFrame(() => openPiercingModal());
-    }
-
-    alert("✅ DEBUG: modal debería estar abierto ahora.");
-  }, true); // 👈 TRUE = CAPTURA
-}
-
-function debugModalState_(id) {
-  const el = document.getElementById(id);
-  const loader = document.getElementById("appLoader");
-
-  if (!el) { alert(`❌ DEBUG: no existe #${id}`); return; }
-
-  const cs = window.getComputedStyle(el);
-  const r = el.getBoundingClientRect();
-
-  console.log("=== DEBUG MODAL ===");
-  console.log("id:", id);
-  console.log("hidden prop:", el.hidden, "has [hidden]:", el.hasAttribute("hidden"));
-  console.log("display:", cs.display, "visibility:", cs.visibility, "opacity:", cs.opacity, "zIndex:", cs.zIndex);
-  console.log("rect:", { x:r.x, y:r.y, w:r.width, h:r.height });
-
-  if (loader) {
-    console.log("--- loader ---");
-    console.log("loader hidden:", loader.hidden, "has [hidden]:", loader.hasAttribute("hidden"));
-    console.log("loader zIndex:", window.getComputedStyle(loader).zIndex);
-  }
-
-  // ¿Qué elemento está arriba en el centro de la pantalla?
-  const cx = Math.floor(window.innerWidth / 2);
-  const cy = Math.floor(window.innerHeight / 2);
-  const topEl = document.elementFromPoint(cx, cy);
-  console.log("elementFromPoint(center):", topEl);
-
-  alert(`DEBUG #${id}
-hidden=${el.hidden} attrHidden=${el.hasAttribute("hidden")}
-display=${cs.display} z=${cs.zIndex}
-loaderHidden=${loader ? loader.hidden : "NA"}
-Mira consola (F12)`);
 }
 
 
@@ -5197,8 +4970,6 @@ discStartPolling_();
   piercBindUI_();
 piercStartPolling_();
 
-debugPiercingWiring_();
-forcePiercingOpenOnCapture_();
 
 
 document.body.classList.toggle("is-admin", isAdminMode());
@@ -5222,11 +4993,39 @@ window.addEventListener("error", (e) => {
   console.error("❌ Error JS:", e.message, e.filename, e.lineno);
 });
 
+// ✅ Inicialización segura cuando el DOM ya está listo
+window.addEventListener("DOMContentLoaded", () => {
+  console.log("✅ DOM listo");
+
+  // Re-buscar por si algo cambió
+  const _btnPiercing = document.getElementById("btnPiercing");
+  const _piercingModal = document.getElementById("piercingModal");
+
+  console.log("btnPiercing:", _btnPiercing);
+  console.log("piercingModal:", _piercingModal);
+
+  if (_btnPiercing) {
+    _btnPiercing.addEventListener("click", () => {
+      console.log("✅ Click en Piercing");
+      setMenuOpen(false);
+      openPiercingModal();
+    });
+  } else {
+    console.warn("⚠️ No se encontró #btnPiercing");
+  }
+
+  // Bind normales
+  discBindUI_();
+  discStartPolling_();
+  piercBindUI_();
+  piercStartPolling_();
+});
 
 </script>
 
 </body>
 </html>
+
 
 
 
