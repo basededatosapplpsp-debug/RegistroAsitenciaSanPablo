@@ -960,6 +960,22 @@ body:not(.is-admin) #adminMonthSummary{
 }
 
 
+
+/* FIX DEFINITIVO: asegurar tamaño de modales */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;              /* top:0 right:0 bottom:0 left:0 */
+  width: 100vw;
+  height: 100vh;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  pointer-events: auto;
+}
+
+
 </style>
 </head>
 
