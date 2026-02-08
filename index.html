@@ -2602,14 +2602,15 @@ async function adminChangePinFlow(oldPin) {
     setLoading(true, "Actualizando…", "Guardando nuevo PIN de administrador.");
     await gsAdminChangePin(oldPin, newPin);
 
-// ✅ sesión admin principal
-setAdminMode(true);
+    // ✅ sesión admin principal
+    setAdminMode(true);
 
-closeAdminModal();
-loginModal.hidden = true;
+    // ✅ cerrar modales sin romper si algún elemento no existe
+    closeAdminModal();
+    if (loginModal) loginModal.hidden = true;
+    if (loginHint) loginHint.textContent = "";
 
-setStatus("", "Administrador", "PIN actualizado ✅ Sesión iniciada como administrador.");
-
+    setStatus("", "Administrador", "PIN actualizado ✅ Sesión iniciada como administrador.");
 
     // limpiar estado del botón
     delete btnAdminEnter.dataset.mode;
@@ -2621,6 +2622,7 @@ setStatus("", "Administrador", "PIN actualizado ✅ Sesión iniciada como admini
     setLoading(false);
   }
 }
+
 
 if (btnAdminOpen) btnAdminOpen.addEventListener("click", openAdminModal);
 if (btnAdminClose) btnAdminClose.addEventListener("click", closeAdminModal);
@@ -3170,7 +3172,8 @@ const sorted = [...list].sort((a, b) => {
     </svg>
   `;
 
-  const selectedKey = normalizeKey(__discCurrentStudent || "");
+  const selectedKey = normalizeKey(normalizeStudent_(__discCurrentStudent || ""));
+
 
   // ✅ OJO: ahora el contenedor NO es button, es div clickable
   discReportedList.innerHTML = sorted
@@ -3796,7 +3799,7 @@ function piercRenderReportedList_(items) {
     </svg>
   `;
 
-  const selectedKey = normalizeKey(__piercCurrentStudent || "");
+  const selectedKey = normalizeKey(piercNormalizeStudent_(__piercCurrentStudent || ""));
 
   piercReportedList.innerHTML = sorted.map(it => {
     const student = String(it.student || "").trim();
@@ -4076,12 +4079,11 @@ function piercStartPolling_() {
 }
 
 function openPiercingModal() {
-  const modal = document.getElementById("piercingModal");
-  if (!modal) return;
+  if (!piercingModal) return;
 
   // 🔥 FIX: si está anidado dentro de disciplineModal, sácalo al <body>
-  if (modal.parentElement !== document.body) {
-    document.body.appendChild(modal);
+  if (piercingModal.parentElement !== document.body) {
+    document.body.appendChild(piercingModal);
     console.warn("✅ PiercingModal movido al <body> (estaba anidado).");
   }
 
@@ -4090,9 +4092,9 @@ function openPiercingModal() {
   setMenuOpen(false);
 
   // Abre piercing
-  modal.hidden = false;
-  modal.removeAttribute("hidden");
-  modal.style.display = "flex";
+  piercingModal.hidden = false;
+  piercingModal.removeAttribute("hidden");
+  piercingModal.style.display = "flex";
 
   // Reset UI
   piercSetHint_("");
@@ -4105,6 +4107,7 @@ function openPiercingModal() {
   // Cargar lista
   piercReloadReportedList(true);
 }
+
 
 
 function closePiercingModal() {
