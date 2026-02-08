@@ -987,9 +987,10 @@ body:not(.is-admin) #adminMonthSummary{
 <button id="btnAdminApproveDevices" class="menu-item" type="button" role="menuitem" hidden>Aprobar dispositivos</button>
 <button id="btnDiscipline" class="menu-item" type="button" role="menuitem">Llamado de atención</button>
       <button id="btnPiercing" class="menu-item" type="button" role="menuitem">Piercing y perforaciones</button>
-      <button id="btnUniform" class="menu-item">
+   <button id="btnUniform" class="menu-item" type="button" role="menuitem">
   Porte del uniforme
 </button>
+
 
 
 
@@ -1432,55 +1433,59 @@ body:not(.is-admin) #adminMonthSummary{
 
 
 <!-- ======= MODAL: PORTE DEL UNIFORME ======= -->
-<div class="modal" id="uniformModal" hidden>
-  <div class="modal-card">
-    <div class="modal-head">
+<div id="uniformModal" class="modal-backdrop" hidden>
+  <div class="modal-card" style="width:min(720px,100%);">
+    <h2 class="modal-title">Porte del uniforme</h2>
+    <p class="modal-sub">Registro por niveles (1 a 4) • sincroniza entre celulares</p>
+
+    <!-- Seleccionado -->
+    <label class="modal-label">Seleccionado</label>
+    <div id="uniSelectedBox" class="status" style="margin-top:6px;">
+      <span class="dot" id="uniLevelDot"></span>
       <div>
-        <div class="modal-title">Porte del uniforme</div>
-        <div class="modal-sub">Registro por niveles (1 a 4) • sincroniza entre celulares</div>
-      </div>
-      <button class="icon-btn" id="btnUniClose" title="Cerrar">✕</button>
-    </div>
-
-    <div class="modal-body">
-      <!-- Seleccionado -->
-      <div class="record-card" id="uniSelectedBox">
-        <div class="top">
-          <div class="left">
-            <span class="lvl-dot" id="uniLevelDot"></span>
-            <span class="teacher" id="uniSelectedName">(Selecciona o escribe un estudiante)</span>
-          </div>
-          <span class="badge badge-neutral" id="uniSelectedMeta">—</span>
-        </div>
-        <div class="meta">
-          Docentes:
-          <span id="uniWhoList">—</span>
-        </div>
-      </div>
-
-      <!-- Input -->
-      <div class="row" style="gap:10px; margin-top:10px;">
-        <input id="uniStudent" class="input" placeholder="Escribe o selecciona un estudiante…" autocomplete="off" />
-        <button class="btn btn-secondary" id="btnUniReload" type="button">Actualizar</button>
-      </div>
-
-      <!-- Niveles -->
-      <div class="row" style="gap:10px; margin-top:10px; flex-wrap:wrap;">
-        <button class="btn disc-level" data-level="1" type="button">Nivel 1</button>
-        <button class="btn disc-level" data-level="2" type="button">Nivel 2</button>
-        <button class="btn disc-level" data-level="3" type="button">Nivel 3</button>
-        <button class="btn disc-level" data-level="4" type="button">Nivel 4</button>
-      </div>
-
-      <div class="muted small" id="uniHint" style="margin-top:8px;"></div>
-
-      <!-- Lista -->
-      <div class="list" id="uniReportedList" style="margin-top:10px;"></div>
-
-      <div class="row" style="margin-top:12px; justify-content:flex-end;">
-        <button class="btn btn-secondary" id="btnUniBack" type="button" hidden>← Atrás</button>
+        <div id="uniSelectedName" style="font-weight:900;">(Selecciona o escribe un estudiante)</div>
+        <div class="muted" id="uniSelectedMeta">—</div>
       </div>
     </div>
+
+    <!-- Input + actualizar -->
+    <label class="modal-label" for="uniStudent" style="margin-top:10px;">Estudiante</label>
+    <div class="row" style="gap:10px;">
+      <input id="uniStudent" class="modal-input" type="text"
+             placeholder="Escribe o selecciona un estudiante…" autocomplete="off" />
+      <button id="btnUniReload" type="button" class="btn btn-ghost">Actualizar</button>
+    </div>
+
+    <!-- Niveles -->
+    <div class="disc-levels" style="margin-top:12px;">
+      <button type="button" class="disc-level" data-level="1">Nivel 1</button>
+      <button type="button" class="disc-level" data-level="2">Nivel 2</button>
+      <button type="button" class="disc-level" data-level="3">Nivel 3</button>
+      <button type="button" class="disc-level danger" data-level="4">Nivel 4</button>
+    </div>
+
+    <!-- Docentes -->
+    <div class="disc-who">
+      <div class="muted small" style="margin-bottom:6px;">Docentes</div>
+      <div id="uniWhoList" class="disc-who-list">—</div>
+    </div>
+
+    <!-- Lista -->
+    <div class="disc-reported">
+      <div class="row row-between" style="margin-top:12px;">
+        <div class="muted small">Reportados (mes actual)</div>
+      </div>
+
+      <div id="uniReportedList" class="disc-reported-list"></div>
+
+      <div id="uniHint" class="modal-hint muted small"></div>
+
+      <div class="modal-actions" style="justify-content:flex-end;">
+        <button id="btnUniBack" type="button" class="btn btn-ghost" hidden>← Atrás</button>
+        <button id="btnUniClose" type="button" class="btn btn-ghost">Cerrar</button>
+      </div>
+    </div>
+
   </div>
 </div>
 
@@ -2602,15 +2607,14 @@ async function adminChangePinFlow(oldPin) {
     setLoading(true, "Actualizando…", "Guardando nuevo PIN de administrador.");
     await gsAdminChangePin(oldPin, newPin);
 
-    // ✅ sesión admin principal
-    setAdminMode(true);
+// ✅ sesión admin principal
+setAdminMode(true);
 
-    // ✅ cerrar modales sin romper si algún elemento no existe
-    closeAdminModal();
-    if (loginModal) loginModal.hidden = true;
-    if (loginHint) loginHint.textContent = "";
+closeAdminModal();
+loginModal.hidden = true;
 
-    setStatus("", "Administrador", "PIN actualizado ✅ Sesión iniciada como administrador.");
+setStatus("", "Administrador", "PIN actualizado ✅ Sesión iniciada como administrador.");
+
 
     // limpiar estado del botón
     delete btnAdminEnter.dataset.mode;
@@ -2622,7 +2626,6 @@ async function adminChangePinFlow(oldPin) {
     setLoading(false);
   }
 }
-
 
 if (btnAdminOpen) btnAdminOpen.addEventListener("click", openAdminModal);
 if (btnAdminClose) btnAdminClose.addEventListener("click", closeAdminModal);
@@ -3172,8 +3175,7 @@ const sorted = [...list].sort((a, b) => {
     </svg>
   `;
 
-  const selectedKey = normalizeKey(normalizeStudent_(__discCurrentStudent || ""));
-
+  const selectedKey = normalizeKey(__discCurrentStudent || "");
 
   // ✅ OJO: ahora el contenedor NO es button, es div clickable
   discReportedList.innerHTML = sorted
@@ -3799,7 +3801,7 @@ function piercRenderReportedList_(items) {
     </svg>
   `;
 
-  const selectedKey = normalizeKey(piercNormalizeStudent_(__piercCurrentStudent || ""));
+  const selectedKey = normalizeKey(__piercCurrentStudent || "");
 
   piercReportedList.innerHTML = sorted.map(it => {
     const student = String(it.student || "").trim();
@@ -4079,11 +4081,12 @@ function piercStartPolling_() {
 }
 
 function openPiercingModal() {
-  if (!piercingModal) return;
+  const modal = document.getElementById("piercingModal");
+  if (!modal) return;
 
   // 🔥 FIX: si está anidado dentro de disciplineModal, sácalo al <body>
-  if (piercingModal.parentElement !== document.body) {
-    document.body.appendChild(piercingModal);
+  if (modal.parentElement !== document.body) {
+    document.body.appendChild(modal);
     console.warn("✅ PiercingModal movido al <body> (estaba anidado).");
   }
 
@@ -4092,9 +4095,9 @@ function openPiercingModal() {
   setMenuOpen(false);
 
   // Abre piercing
-  piercingModal.hidden = false;
-  piercingModal.removeAttribute("hidden");
-  piercingModal.style.display = "flex";
+  modal.hidden = false;
+  modal.removeAttribute("hidden");
+  modal.style.display = "flex";
 
   // Reset UI
   piercSetHint_("");
@@ -4107,7 +4110,6 @@ function openPiercingModal() {
   // Cargar lista
   piercReloadReportedList(true);
 }
-
 
 
 function closePiercingModal() {
