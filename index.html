@@ -3858,8 +3858,14 @@ async function gsPiercingList(month) {
 async function gsPiercingMark(payload) {
   const res = await fetch(GS_WEBAPP_URL, {
     method: "POST",
-    body: JSON.stringify({ action: "piercing_mark", ...payload, key: GS_API_KEY })
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      action: "piercing_mark",
+      ...(payload || {}),
+      key: GS_API_KEY
+    })
   });
+
   let data = null;
   try { data = await res.json(); } catch { throw new Error("Respuesta inválida del servidor"); }
   if (!data.ok) throw new Error(data.msg || data.error || "piercing_mark_failed");
@@ -3869,13 +3875,21 @@ async function gsPiercingMark(payload) {
 async function gsPiercingDeleteStudent(payload) {
   const res = await fetch(GS_WEBAPP_URL, {
     method: "POST",
-    body: JSON.stringify({ action: "piercing_delete_student", ...payload, key: GS_API_KEY })
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      action: "piercing_delete_student",
+      ...(payload || {}),
+      key: GS_API_KEY
+    })
   });
+
   let data = null;
   try { data = await res.json(); } catch { throw new Error("Respuesta inválida del servidor"); }
   if (!data.ok) throw new Error(data.msg || data.error || "piercing_delete_failed");
   return data;
 }
+
+
 
 /* ======= UI actions ======= */
 async function piercReloadReportedList(showHint=false) {
@@ -5009,7 +5023,6 @@ window.addEventListener("error", (e) => {
 
 </body>
 </html>
-
 
 
 
