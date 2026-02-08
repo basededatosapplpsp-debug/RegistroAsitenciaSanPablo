@@ -4153,6 +4153,72 @@ function piercBindUI_() {
   }
 }
 
+function debugPiercingWiring_() {
+  const btn = document.getElementById("btnPiercing");
+  const modal = document.getElementById("piercingModal");
+
+  // ✅ Validación visible
+  if (!btn) {
+    alert("❌ DEBUG: NO existe #btnPiercing en el DOM");
+    console.error("❌ DEBUG: NO existe #btnPiercing");
+    return;
+  }
+  if (!modal) {
+    alert("❌ DEBUG: NO existe #piercingModal en el DOM");
+    console.error("❌ DEBUG: NO existe #piercingModal");
+    return;
+  }
+
+  console.log("✅ DEBUG: btnPiercing encontrado:", btn);
+  console.log("✅ DEBUG: piercingModal encontrado:", modal);
+
+  // ✅ Listener de prueba (NO reemplaza el tuyo, solo confirma click)
+  btn.addEventListener("click", (e) => {
+    console.log("✅ DEBUG: CLICK en btnPiercing (llegó)", e);
+    alert("✅ DEBUG: CLICK en Piercing SÍ llega. Intentando abrir modal…");
+  });
+}
+
+function forcePiercingOpenOnCapture_() {
+  // Captura: se ejecuta ANTES que los listeners normales
+  document.addEventListener("click", (e) => {
+    const hit = e.target && e.target.closest ? e.target.closest("#btnPiercing") : null;
+    if (!hit) return;
+
+    console.log("🧲 DEBUG: Capturé click en #btnPiercing (modo fuerza)");
+
+    // Cortar todo lo demás
+    e.preventDefault();
+    e.stopPropagation();
+    if (typeof e.stopImmediatePropagation === "function") e.stopImmediatePropagation();
+
+    // Cierra menú (por si está abierto)
+    try { setMenuOpen(false); } catch {}
+
+    // Abrir modal “hard”
+    const modal = document.getElementById("piercingModal");
+    if (!modal) {
+      alert("❌ DEBUG: No existe #piercingModal al intentar abrir");
+      return;
+    }
+
+    // Asegurar que hidden se quite
+    modal.hidden = false;
+
+    // Por si algún CSS raro lo deja oculto:
+    modal.style.display = "flex";
+    modal.style.visibility = "visible";
+    modal.style.opacity = "1";
+
+    // Y llamamos tu flujo normal también (si existe)
+    if (typeof openPiercingModal === "function") {
+      requestAnimationFrame(() => openPiercingModal());
+    }
+
+    alert("✅ DEBUG: modal debería estar abierto ahora.");
+  }, true); // 👈 TRUE = CAPTURA
+}
+
 
 
 // ======= GEO =======
@@ -5027,6 +5093,8 @@ discStartPolling_();
   piercBindUI_();
 piercStartPolling_();
 
+debugPiercingWiring_();
+forcePiercingOpenOnCapture_();
 
 
 document.body.classList.toggle("is-admin", isAdminMode());
