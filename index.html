@@ -4036,19 +4036,24 @@ function piercStartPolling_() {
 function openPiercingModal() {
   if (!piercingModal) return;
 
-  // ✅ asegura exclusividad
+  // ✅ exclusividad
   if (typeof closeDisciplineModal === "function") closeDisciplineModal();
 
+  // ✅ forzar repaint estable antes de mostrar
   piercingModal.hidden = false;
+
   piercSetHint_("");
   __piercView = "list";
   __piercCurrentStudent = "";
   piercUpdateSelectedBox_("");
   piercRenderReportedList_(__piercCacheList);
+
   if (btnPiercBack) btnPiercBack.hidden = true;
 
+  // ✅ cargar data (sin bloquear apertura)
   piercReloadReportedList(true);
 }
+
 
 function closePiercingModal() {
   if (!piercingModal) return;
@@ -4062,10 +4067,34 @@ function closePiercingModal() {
 }
 
 function piercBindUI_() {
+  // ✅ 1) Click directo al botón (si existe)
   if (btnPiercing) {
-    btnPiercing.addEventListener("click", () => {
+    btnPiercing.addEventListener("click", (e) => {
+      // clave: evitar que el click burbujee y se "mezcle" con cierres globales
+      e.preventDefault();
+      e.stopPropagation();
+
+      // cerrar menú primero
       setMenuOpen(false);
-      openPiercingModal();
+
+      // abrir modal en el siguiente frame (evita glitch iOS/PWA)
+      requestAnimationFrame(() => openPiercingModal());
+    });
+  }
+
+  // ✅ 2) Fallback por delegación: si por alguna razón btnPiercing no se engancha
+  // (ej: reemplazos dinámicos, duplicados raros, etc.)
+  if (userMenu) {
+    userMenu.addEventListener("click", (e) => {
+      const t = e.target;
+      const hit = t && t.closest ? t.closest("#btnPiercing") : null;
+      if (!hit) return;
+
+      e.preventDefault();
+      e.stopPropagation();
+
+      setMenuOpen(false);
+      requestAnimationFrame(() => openPiercingModal());
     });
   }
 
@@ -4073,6 +4102,7 @@ function piercBindUI_() {
   if (btnPiercReload) btnPiercReload.addEventListener("click", () => piercReloadReportedList(true));
   if (btnPiercBack) btnPiercBack.addEventListener("click", piercBackToList_);
 
+  // botones 1..4 dentro del modal
   if (piercingModal) {
     piercingModal.querySelectorAll(".disc-level").forEach(btn => {
       btn.addEventListener("click", () => {
@@ -4082,6 +4112,7 @@ function piercBindUI_() {
     });
   }
 
+  // escribir estudiante
   if (piercStudentEl) {
     piercStudentEl.addEventListener("input", () => {
       const raw = String(piercStudentEl.value || "");
@@ -4121,6 +4152,7 @@ function piercBindUI_() {
     });
   }
 }
+
 
 
 // ======= GEO =======
