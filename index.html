@@ -3669,13 +3669,14 @@ function discBindUI_() {
     });
   }
 
-  if (btnDiscClose) {
+if (btnDiscClose) {
   btnDiscClose.addEventListener("click", (e) => {
     e.preventDefault();
     e.stopPropagation();
     closeDisciplineModal();
   });
-}  if (btnDiscReload) btnDiscReload.addEventListener("click", () => discReloadReportedList(true));
+}
+  if (btnDiscReload) btnDiscReload.addEventListener("click", () => discReloadReportedList(true));
   if (btnDiscBack) btnDiscBack.addEventListener("click", discBackToList_);
 
   // botones 1..4
@@ -4654,7 +4655,7 @@ function uniBindUI_() {
     });
   }
 
-  if (btnUniClose) {
+if (btnUniClose) {
   btnUniClose.addEventListener("click", (e) => {
     e.preventDefault();
     e.stopPropagation();
@@ -5646,6 +5647,40 @@ window.addEventListener("error", (e) => {
   console.error("❌ Error JS:", e.message, e.filename, e.lineno);
 });
 
+// ==============================
+// FIX: No cerrar menú cuando se hace click dentro de un modal
+// ==============================
+(function keepMenuOpenWhenClosingModals() {
+  const modalIds = [
+    "disciplineModal",
+    "piercingModal",
+    "uniformModal",
+    "loginModal",
+    "adminModal",
+    "adminAssistModal",
+    "adminDevicesModal",
+    "adminManualModal",
+    "adminConfigModal"
+  ];
+
+  modalIds.forEach(id => {
+    const modal = document.getElementById(id);
+    if (!modal) return;
+
+    // Bloquea cualquier click dentro del modal para que NO llegue al document click handler
+    modal.addEventListener("click", (e) => {
+      e.stopPropagation();
+    }, true);
+
+    // Bloquea clicks dentro de la tarjeta del modal (por si acaso)
+    const card = modal.querySelector(".modal-card");
+    if (card) {
+      card.addEventListener("click", (e) => {
+        e.stopPropagation();
+      }, true);
+    }
+  });
+})();
 
 
 </script>
