@@ -4052,35 +4052,90 @@ function piercStartPolling_() {
 function openPiercingModal() {
   if (!piercingModal) return;
 
-  // ✅ exclusividad
+  // ✅ asegurar exclusividad
   if (typeof closeDisciplineModal === "function") closeDisciplineModal();
 
-  // ✅ forzar repaint estable antes de mostrar
+  // ✅ QUITAR hidden SIEMPRE (prop + atributo)
   piercingModal.hidden = false;
+  piercingModal.removeAttribute("hidden");
 
+  // ✅ asegurar que tenga caja (por si algún CSS raro lo pisa)
+  piercingModal.style.display = "flex";
+  piercingModal.style.position = "fixed";
+  piercingModal.style.inset = "0";
+  piercingModal.style.width = "100vw";
+  piercingModal.style.height = "100vh";
+  piercingModal.style.zIndex = "9999";
+  piercingModal.style.visibility = "visible";
+  piercingModal.style.opacity = "1";
+
+  // ✅ reset UI como ya hacías
   piercSetHint_("");
   __piercView = "list";
   __piercCurrentStudent = "";
   piercUpdateSelectedBox_("");
   piercRenderReportedList_(__piercCacheList);
-
   if (btnPiercBack) btnPiercBack.hidden = true;
 
-  // ✅ cargar data (sin bloquear apertura)
+  // ✅ valida visualmente si de verdad quedó visible
+  validatePiercingModalOpen_();
+
+  // ✅ carga datos
   piercReloadReportedList(true);
 }
+
 
 
 function closePiercingModal() {
   if (!piercingModal) return;
 
+  // ✅ PONER hidden (prop + atributo)
   piercingModal.hidden = true;
+  piercingModal.setAttribute("hidden", "");
+
+  // (limpiar inline styles opcional, pero sano)
+  piercingModal.style.display = "";
+  piercingModal.style.visibility = "";
+  piercingModal.style.opacity = "";
+
   __piercView = "list";
   __piercCurrentStudent = "";
   piercSetHint_("");
   piercUpdateSelectedBox_("");
   if (btnPiercBack) btnPiercBack.hidden = true;
 }
+
+
+function validatePiercingModalOpen_() {
+  if (!piercingModal) {
+    console.error("❌ validatePiercingModalOpen_: piercingModal NO existe");
+    return;
+  }
+
+  requestAnimationFrame(() => {
+    const cs = getComputedStyle(piercingModal);
+    const r = piercingModal.getBoundingClientRect();
+
+    console.log("=== VALIDACIÓN PIERCING ===");
+    console.log("hidden prop:", piercingModal.hidden);
+    console.log("has [hidden] attr:", piercingModal.hasAttribute("hidden"));
+    console.log("computed display:", cs.display);
+    console.log("computed visibility:", cs.visibility);
+    console.log("computed opacity:", cs.opacity);
+    console.log("rect:", { x: r.x, y: r.y, w: r.width, h: r.height });
+
+    // ✅ si sigue en 0x0, lo marcamos en pantalla
+    if (r.width === 0 || r.height === 0 || cs.display === "none") {
+      piercingModal.style.outline = "4px solid red";
+      console.error("❌ PIERCING sigue sin mostrarse: probablemente aún tiene [hidden] o display:none por CSS.");
+    } else {
+      piercingModal.style.outline = "4px solid lime";
+      console.log("✅ PIERCING visible correctamente");
+    }
+  });
+}
+
+
 
 function piercBindUI_() {
   // ✅ 1) Click directo al botón (si existe)
