@@ -3551,10 +3551,15 @@ function closeDisciplineModal() {
 }
 function discBindUI_() {
   if (btnDiscipline) {
-    btnDiscipline.addEventListener("click", () => {
-      setMenuOpen(false);
-      openDisciplineModal();
-    });
+ btnDiscipline.addEventListener("click", (e) => {
+  e.preventDefault();
+  e.stopPropagation();
+  setMenuOpen(false);
+  // ✅ asegura que solo quede 1 modal abierto
+  if (typeof closePiercingModal === "function") closePiercingModal();
+  openDisciplineModal();
+});
+
   }
 
   if (btnDiscClose) btnDiscClose.addEventListener("click", closeDisciplineModal);
@@ -4044,10 +4049,15 @@ function closePiercingModal() {
 
 function piercBindUI_() {
   if (btnPiercing) {
-    btnPiercing.addEventListener("click", () => {
-      setMenuOpen(false);
-      openPiercingModal();
-    });
+ btnPiercing.addEventListener("click", (e) => {
+  e.preventDefault();
+  e.stopPropagation();
+  setMenuOpen(false);
+  // ✅ asegura que solo quede 1 modal abierto
+  if (typeof closeDisciplineModal === "function") closeDisciplineModal();
+  openPiercingModal();
+});
+
   }
 
   if (btnPiercClose) btnPiercClose.addEventListener("click", closePiercingModal);
@@ -5011,11 +5021,15 @@ window.addEventListener("DOMContentLoaded", () => {
   console.log("piercingModal:", _piercingModal);
 
   if (_btnPiercing) {
-    _btnPiercing.addEventListener("click", () => {
-      console.log("✅ Click en Piercing");
-      setMenuOpen(false);
-      openPiercingModal();
-    });
+  _btnPiercing.addEventListener("click", (e) => {
+  e.preventDefault();
+  e.stopPropagation();
+  console.log("✅ Click en Piercing");
+  setMenuOpen(false);
+  if (typeof closeDisciplineModal === "function") closeDisciplineModal();
+  openPiercingModal();
+});
+
   } else {
     console.warn("⚠️ No se encontró #btnPiercing");
   }
@@ -5031,7 +5045,6 @@ window.addEventListener("DOMContentLoaded", () => {
 
 </body>
 </html>
-
 
 
 
