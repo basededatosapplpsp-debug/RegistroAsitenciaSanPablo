@@ -1313,33 +1313,27 @@ body:not(.is-admin) #adminMonthSummary{
   </div>
 </div>
 
-
-  <!-- ======= MODAL LLAMADO DE ATENCIÓN (CELULAR EN CLASE) ======= -->
+<!-- ======= MODAL LLAMADO DE ATENCIÓN (CELULAR EN CLASE) ======= -->
 <div id="disciplineModal" class="modal-backdrop" hidden>
   <div class="modal-card" style="width:min(720px,100%);">
     <h2 class="modal-title">Llamado de atención</h2>
     <p class="modal-sub">Reporta uso de celular en clase. Marca el nivel (1 a 4). Al llegar a 4 se notifica a los docentes que participaron.</p>
 
-<!-- ✅ Seleccionado (se mantiene) -->
-<label class="modal-label">Seleccionado</label>
-<div id="discSelectedBox" class="status" style="margin-top:6px;">
-  <span class="dot" id="discLevelDot"></span>
-  <div>
-    <div id="discSelectedName" style="font-weight:900;">Selecciona un estudiante de la lista</div>
-    <div class="muted" id="discSelectedMeta">—</div>
-  </div>
-</div>
+    <label class="modal-label">Seleccionado</label>
+    <div id="discSelectedBox" class="status" style="margin-top:6px;">
+      <span class="dot" id="discLevelDot"></span>
+      <div>
+        <div id="discSelectedName" style="font-weight:900;">Selecciona un estudiante de la lista</div>
+        <div class="muted" id="discSelectedMeta">—</div>
+      </div>
+    </div>
 
-<!-- ✅ INPUT para escribir estudiante (AGREGAR) -->
-<label class="modal-label" for="discStudent">Estudiante</label>
-<input id="discStudent" class="modal-input" type="text"
-       placeholder="Escribe el nombre del estudiante…" autocomplete="off" />
-<div class="muted small" style="margin-top:6px;">
-  Tip: también puedes tocar un nombre en “Reportados” para cargarlo arriba.
-</div>
-
-
-
+    <label class="modal-label" for="discStudent">Estudiante</label>
+    <input id="discStudent" class="modal-input" type="text"
+           placeholder="Escribe el nombre del estudiante…" autocomplete="off" />
+    <div class="muted small" style="margin-top:6px;">
+      Tip: también puedes tocar un nombre en “Reportados” para cargarlo arriba.
+    </div>
 
     <div class="disc-levels">
       <button type="button" class="disc-level" data-level="1">1 • Leve</button>
@@ -1353,28 +1347,24 @@ body:not(.is-admin) #adminMonthSummary{
       <div id="discWhoList" class="disc-who-list">—</div>
     </div>
 
-   <div class="disc-reported">
-  <div class="row row-between" style="margin-top:12px;">
-    <div class="muted small">Reportados (mes actual)</div>
-  </div>
+    <div class="disc-reported">
+      <div class="row row-between" style="margin-top:12px;">
+        <div class="muted small">Reportados (mes actual)</div>
+      </div>
 
-    <div id="discReportedList" class="disc-reported-list"></div>
+      <div id="discReportedList" class="disc-reported-list"></div>
 
+      <div id="discHint" class="modal-hint muted small"></div>
 
-    <div id="discHint" class="modal-hint muted small"></div>
-
-   <div class="modal-actions" style="justify-content:flex-end;">
-  <!-- Atrás (lo controlamos por JS, inicia oculto) -->
-  <button id="btnDiscBack" type="button" class="btn btn-ghost" hidden>← Atrás</button>
-
-  <!-- Recargar (mantenemos MISMO ID para no romper tu JS actual) -->
-  <button id="btnDiscReload" type="button" class="btn btn-ghost">Recargar</button>
-
-  <button id="btnDiscClose" type="button" class="btn btn-ghost">Cerrar</button>
-</div>
-
+      <div class="modal-actions" style="justify-content:flex-end;">
+        <button id="btnDiscBack" type="button" class="btn btn-ghost" hidden>← Atrás</button>
+        <button id="btnDiscReload" type="button" class="btn btn-ghost">Recargar</button>
+        <button id="btnDiscClose" type="button" class="btn btn-ghost">Cerrar</button>
+      </div>
+    </div>
   </div>
 </div>
+
 
 <!-- ======= MODAL PIERCING Y PERFORACIONES ======= -->
 <div id="piercingModal" class="modal-backdrop" hidden>
@@ -1427,7 +1417,6 @@ body:not(.is-admin) #adminMonthSummary{
         <button id="btnPiercClose" type="button" class="btn btn-ghost">Cerrar</button>
       </div>
     </div>
-
   </div>
 </div>
 
@@ -1438,7 +1427,6 @@ body:not(.is-admin) #adminMonthSummary{
     <h2 class="modal-title">Porte del uniforme</h2>
     <p class="modal-sub">Registro por niveles (1 a 4) • sincroniza entre celulares</p>
 
-    <!-- Seleccionado -->
     <label class="modal-label">Seleccionado</label>
     <div id="uniSelectedBox" class="status" style="margin-top:6px;">
       <span class="dot" id="uniLevelDot"></span>
@@ -1448,29 +1436,28 @@ body:not(.is-admin) #adminMonthSummary{
       </div>
     </div>
 
-    <!-- Input + actualizar -->
-    <label class="modal-label" for="uniStudent" style="margin-top:10px;">Estudiante</label>
-    <div class="row" style="gap:10px;">
-      <input id="uniStudent" class="modal-input" type="text"
-             placeholder="Escribe o selecciona un estudiante…" autocomplete="off" />
-      <button id="btnUniReload" type="button" class="btn btn-ghost">Actualizar</button>
+    <div class="disc-who">
+      <div class="muted small" style="margin-bottom:6px;">Docentes</div>
+      <div id="uniWhoList" class="disc-who-list">—</div>
     </div>
 
-    <!-- Niveles -->
-    <div class="disc-levels" style="margin-top:12px;">
+    <label class="modal-label" for="uniStudent">Estudiante</label>
+    <input id="uniStudent" class="modal-input" type="text"
+           placeholder="Escribe o selecciona un estudiante…" autocomplete="off" />
+
+    <div class="row" style="margin-top:10px;">
+      <button id="btnUniReload" type="button" class="btn btn-primary" style="width:100%;">Actualizar</button>
+    </div>
+
+    <div class="disc-levels" style="margin-top:10px;">
       <button type="button" class="disc-level" data-level="1">Nivel 1</button>
       <button type="button" class="disc-level" data-level="2">Nivel 2</button>
       <button type="button" class="disc-level" data-level="3">Nivel 3</button>
       <button type="button" class="disc-level danger" data-level="4">Nivel 4</button>
     </div>
 
-    <!-- Docentes -->
-    <div class="disc-who">
-      <div class="muted small" style="margin-bottom:6px;">Docentes</div>
-      <div id="uniWhoList" class="disc-who-list">—</div>
-    </div>
+    <div id="uniHint" class="modal-hint muted small"></div>
 
-    <!-- Lista -->
     <div class="disc-reported">
       <div class="row row-between" style="margin-top:12px;">
         <div class="muted small">Reportados (mes actual)</div>
@@ -1478,14 +1465,11 @@ body:not(.is-admin) #adminMonthSummary{
 
       <div id="uniReportedList" class="disc-reported-list"></div>
 
-      <div id="uniHint" class="modal-hint muted small"></div>
-
       <div class="modal-actions" style="justify-content:flex-end;">
         <button id="btnUniBack" type="button" class="btn btn-ghost" hidden>← Atrás</button>
         <button id="btnUniClose" type="button" class="btn btn-ghost">Cerrar</button>
       </div>
     </div>
-
   </div>
 </div>
 
