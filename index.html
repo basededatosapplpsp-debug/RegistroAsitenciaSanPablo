@@ -959,6 +959,14 @@ body:not(.is-admin) #adminMonthSummary{
   text-overflow: ellipsis;
 }
 
+/* ✅ Modales SIEMPRE encima del menú */
+.modal-backdrop{ z-index: 20000; }
+
+/* opcional: si quieres priorizar uno sobre otro */
+#disciplineModal{ z-index: 20000; }
+#piercingModal{ z-index: 20001; }
+#loginModal{ z-index: 30000; }
+#appLoader{ z-index: 40000; }
 
 </style>
 </head>
@@ -4021,7 +4029,20 @@ function piercStartPolling_() {
 function openPiercingModal() {
   if (!piercingModal) return;
 
+  // ✅ Cierra el otro modal para evitar stacking raro
+  if (disciplineModal) disciplineModal.hidden = true;
+
+  // ✅ Cierra menú
+  setMenuOpen(false);
+
+  // ✅ Fuerza apertura
   piercingModal.hidden = false;
+  piercingModal.removeAttribute("hidden");
+  piercingModal.style.display = "flex";
+  piercingModal.style.visibility = "visible";
+  piercingModal.style.opacity = "1";
+
+  // Reset UI
   piercSetHint_("");
   __piercView = "list";
   __piercCurrentStudent = "";
@@ -4029,8 +4050,18 @@ function openPiercingModal() {
   piercRenderReportedList_(__piercCacheList);
   if (btnPiercBack) btnPiercBack.hidden = true;
 
+  // ✅ Debug visible REAL
+  requestAnimationFrame(() => {
+    const card = piercingModal.querySelector(".modal-card");
+    const r = card ? card.getBoundingClientRect() : null;
+    console.log("🧪 Piercing modal display:", getComputedStyle(piercingModal).display);
+    console.log("🧪 Piercing modal rect:", r);
+  });
+
+  // carga lista
   piercReloadReportedList(true);
 }
+
 
 function closePiercingModal() {
   if (!piercingModal) return;
