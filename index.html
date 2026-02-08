@@ -1004,10 +1004,10 @@ body:not(.is-admin) #adminMonthSummary{
 
   <!-- ✅ Submenú de Faltas (aquí van los botones que ya tienes) -->
   <div id="faltasSubMenu" class="menu-subpanel" hidden>
-    <div class="muted small" style="padding:6px 8px;">Faltas</div>
+    <div class="muted small" style="padding:6px 8px;">Llamado de atención</div>
 
     <!-- ✅ MISMOS IDs => tu JS no se rompe -->
-    <button id="btnDiscipline" class="menu-item" type="button" role="menuitem">Llamado de atención</button>
+    <button id="btnDiscipline" class="menu-item" type="button" role="menuitem">Uso del celular</button>
     <button id="btnPiercing" class="menu-item" type="button" role="menuitem">Piercing y perforaciones</button>
     <button id="btnUniform" class="menu-item" type="button" role="menuitem">Porte del uniforme</button>
   </div>
@@ -3669,13 +3669,7 @@ function discBindUI_() {
     });
   }
 
-if (btnDiscClose) {
-  btnDiscClose.addEventListener("click", (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    closeDisciplineModal();
-  });
-}
+  if (btnDiscClose) btnDiscClose.addEventListener("click", closeDisciplineModal);
   if (btnDiscReload) btnDiscReload.addEventListener("click", () => discReloadReportedList(true));
   if (btnDiscBack) btnDiscBack.addEventListener("click", discBackToList_);
 
@@ -4188,13 +4182,7 @@ function piercBindUI_() {
     });
   }
 
-  if (btnPiercClose) {
-  btnPiercClose.addEventListener("click", (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    closePiercingModal();
-  });
-}
+  if (btnPiercClose) btnPiercClose.addEventListener("click", closePiercingModal);
   if (btnPiercReload) btnPiercReload.addEventListener("click", () => piercReloadReportedList(true));
   if (btnPiercBack) btnPiercBack.addEventListener("click", piercBackToList_);
 
@@ -4655,13 +4643,8 @@ function uniBindUI_() {
     });
   }
 
-if (btnUniClose) {
-  btnUniClose.addEventListener("click", (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    closeUniformModal();
-  });
-}  if (btnUniReload) btnUniReload.addEventListener("click", () => uniReloadReportedList(true));
+  if (btnUniClose) btnUniClose.addEventListener("click", closeUniformModal);
+  if (btnUniReload) btnUniReload.addEventListener("click", () => uniReloadReportedList(true));
   if (btnUniBack) btnUniBack.addEventListener("click", uniBackToList_);
 
   if (uniformModal) {
@@ -5647,40 +5630,6 @@ window.addEventListener("error", (e) => {
   console.error("❌ Error JS:", e.message, e.filename, e.lineno);
 });
 
-// ==============================
-// FIX: No cerrar menú cuando se hace click dentro de un modal
-// ==============================
-(function keepMenuOpenWhenClosingModals() {
-  const modalIds = [
-    "disciplineModal",
-    "piercingModal",
-    "uniformModal",
-    "loginModal",
-    "adminModal",
-    "adminAssistModal",
-    "adminDevicesModal",
-    "adminManualModal",
-    "adminConfigModal"
-  ];
-
-  modalIds.forEach(id => {
-    const modal = document.getElementById(id);
-    if (!modal) return;
-
-    // Bloquea cualquier click dentro del modal para que NO llegue al document click handler
-    modal.addEventListener("click", (e) => {
-      e.stopPropagation();
-    }, true);
-
-    // Bloquea clicks dentro de la tarjeta del modal (por si acaso)
-    const card = modal.querySelector(".modal-card");
-    if (card) {
-      card.addEventListener("click", (e) => {
-        e.stopPropagation();
-      }, true);
-    }
-  });
-})();
 
 
 </script>
