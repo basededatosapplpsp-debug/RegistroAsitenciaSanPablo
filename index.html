@@ -4973,13 +4973,7 @@ btnEntrada.addEventListener("click", () => register("ENTRADA"));
 btnSalida.addEventListener("click",  () => register("SALIDA"));
 btnExport.addEventListener("click", exportCSV);
 
-// 🔥 Bind directo y seguro del botón Piercing (UNA sola vez)
-if (btnPiercing) {
-  btnPiercing.addEventListener("click", () => {
-    setMenuOpen(false);
-    openPiercingModal();
-  });
-}
+
 
 // Inicial: rápido (cache) + refresh silencioso
 refreshFromSheet({ useCache: true, silent: true });
@@ -5012,34 +5006,10 @@ window.addEventListener("error", (e) => {
 // ✅ Inicialización segura cuando el DOM ya está listo
 window.addEventListener("DOMContentLoaded", () => {
   console.log("✅ DOM listo");
-
-  // Re-buscar por si algo cambió
-  const _btnPiercing = document.getElementById("btnPiercing");
-  const _piercingModal = document.getElementById("piercingModal");
-
-  console.log("btnPiercing:", _btnPiercing);
-  console.log("piercingModal:", _piercingModal);
-
-  if (_btnPiercing) {
-  _btnPiercing.addEventListener("click", (e) => {
-  e.preventDefault();
-  e.stopPropagation();
-  console.log("✅ Click en Piercing");
-  setMenuOpen(false);
-  if (typeof closeDisciplineModal === "function") closeDisciplineModal();
-  openPiercingModal();
+  console.log("btnPiercing:", document.getElementById("btnPiercing"));
+  console.log("piercingModal:", document.getElementById("piercingModal"));
 });
 
-  } else {
-    console.warn("⚠️ No se encontró #btnPiercing");
-  }
-
-  // Bind normales
-  discBindUI_();
-  discStartPolling_();
-  piercBindUI_();
-  piercStartPolling_();
-});
 
 </script>
 
