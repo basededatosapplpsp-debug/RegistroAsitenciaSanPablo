@@ -3669,8 +3669,13 @@ function discBindUI_() {
     });
   }
 
-  if (btnDiscClose) btnDiscClose.addEventListener("click", closeDisciplineModal);
-  if (btnDiscReload) btnDiscReload.addEventListener("click", () => discReloadReportedList(true));
+  if (btnDiscClose) {
+  btnDiscClose.addEventListener("click", (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    closeDisciplineModal();
+  });
+}  if (btnDiscReload) btnDiscReload.addEventListener("click", () => discReloadReportedList(true));
   if (btnDiscBack) btnDiscBack.addEventListener("click", discBackToList_);
 
   // botones 1..4
@@ -4182,7 +4187,13 @@ function piercBindUI_() {
     });
   }
 
-  if (btnPiercClose) btnPiercClose.addEventListener("click", closePiercingModal);
+  if (btnPiercClose) {
+  btnPiercClose.addEventListener("click", (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    closePiercingModal();
+  });
+}
   if (btnPiercReload) btnPiercReload.addEventListener("click", () => piercReloadReportedList(true));
   if (btnPiercBack) btnPiercBack.addEventListener("click", piercBackToList_);
 
@@ -4643,8 +4654,13 @@ function uniBindUI_() {
     });
   }
 
-  if (btnUniClose) btnUniClose.addEventListener("click", closeUniformModal);
-  if (btnUniReload) btnUniReload.addEventListener("click", () => uniReloadReportedList(true));
+  if (btnUniClose) {
+  btnUniClose.addEventListener("click", (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    closeUniformModal();
+  });
+}  if (btnUniReload) btnUniReload.addEventListener("click", () => uniReloadReportedList(true));
   if (btnUniBack) btnUniBack.addEventListener("click", uniBackToList_);
 
   if (uniformModal) {
