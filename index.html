@@ -995,6 +995,51 @@ body:not(.is-admin) #adminMonthSummary{
   flex-direction: column;
 }
 
+/* ===== FIX PIERCING: asegurar que se vea SI o SI ===== */
+#piercingModal{
+  z-index: 10050;              /* por encima del menú (10000) */
+}
+
+#piercingModal:not([hidden]){
+  display: flex !important;    /* por si algo lo pisa */
+}
+
+#piercingModal .modal-card{
+  width: min(720px, 100%) !important;
+  min-height: 260px;           /* evita 0x0 */
+  max-height: calc(100dvh - 24px);
+  overflow: auto;
+
+  /* por si alguna regla rara lo deja transparente */
+  background: #0b1220;
+}
+
+   /* ===== FIX DEFINITIVO: MODAL PIERCING ===== */
+#piercingModal {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 20000;
+}
+
+/* 🔥 ESTO ES LO CLAVE */
+#piercingModal .modal-card {
+  display: flex !important;     /* pisa display: contents */
+  flex-direction: column;
+
+  width: min(720px, 92vw);
+  min-height: 260px;
+  max-height: 90vh;
+
+  background: #0b1220;
+  border-radius: 16px;
+  box-shadow: 0 10px 40px rgba(0,0,0,.4);
+
+  overflow-y: auto;
+}
+
 
 </style>
 </head>
