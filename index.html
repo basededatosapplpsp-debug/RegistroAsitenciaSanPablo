@@ -968,6 +968,21 @@ body:not(.is-admin) #adminMonthSummary{
 #loginModal{ z-index: 30000; }
 #appLoader{ z-index: 40000; }
 
+/* ===== FIX DEFINITIVO MODALES ===== */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;              /* top:0 right:0 bottom:0 left:0 */
+  width: 100vw;
+  height: 100vh;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  background: rgba(0,0,0,.45);
+}
+
+
 </style>
 </head>
 
