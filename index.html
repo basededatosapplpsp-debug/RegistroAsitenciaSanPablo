@@ -3482,6 +3482,8 @@ function fillDatalist_(datalistEl, names) {
 }
 
 // Inicializa un modal (select curso -> carga estudiantes -> datalist)
+// Inicializa un modal (select curso -> carga estudiantes -> datalist)
+// ✅ Ahora es "re-ejecutable" sin duplicar event listeners
 async function initCourseComboForModal({
   selectEl,
   datalistEl,
@@ -3508,17 +3510,28 @@ async function initCourseComboForModal({
       }
       const students = await gsCourseStudents(course);
       fillDatalist_(datalistEl, students);
+
+      // ✅ si el usuario ya había escrito algo, no lo borramos;
+      // pero si el valor no existe en el nuevo curso, solo queda como texto (normal).
     }
 
-    selectEl.addEventListener("change", loadStudentsForSelectedCourse);
+    // ✅ evita duplicar listeners si esta función se llama de nuevo
+    if (selectEl.__courseChangeHandler) {
+      selectEl.removeEventListener("change", selectEl.__courseChangeHandler);
+    }
+    selectEl.__courseChangeHandler = loadStudentsForSelectedCourse;
+    selectEl.addEventListener("change", selectEl.__courseChangeHandler);
 
     // carga inicial si hay curso seleccionado
     await loadStudentsForSelectedCourse();
+
   } catch (e) {
     // No rompas nada si falla: solo deja vacío
     console.warn("⚠️ No se pudo cargar cursos/estudiantes:", e);
+    fillDatalist_(datalistEl, []);
   }
 }
+
 
   
 /* ======= UI actions ======= */
@@ -5763,12 +5776,24 @@ document.body.classList.toggle("is-admin", isAdminMode());
 // ✅ Mostrar login al abrir (si no hay perfil guardado)
 if (isAdminMode()) {
   setAdminMode(true); // aplica UI admin (cierra modal y pone ADMINISTRADOR)
+
+  // ✅ (Opcional pero recomendado) también prepara cursos/estudiantes por si usa modales
+  initAllModalCourses_();
+
 } else {
   initAdminRecordsPanelUI(); // ✅ fuerza ocultar combos + resumen si NO es admin
   const _p = requireLogin();
-  if (_p) applySessionUI(_p);
-  else applySessionUI(null);
+
+  if (_p) {
+    applySessionUI(_p);
+
+    // ✅ FIX: si ya hay sesión guardada, inicializa cursos + estudiantes
+    initAllModalCourses_();
+  } else {
+    applySessionUI(null);
+  }
 }
+
 
 
 
@@ -5784,6 +5809,7 @@ window.addEventListener("error", (e) => {
 
 </body>
 </html>
+
 
 
 
