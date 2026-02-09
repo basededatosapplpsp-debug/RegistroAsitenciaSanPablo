@@ -1351,6 +1351,9 @@ body:not(.is-admin) #adminMonthSummary{
     <label class="modal-label" for="discCourse">Curso</label>
     <select id="discCourse" class="modal-input"></select>
     <datalist id="discStudentsList"></datalist>
+    <label class="modal-label" for="discStudentSelect">Estudiante (lista)</label>
+<select id="discStudentSelect" class="modal-input"></select>
+
 
     <label class="modal-label" for="discStudent">Estudiante</label>
     <input id="discStudent" class="modal-input" type="text"
@@ -1413,6 +1416,9 @@ body:not(.is-admin) #adminMonthSummary{
     <label class="modal-label" for="piercCourse">Curso</label>
     <select id="piercCourse" class="modal-input"></select>
     <datalist id="piercStudentsList"></datalist>
+    <label class="modal-label" for="piercStudentSelect">Estudiante (lista)</label>
+<select id="piercStudentSelect" class="modal-input"></select>
+
 
     <label class="modal-label" for="piercStudent">Estudiante</label>
     <input id="piercStudent" class="modal-input" type="text"
@@ -1475,6 +1481,9 @@ body:not(.is-admin) #adminMonthSummary{
     <label class="modal-label" for="uniCourse">Curso</label>
     <select id="uniCourse" class="modal-input"></select>
     <datalist id="uniStudentsList"></datalist>
+    <label class="modal-label" for="uniStudentSelect">Estudiante (lista)</label>
+<select id="uniStudentSelect" class="modal-input"></select>
+
 
     <label class="modal-label" for="uniStudent">Estudiante</label>
     <input id="uniStudent" class="modal-input" type="text"
@@ -1605,9 +1614,21 @@ const discSelectedNameEl = $("discSelectedName");
 const discSelectedMetaEl = $("discSelectedMeta");
 const discLevelDotEl = $("discLevelDot");
 const discStudentEl = $("discStudent"); // ✅ input para escribir estudiante
+
+  // ✅ NUEVO: combos curso / estudiantes (Disciplina)
+const discCourseEl = $("discCourse");
+const discStudentsListEl = $("discStudentsList");
+const discStudentSelectEl = $("discStudentSelect");
+
+  
+
 // ======= PIERCING (LLAMADO DE ATENCIÓN) =======
 const btnPiercing = $("btnPiercing");
 const piercingModal = $("piercingModal");
+
+  const piercCourseEl = $("piercCourse");
+const piercStudentsListEl = $("piercStudentsList");
+const piercStudentSelectEl = $("piercStudentSelect");
 
 const piercWhoList = $("piercWhoList");
 const piercReportedList = $("piercReportedList");
@@ -1622,7 +1643,9 @@ const piercSelectedMetaEl = $("piercSelectedMeta");
 const piercLevelDotEl = $("piercLevelDot");
 const piercStudentEl = $("piercStudent");
 
-
+const uniCourseEl = $("uniCourse");
+const uniStudentsListEl = $("uniStudentsList");
+const uniStudentSelectEl = $("uniStudentSelect");
 
 
 // ======= ADMIN UI =======
@@ -1773,6 +1796,18 @@ function updateDailyButtonsState(records) {
 
 
 // ======= Helpers =======
+
+bindStudentSelectToInput_(
+  discStudentSelectEl,
+  discStudentEl,
+  () => {
+    // no hace falta nada aquí
+    // tu lógica actual escucha discStudentEl
+  }
+);
+
+
+  
 function pad(n){ return String(n).padStart(2,"0"); }
 function nowParts() {
   const d = new Date();
@@ -3481,6 +3516,52 @@ function fillDatalist_(datalistEl, names) {
   });
 }
 
+function fillStudentsUI_(students, datalistEl, selectEl, inputEl) {
+  const arr = Array.isArray(students) ? students : [];
+
+  // 1) datalist (por si el navegador sí lo soporta)
+  if (datalistEl) {
+    datalistEl.innerHTML = "";
+    arr.forEach(name => {
+      const opt = document.createElement("option");
+      opt.value = String(name || "");
+      datalistEl.appendChild(opt);
+    });
+  }
+
+  // 2) select REAL (combo)
+  if (selectEl) {
+    selectEl.innerHTML = "";
+    const opt0 = document.createElement("option");
+    opt0.value = "";
+    opt0.textContent = arr.length ? "— Selecciona —" : "— Sin estudiantes —";
+    selectEl.appendChild(opt0);
+
+    arr.forEach(name => {
+      const opt = document.createElement("option");
+      opt.value = String(name || "");
+      opt.textContent = String(name || "");
+      selectEl.appendChild(opt);
+    });
+  }
+
+  // 3) Si hay input, lo limpiamos para evitar confusión
+  if (inputEl) inputEl.value = "";
+}
+
+function bindStudentSelectToInput_(selectEl, inputEl, onInputCb) {
+  if (!selectEl || !inputEl) return;
+
+  selectEl.addEventListener("change", () => {
+    inputEl.value = selectEl.value || "";
+    // dispara tu misma lógica existente
+    if (typeof onInputCb === "function") onInputCb();
+    // por si tienes listeners "input" ya puestos:
+    inputEl.dispatchEvent(new Event("input", { bubbles: true }));
+  });
+}
+
+  
 // Inicializa un modal (select curso -> carga estudiantes -> datalist)
 // Inicializa un modal (select curso -> carga estudiantes -> datalist)
 // ✅ Ahora es "re-ejecutable" sin duplicar event listeners
@@ -3763,6 +3844,14 @@ function openDisciplineModal() {
   if (!disciplineModal) return;
 
   disciplineModal.hidden = false;
+
+  initCourseComboForModal({
+  courseSelectEl: discCourseEl,
+  studentInputEl: discStudentEl,
+  studentsDatalistEl: discStudentsListEl,
+  studentSelectEl: discStudentSelectEl
+});
+
   discSetHint_("");
 
   __discView = "list";               // ✅ siempre abre en lista
@@ -4266,13 +4355,19 @@ function openPiercingModal() {
   // ✅ (Opcional) cerrar SOLO disciplina (no el menú)
   if (disciplineModal) disciplineModal.hidden = true;
 
-  // ❌ NO cerrar menú aquí
-  // setMenuOpen(false);
-
   // Abre piercing
   modal.hidden = false;
   modal.removeAttribute("hidden");
   modal.style.display = "flex";
+
+  // ===== ✅ NUEVO: cursos + estudiantes (PIERCING) =====
+  initCourseComboForModal({
+    courseSelectEl: $("piercCourse"),
+    studentInputEl: $("piercStudent"),
+    studentsDatalistEl: $("piercStudentsList"),
+    studentSelectEl: $("piercStudentSelect")
+  });
+  // ====================================================
 
   // Reset UI
   piercSetHint_("");
@@ -4287,6 +4382,7 @@ function openPiercingModal() {
 
   console.log("✅ openPiercingModal() abrió el modal y dejó el menú/submenú abiertos");
 }
+
 
 
 function closePiercingModal() {
@@ -4775,6 +4871,15 @@ function openUniformModal() {
   if (!uniformModal) return;
   uniformModal.hidden = false;
 
+  // ===== ✅ NUEVO: cursos + estudiantes (UNIFORME) =====
+  initCourseComboForModal({
+    courseSelectEl: $("uniCourse"),
+    studentInputEl: $("uniStudent"),
+    studentsDatalistEl: $("uniStudentsList"),
+    studentSelectEl: $("uniStudentSelect")
+  });
+  // ====================================================
+
   uniSetHint_("");
   __uniView = "list";
   __uniCurrentStudent = "";
@@ -4784,6 +4889,7 @@ function openUniformModal() {
   if (btnUniBack) btnUniBack.hidden = true;
   uniReloadReportedList(true);
 }
+
 
 function closeUniformModal() {
   if (!uniformModal) return;
@@ -5809,6 +5915,7 @@ window.addEventListener("error", (e) => {
 
 </body>
 </html>
+
 
 
 
