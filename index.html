@@ -4134,9 +4134,11 @@ function openPiercingModal() {
     console.warn("✅ PiercingModal movido al <body> (estaba anidado).");
   }
 
-  // Cierra disciplina y menú
+  // ✅ (Opcional) cerrar SOLO disciplina (no el menú)
   if (disciplineModal) disciplineModal.hidden = true;
-  setMenuOpen(false);
+
+  // ❌ NO cerrar menú aquí
+  // setMenuOpen(false);
 
   // Abre piercing
   modal.hidden = false;
@@ -4153,6 +4155,8 @@ function openPiercingModal() {
 
   // Cargar lista
   piercReloadReportedList(true);
+
+  console.log("✅ openPiercingModal() abrió el modal y dejó el menú/submenú abiertos");
 }
 
 
@@ -5629,6 +5633,7 @@ window.addEventListener("error", (e) => {
 
 </body>
 </html>
+
 
 
 
