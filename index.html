@@ -1347,8 +1347,14 @@ body:not(.is-admin) #adminMonthSummary{
       </div>
     </div>
 
+    <!-- ✅ NUEVO: Curso + Autocomplete -->
+    <label class="modal-label" for="discCourse">Curso</label>
+    <select id="discCourse" class="modal-input"></select>
+    <datalist id="discStudentsList"></datalist>
+
     <label class="modal-label" for="discStudent">Estudiante</label>
     <input id="discStudent" class="modal-input" type="text"
+           list="discStudentsList"
            placeholder="Escribe el nombre del estudiante…" autocomplete="off" />
     <div class="muted small" style="margin-top:6px;">
       Tip: también puedes tocar un nombre en “Reportados” para cargarlo arriba.
@@ -1385,6 +1391,7 @@ body:not(.is-admin) #adminMonthSummary{
 </div>
 
 
+
 <!-- ======= MODAL PIERCING Y PERFORACIONES ======= -->
 <div id="piercingModal" class="modal-backdrop" hidden>
   <div class="modal-card" style="width:min(720px,100%);">
@@ -1402,8 +1409,14 @@ body:not(.is-admin) #adminMonthSummary{
       </div>
     </div>
 
+    <!-- ✅ NUEVO: Curso + Autocomplete -->
+    <label class="modal-label" for="piercCourse">Curso</label>
+    <select id="piercCourse" class="modal-input"></select>
+    <datalist id="piercStudentsList"></datalist>
+
     <label class="modal-label" for="piercStudent">Estudiante</label>
     <input id="piercStudent" class="modal-input" type="text"
+           list="piercStudentsList"
            placeholder="Escribe el nombre del estudiante…" autocomplete="off" />
     <div class="muted small" style="margin-top:6px;">
       Tip: también puedes tocar un nombre en “Reportados” para cargarlo arriba.
@@ -1439,6 +1452,7 @@ body:not(.is-admin) #adminMonthSummary{
   </div>
 </div>
 
+
 <!-- ======= MODAL: PORTE DEL UNIFORME ======= -->
 <div id="uniformModal" class="modal-backdrop" hidden>
   <div class="modal-card" style="width:min(720px,100%);">
@@ -1457,15 +1471,20 @@ body:not(.is-admin) #adminMonthSummary{
       </div>
     </div>
 
-    <!-- ✅ Input -->
+    <!-- ✅ NUEVO: Curso + Autocomplete -->
+    <label class="modal-label" for="uniCourse">Curso</label>
+    <select id="uniCourse" class="modal-input"></select>
+    <datalist id="uniStudentsList"></datalist>
+
     <label class="modal-label" for="uniStudent">Estudiante</label>
     <input id="uniStudent" class="modal-input" type="text"
+           list="uniStudentsList"
            placeholder="Escribe el nombre del estudiante…" autocomplete="off" />
     <div class="muted small" style="margin-top:6px;">
       Tip: también puedes tocar un nombre en “Reportados” para cargarlo arriba.
     </div>
 
-    <!-- ✅ Niveles (igual que los otros) -->
+    <!-- ✅ Niveles -->
     <div class="disc-levels">
       <button type="button" class="disc-level" data-level="1">1 • Leve</button>
       <button type="button" class="disc-level" data-level="2">2</button>
@@ -1473,13 +1492,13 @@ body:not(.is-admin) #adminMonthSummary{
       <button type="button" class="disc-level danger" data-level="4">4 • Grave</button>
     </div>
 
-    <!-- ✅ Who list (mismo diseño) -->
+    <!-- ✅ Who list -->
     <div class="disc-who">
       <div class="muted small" style="margin-bottom:6px;">Docentes que han marcado niveles</div>
       <div id="uniWhoList" class="disc-who-list">—</div>
     </div>
 
-    <!-- ✅ Reportados (mismo diseño) -->
+    <!-- ✅ Reportados -->
     <div class="disc-reported">
       <div class="row row-between" style="margin-top:12px;">
         <div class="muted small">Reportados (mes actual)</div>
@@ -1489,7 +1508,7 @@ body:not(.is-admin) #adminMonthSummary{
 
       <div id="uniHint" class="modal-hint muted small"></div>
 
-      <!-- ✅ Botones (igual que los otros) -->
+      <!-- ✅ Botones -->
       <div class="modal-actions" style="justify-content:flex-end;">
         <button id="btnUniBack" type="button" class="btn btn-ghost" hidden>← Atrás</button>
         <button id="btnUniReload" type="button" class="btn btn-ghost">Recargar</button>
@@ -1498,6 +1517,7 @@ body:not(.is-admin) #adminMonthSummary{
     </div>
   </div>
 </div>
+
 
 
 
@@ -2568,6 +2588,8 @@ btnLoginSave.addEventListener("click", async () => {
     setStatus("", "Sesión iniciada", "Dispositivo autorizado ✅ Ya puedes registrar asistencia.");
 
     refreshFromSheet({ silent: true, useCache: false });
+    initAllModalCourses_();
+
 
   } catch (e) {
     const msg = String(e && e.message ? e.message : e);
@@ -3405,6 +3427,100 @@ async function gsDisciplineList(month) {
   return data.items || [];
 }
 
+/************ CURSOS + ESTUDIANTES (AUTOCOMPLETE) ************/
+async function gsCoursesList() {
+  const res = await fetch(GS_WEBAPP_URL, {
+    method: "POST",
+    body: JSON.stringify({ action: "courses_list", key: GS_API_KEY })
+  });
+  let data = null;
+  try { data = await res.json(); } catch { throw new Error("Respuesta inválida del servidor"); }
+  if (!data.ok) throw new Error(data.msg || data.error || "courses_list_failed");
+  return data.courses || [];
+}
+
+async function gsCourseStudents(course) {
+  const res = await fetch(GS_WEBAPP_URL, {
+    method: "POST",
+    body: JSON.stringify({ action: "course_students", course, key: GS_API_KEY })
+  });
+  let data = null;
+  try { data = await res.json(); } catch { throw new Error("Respuesta inválida del servidor"); }
+  if (!data.ok) throw new Error(data.msg || data.error || "course_students_failed");
+  return data.students || [];
+}
+
+function fillSelect_(selectEl, items, placeholderText) {
+  if (!selectEl) return;
+  const prev = selectEl.value;
+
+  selectEl.innerHTML = "";
+  const opt0 = document.createElement("option");
+  opt0.value = "";
+  opt0.textContent = placeholderText || "Selecciona…";
+  selectEl.appendChild(opt0);
+
+  (items || []).forEach(v => {
+    const opt = document.createElement("option");
+    opt.value = v;
+    opt.textContent = v;
+    selectEl.appendChild(opt);
+  });
+
+  // intenta restaurar selección anterior si existe
+  if (prev && items && items.includes(prev)) selectEl.value = prev;
+}
+
+function fillDatalist_(datalistEl, names) {
+  if (!datalistEl) return;
+  datalistEl.innerHTML = "";
+  (names || []).forEach(n => {
+    const opt = document.createElement("option");
+    opt.value = n;
+    datalistEl.appendChild(opt);
+  });
+}
+
+// Inicializa un modal (select curso -> carga estudiantes -> datalist)
+async function initCourseComboForModal({
+  selectEl,
+  datalistEl,
+  studentInputEl,
+  defaultCourse
+}) {
+  if (!selectEl || !datalistEl || !studentInputEl) return;
+
+  try {
+    const courses = await gsCoursesList();
+    fillSelect_(selectEl, courses, "Selecciona el curso…");
+
+    // default: usa el curso guardado en login (si existe)
+    const preferred = String(defaultCourse || "").trim();
+    if (preferred && courses.includes(preferred)) {
+      selectEl.value = preferred;
+    }
+
+    async function loadStudentsForSelectedCourse() {
+      const course = String(selectEl.value || "").trim();
+      if (!course) {
+        fillDatalist_(datalistEl, []);
+        return;
+      }
+      const students = await gsCourseStudents(course);
+      fillDatalist_(datalistEl, students);
+    }
+
+    selectEl.addEventListener("change", loadStudentsForSelectedCourse);
+
+    // carga inicial si hay curso seleccionado
+    await loadStudentsForSelectedCourse();
+  } catch (e) {
+    // No rompas nada si falla: solo deja vacío
+    console.warn("⚠️ No se pudo cargar cursos/estudiantes:", e);
+  }
+}
+
+  
 /* ======= UI actions ======= */
 async function discReloadReportedList(showHint=false) {
   try {
@@ -4231,6 +4347,41 @@ function piercBindUI_() {
   }
 }
 
+// ======= Curso + Autocomplete en modales =======
+const discCourseEl  = document.getElementById("discCourse");
+const discStudentsDL = document.getElementById("discStudentsList");
+
+const piercCourseEl = document.getElementById("piercCourse");
+const piercStudentsDL = document.getElementById("piercStudentsList");
+
+const uniCourseEl   = document.getElementById("uniCourse");
+const uniStudentsDL  = document.getElementById("uniStudentsList");
+
+// Llama esto cuando la app ya está lista (por ejemplo después del login o al cargar)
+function initAllModalCourses_() {
+  const defaultCourse = (loginCourseEl && loginCourseEl.value) ? loginCourseEl.value.trim() : "";
+
+  initCourseComboForModal({
+    selectEl: discCourseEl,
+    datalistEl: discStudentsDL,
+    studentInputEl: discStudentEl,
+    defaultCourse
+  });
+
+  initCourseComboForModal({
+    selectEl: piercCourseEl,
+    datalistEl: piercStudentsDL,
+    studentInputEl: piercStudentEl,
+    defaultCourse
+  });
+
+  initCourseComboForModal({
+    selectEl: uniCourseEl,
+    datalistEl: uniStudentsDL,
+    studentInputEl: uniStudentEl,
+    defaultCourse
+  });
+}
 
 
 /************ UNIFORME (UI) ************/
@@ -5633,6 +5784,7 @@ window.addEventListener("error", (e) => {
 
 </body>
 </html>
+
 
 
 
