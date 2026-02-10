@@ -3662,6 +3662,7 @@ function fillStudentsUI_(students, datalistEl, selectEl, inputEl) {
 
 
 // ✅ Vincula el <select> de estudiantes con el <input> (para que tu lógica existente use el input)
+// ✅ Vincula el <select> de estudiantes con el <input> + callback inmediato
 function bindStudentSelectToInput_(studentSelectEl, studentInputEl, onPick) {
   if (!studentSelectEl || !studentInputEl) return;
 
@@ -3673,17 +3674,21 @@ function bindStudentSelectToInput_(studentSelectEl, studentInputEl, onPick) {
     const v = String(studentSelectEl.value || "").trim();
     if (!v) return;
 
+    // 1) escribir en el input
     studentInputEl.value = v;
 
-    // dispara eventos para que cualquier lógica que ya tengas en el input se ejecute
+    // 2) disparar eventos para que tu lógica existente corra (lo más inmediato posible)
     studentInputEl.dispatchEvent(new Event("input", { bubbles: true }));
     studentInputEl.dispatchEvent(new Event("change", { bubbles: true }));
 
+    // 3) callback inmediato (para actualizar label + niveles YA)
     if (typeof onPick === "function") onPick(v);
   };
 
   studentSelectEl.addEventListener("change", apply);
+  studentSelectEl.addEventListener("input", apply); // por si el navegador dispara input en select
 }
+
 
 
 // ✅ Mete el select "lista de estudiantes" dentro del input (overlay a la derecha)
@@ -4720,41 +4725,47 @@ const uniStudentSelectEl = document.getElementById("uniStudentSelect");
 function initAllModalCourses_() {
   const defaultCourse = (loginCourseEl && loginCourseEl.value) ? loginCourseEl.value.trim() : "";
 
-  // ✅ 1) Integrar select dentro del input (flecha a la derecha)
+  // ===== DISC =====
+  bindStudentSelectToInput_(discStudentSelectEl, discStudentEl, (name) => {
+    // ✅ actualiza “Seleccionado” y niveles inmediato
+    if (typeof discUpdateSelectedBox_ === "function") discUpdateSelectedBox_(name);
+  });
   mountStudentSelectIntoInput_(discStudentEl, discStudentSelectEl);
+
+  initCourseComboForModal({
+    courseSelectEl: discCourseEl,
+    studentInputEl: discStudentEl,
+    studentsDatalistEl: discStudentsDL,
+    studentSelectEl: discStudentSelectEl
+  });
+
+  // ===== PIERC =====
+  bindStudentSelectToInput_(piercStudentSelectEl, piercStudentEl, (name) => {
+    if (typeof piercUpdateSelectedBox_ === "function") piercUpdateSelectedBox_(name);
+  });
   mountStudentSelectIntoInput_(piercStudentEl, piercStudentSelectEl);
+
+  initCourseComboForModal({
+    courseSelectEl: piercCourseEl,
+    studentInputEl: piercStudentEl,
+    studentsDatalistEl: piercStudentsDL,
+    studentSelectEl: piercStudentSelectEl
+  });
+
+  // ===== UNI =====
+  bindStudentSelectToInput_(uniStudentSelectEl, uniStudentEl, (name) => {
+    if (typeof uniUpdateSelectedBox_ === "function") uniUpdateSelectedBox_(name);
+  });
   mountStudentSelectIntoInput_(uniStudentEl, uniStudentSelectEl);
 
-  // ✅ 2) Vincula select -> input (para que el valor se copie al input real)
-  bindStudentSelectToInput_(discStudentSelectEl, discStudentEl);
-  bindStudentSelectToInput_(piercStudentSelectEl, piercStudentEl);
-  bindStudentSelectToInput_(uniStudentSelectEl, uniStudentEl);
-
-  // ✅ 3) Cursos -> Estudiantes
   initCourseComboForModal({
-    selectEl: discCourseEl,
-    datalistEl: discStudentsDL,
-    studentInputEl: discStudentEl,
-    studentSelectEl: discStudentSelectEl,
-    defaultCourse
-  });
-
-  initCourseComboForModal({
-    selectEl: piercCourseEl,
-    datalistEl: piercStudentsDL,
-    studentInputEl: piercStudentEl,
-    studentSelectEl: piercStudentSelectEl,
-    defaultCourse
-  });
-
-  initCourseComboForModal({
-    selectEl: uniCourseEl,
-    datalistEl: uniStudentsDL,
+    courseSelectEl: uniCourseEl,
     studentInputEl: uniStudentEl,
-    studentSelectEl: uniStudentSelectEl,
-    defaultCourse
+    studentsDatalistEl: uniStudentsDL,
+    studentSelectEl: uniStudentSelectEl
   });
 }
+
 
 
 
@@ -6168,6 +6179,8 @@ window.addEventListener("error", (e) => {
 document.addEventListener("DOMContentLoaded", () => {
   // precarga en segundo plano (no rompe si aún no hay login)
   prewarmCoursesAndStudents_();
+  initAllModalCourses_();
+
 
   // si ya hay perfil guardado, deja listos los combos también
   try {
