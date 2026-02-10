@@ -3337,25 +3337,34 @@ function discApplyLevelUI_(level) {
 
 function discRenderWho_(whoArr) {
   if (!discWhoList) return;
+
   const list = Array.isArray(whoArr) ? whoArr : [];
   if (!list.length) {
     discWhoList.textContent = "—";
     return;
   }
 
-  // ✅ Muestra: Docente + nivel que puso
-discWhoList.innerHTML = list.map(x => {
-  const name = escapeHtml(x.teacher || "");
-  const lvl  = escapeHtml(String(x.level || ""));
-  const date = formatDateShort_(x.date);
-  return `
-    <span class="disc-pill">
-      ${name} • Nivel ${lvl}${date ? ` • ${date}` : ""}
-    </span>
-  `;
-}).join("");
+  // ✅ Muestra hora sin recalcular fechas (usa lo que viene del server)
+  discWhoList.innerHTML = list.map(x => {
+    const name = escapeHtml(x.teacher || "");
+    const lvl  = escapeHtml(String(x.level || ""));
+    const date = formatDateShort_(x.date || "");     // "yyyy-MM-dd" esperado
+    const time = escapeHtml(String(x.time || ""));   // "HH:mm:ss" esperado
+    const dt   = escapeHtml(String(x.dt || ""));     // opcional: "yyyy-MM-dd HH:mm:ss"
 
+    // prioridad: dt (si existe) > date+time > date
+    const when = dt
+      ? dt
+      : (date && time ? `${date} ${time}` : (date || ""));
+
+    return `
+      <span class="disc-pill">
+        ${name} • Nivel ${lvl}${when ? ` • ${when}` : ""}
+      </span>
+    `;
+  }).join("");
 }
+
 
 // ✅ LISTA “Reportados del mes” = solo nombres ordenados, click selecciona
 function discRenderReportedList_(items) {
