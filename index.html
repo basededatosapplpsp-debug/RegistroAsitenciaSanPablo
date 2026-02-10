@@ -3662,31 +3662,37 @@ function fillStudentsUI_(students, datalistEl, selectEl, inputEl) {
 
 
 // ✅ Vincula el <select> de estudiantes con el <input> (para que tu lógica existente use el input)
-// ✅ Vincula el <select> de estudiantes con el <input> + callback inmediato
+// ✅ select -> input + UI update inmediato (sin esperar debounce)
 function bindStudentSelectToInput_(studentSelectEl, studentInputEl, onPick) {
   if (!studentSelectEl || !studentInputEl) return;
 
-  // evitar doble bind si se llama varias veces
   if (studentSelectEl.dataset.boundToInput === "1") return;
   studentSelectEl.dataset.boundToInput = "1";
 
-  const apply = () => {
+  const applyNow = () => {
     const v = String(studentSelectEl.value || "").trim();
     if (!v) return;
 
-    // 1) escribir en el input
-    studentInputEl.value = v;
+    // 1) actualiza input ya
+    if (studentInputEl.value !== v) studentInputEl.value = v;
 
-    // 2) disparar eventos para que tu lógica existente corra (lo más inmediato posible)
+    // 2) fuerza eventos (para tu lógica existente)
     studentInputEl.dispatchEvent(new Event("input", { bubbles: true }));
     studentInputEl.dispatchEvent(new Event("change", { bubbles: true }));
 
-    // 3) callback inmediato (para actualizar label + niveles YA)
+    // 3) callback inmediato (actualiza “Seleccionado” y niveles)
     if (typeof onPick === "function") onPick(v);
+
+    // 4) truco: fuerza un frame de render para que el DOM pinte YA (Android)
+    requestAnimationFrame(() => {});
   };
 
-  studentSelectEl.addEventListener("change", apply);
-  studentSelectEl.addEventListener("input", apply); // por si el navegador dispara input en select
+  // change al seleccionar
+  studentSelectEl.addEventListener("change", applyNow);
+
+  // algunos navegadores disparan click/touch sin change inmediato
+  studentSelectEl.addEventListener("click", applyNow);
+  studentSelectEl.addEventListener("touchend", applyNow, { passive: true });
 }
 
 
@@ -3796,6 +3802,17 @@ function initCourseComboForModal({
 
 
 
+function bindStudentSelectToInput_(selectEl, inputEl, onInputCb) {
+  if (!selectEl || !inputEl) return;
+
+  selectEl.addEventListener("change", () => {
+    inputEl.value = selectEl.value || "";
+    // dispara tu misma lógica existente
+    if (typeof onInputCb === "function") onInputCb();
+    // por si tienes listeners "input" ya puestos:
+    inputEl.dispatchEvent(new Event("input", { bubbles: true }));
+  });
+}
 
   
 // Inicializa un modal (select curso -> carga estudiantes -> datalist)
@@ -4696,9 +4713,8 @@ function piercBindUI_() {
     });
   }
 }
-
 // ======= Curso + Autocomplete en modales (Cursos + Select estudiantes) =======
-const discCourseEl        = document.getElementById("discCourse");
+const discCourseEl        = document.getgetElementById("discCourse");
 const discStudentsDL      = document.getElementById("discStudentsList");
 const discStudentSelectEl = document.getElementById("discStudentSelect");
 
@@ -4714,44 +4730,78 @@ const uniStudentSelectEl = document.getElementById("uniStudentSelect");
 function initAllModalCourses_() {
   const defaultCourse = (loginCourseEl && loginCourseEl.value) ? loginCourseEl.value.trim() : "";
 
-  // ===== DISC =====
+  // ✅ 1) Integrar select dentro del input (flecha a la derecha)
+  mountStudentSelectIntoInput_(discStudentEl, discStudentSelectEl);
+  mountStudentSelectIntoInput_(piercStudentEl, piercStudentSelectEl);
+  mountStudentSelectIntoInput_(uniStudentEl, uniStudentSelectEl);
+
+  // ✅ 2) Vincula select -> input + actualización inmediata de “Seleccionado”
   bindStudentSelectToInput_(discStudentSelectEl, discStudentEl, (name) => {
-    // ✅ actualiza “Seleccionado” y niveles inmediato
     if (typeof discUpdateSelectedBox_ === "function") discUpdateSelectedBox_(name);
   });
-  mountStudentSelectIntoInput_(discStudentEl, discStudentSelectEl);
 
-  initCourseComboForModal({
-    courseSelectEl: discCourseEl,
-    studentInputEl: discStudentEl,
-    studentsDatalistEl: discStudentsDL,
-    studentSelectEl: discStudentSelectEl
-  });
-
-  // ===== PIERC =====
   bindStudentSelectToInput_(piercStudentSelectEl, piercStudentEl, (name) => {
     if (typeof piercUpdateSelectedBox_ === "function") piercUpdateSelectedBox_(name);
   });
-  mountStudentSelectIntoInput_(piercStudentEl, piercStudentSelectEl);
 
-  initCourseComboForModal({
-    courseSelectEl: piercCourseEl,
-    studentInputEl: piercStudentEl,
-    studentsDatalistEl: piercStudentsDL,
-    studentSelectEl: piercStudentSelectEl
-  });
-
-  // ===== UNI =====
   bindStudentSelectToInput_(uniStudentSelectEl, uniStudentEl, (name) => {
     if (typeof uniUpdateSelectedBox_ === "function") uniUpdateSelectedBox_(name);
   });
-  mountStudentSelectIntoInput_(uniStudentEl, uniStudentSelectEl);
+
+  // ✅ 2.1) También al escribir en el input (por si tu UI depende del input)
+  if (discStudentEl && !discStudentEl.dataset.fastSelBind) {
+    discStudentEl.dataset.fastSelBind = "1";
+    discStudentEl.addEventListener("input", () => {
+      if (typeof discUpdateSelectedBox_ === "function") discUpdateSelectedBox_(discStudentEl.value);
+    });
+    discStudentEl.addEventListener("change", () => {
+      if (typeof discUpdateSelectedBox_ === "function") discUpdateSelectedBox_(discStudentEl.value);
+    });
+  }
+
+  if (piercStudentEl && !piercStudentEl.dataset.fastSelBind) {
+    piercStudentEl.dataset.fastSelBind = "1";
+    piercStudentEl.addEventListener("input", () => {
+      if (typeof piercUpdateSelectedBox_ === "function") piercUpdateSelectedBox_(piercStudentEl.value);
+    });
+    piercStudentEl.addEventListener("change", () => {
+      if (typeof piercUpdateSelectedBox_ === "function") piercUpdateSelectedBox_(piercStudentEl.value);
+    });
+  }
+
+  if (uniStudentEl && !uniStudentEl.dataset.fastSelBind) {
+    uniStudentEl.dataset.fastSelBind = "1";
+    uniStudentEl.addEventListener("input", () => {
+      if (typeof uniUpdateSelectedBox_ === "function") uniUpdateSelectedBox_(uniStudentEl.value);
+    });
+    uniStudentEl.addEventListener("change", () => {
+      if (typeof uniUpdateSelectedBox_ === "function") uniUpdateSelectedBox_(uniStudentEl.value);
+    });
+  }
+
+  // ✅ 3) Cursos -> Estudiantes
+  initCourseComboForModal({
+    selectEl: discCourseEl,
+    datalistEl: discStudentsDL,
+    studentInputEl: discStudentEl,
+    studentSelectEl: discStudentSelectEl,
+    defaultCourse
+  });
 
   initCourseComboForModal({
-    courseSelectEl: uniCourseEl,
+    selectEl: piercCourseEl,
+    datalistEl: piercStudentsDL,
+    studentInputEl: piercStudentEl,
+    studentSelectEl: piercStudentSelectEl,
+    defaultCourse
+  });
+
+  initCourseComboForModal({
+    selectEl: uniCourseEl,
+    datalistEl: uniStudentsDL,
     studentInputEl: uniStudentEl,
-    studentsDatalistEl: uniStudentsDL,
-    studentSelectEl: uniStudentSelectEl
+    studentSelectEl: uniStudentSelectEl,
+    defaultCourse
   });
 }
 
@@ -6169,8 +6219,6 @@ document.addEventListener("DOMContentLoaded", () => {
   // precarga en segundo plano (no rompe si aún no hay login)
   prewarmCoursesAndStudents_();
 
-
-
   // si ya hay perfil guardado, deja listos los combos también
   try {
     const p = (typeof loadProfile === "function") ? loadProfile() : null;
@@ -6183,7 +6231,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
 </body>
 </html>
-
 
 
 
