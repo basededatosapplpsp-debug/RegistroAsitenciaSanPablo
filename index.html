@@ -3796,17 +3796,6 @@ function initCourseComboForModal({
 
 
 
-function bindStudentSelectToInput_(selectEl, inputEl, onInputCb) {
-  if (!selectEl || !inputEl) return;
-
-  selectEl.addEventListener("change", () => {
-    inputEl.value = selectEl.value || "";
-    // dispara tu misma lógica existente
-    if (typeof onInputCb === "function") onInputCb();
-    // por si tienes listeners "input" ya puestos:
-    inputEl.dispatchEvent(new Event("input", { bubbles: true }));
-  });
-}
 
   
 // Inicializa un modal (select curso -> carga estudiantes -> datalist)
@@ -6179,7 +6168,7 @@ window.addEventListener("error", (e) => {
 document.addEventListener("DOMContentLoaded", () => {
   // precarga en segundo plano (no rompe si aún no hay login)
   prewarmCoursesAndStudents_();
-  initAllModalCourses_();
+
 
 
   // si ya hay perfil guardado, deja listos los combos también
