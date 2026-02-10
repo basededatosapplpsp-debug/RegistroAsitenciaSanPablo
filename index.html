@@ -4840,13 +4840,18 @@ function initAllModalCourses_() {
     defaultCourse
   });
 
-  // ========= UNI =========
-  mountStudentSelectIntoInput_(uniStudentEl, uniStudentSelectEl);
-  bindStudentSelectToInput_(uniStudentSelectEl, uniStudentEl, (name) => {
-    if (typeof uniUpdateSelectedBox_ === "function") {
-      uniUpdateSelectedBox_(name);
-    }
-  });
+// ========= UNI =========
+mountStudentSelectIntoInput_(uniStudentEl, uniStudentSelectEl);
+bindStudentSelectToInput_(uniStudentSelectEl, uniStudentEl, (name) => {
+  // ✅ Al seleccionar desde el combo, abrir la vista detalle (como Piercing)
+  if (typeof uniOpenDetail_ === "function") {
+    uniOpenDetail_(name);
+  } else if (typeof uniUpdateSelectedBox_ === "function") {
+    // fallback por si falta uniOpenDetail_
+    uniUpdateSelectedBox_(name);
+  }
+});
+
 
   initCourseComboForModal({
     selectEl: uniCourseEl,
@@ -5322,14 +5327,39 @@ function uniBindUI_() {
     });
   }
 
-  if (uniStudentEl) {
-    uniStudentEl.addEventListener("input", () => {
-      const raw = String(uniStudentEl.value || "");
-      __uniCurrentStudent = raw;
+ if (uniStudentEl) {
+  uniStudentEl.addEventListener("input", () => {
+    const raw = String(uniStudentEl.value || "");
+    const s = uniNormalizeStudent_(raw);
+    __uniCurrentStudent = s;
 
-      // ... (TU CÓDIGO EXISTENTE sigue igual desde aquí)
-    });
-  }
+    // Si está vacío => vuelve a lista normal
+    if (!s) {
+      __uniView = "list";
+      uniUpdateSelectedBox_("");
+      uniRenderReportedList_(__uniCacheList);
+      if (btnUniBack) btnUniBack.hidden = true;
+      uniSetHint_("");
+      return;
+    }
+
+    // Actualiza box seleccionado (nivel, llamados, docentes, who)
+    uniUpdateSelectedBox_(s);
+
+    // Si el nombre coincide EXACTO con un reportado del mes => abre detalle como Piercing
+    const item = uniFindInCache_(s);
+    if (item) {
+      uniOpenDetail_(s);
+      return;
+    }
+
+    // Si no existe en cache (aún no reportado este mes) => deja vista lista
+    __uniView = "list";
+    uniRenderReportedList_(__uniCacheList);
+    if (btnUniBack) btnUniBack.hidden = true;
+  });
+}
+
 }
 
 
