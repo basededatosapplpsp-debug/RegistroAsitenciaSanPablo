@@ -1050,10 +1050,10 @@ input[list]::-moz-list-dropdown {
 }
 
 .dot.yellow{
-  /* usa el MISMO color del lvl-dot lvl-2 (amarillo) */
-  background: rgba(234,179,8,.95);   /* amarillo */
-  box-shadow: 0 0 0 4px rgba(234,179,8,.20);
+  background: #f8f405;                     /* ✅ MISMO amarillo del lvl-2 */
+  box-shadow: 0 0 0 6px rgba(248,244,5,.18); /* ✅ mismo halo que .dot */
 }
+
 
 </style>
 </head>
@@ -2120,9 +2120,10 @@ function dotClassByLevel_(lv) {
   if (n <= 0) return "dot";
   if (n >= 4) return "dot bad";
   if (n === 3) return "dot warn";      // naranja
-  if (n === 2) return "dot yellow";    // amarillo (nuevo)
+  if (n === 2) return "dot yellow";    // amarillo
   return "dot";                        // nivel 1 (verde)
 }
+
 
 
 
