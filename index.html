@@ -1615,6 +1615,22 @@ input[list]::-moz-list-dropdown {
 
 
 
+<!-- ===== CONFIRM MODAL PRO ===== -->
+<div id="appConfirm" class="modal-backdrop" hidden>
+  <div class="modal-card">
+    <h3 class="modal-title" id="confirmTitle">Confirmar acción</h3>
+    <p class="modal-sub" id="confirmMsg">¿Estás seguro?</p>
+
+    <div class="modal-actions">
+      <button id="confirmCancel" class="btn btn-ghost">
+        Cancelar
+      </button>
+      <button id="confirmOk" class="btn btn-danger">
+        Confirmar
+      </button>
+    </div>
+  </div>
+</div>
 
 
 
@@ -1783,6 +1799,47 @@ const adminRecordsFilters = $("adminRecordsFilters");
 const recordsMonthSelect = $("recordsMonthSelect");
 const recordsTeacherSelect = $("recordsTeacherSelect");
 
+let __confirmResolve = null;
+
+function confirmPro({
+  title = "¿Confirmar?",
+  msg = "¿Estás seguro de continuar?",
+  okText = "Confirmar",
+  cancelText = "Cancelar",
+  danger = true
+} = {}) {
+  return new Promise(resolve => {
+    const modal = document.getElementById("appConfirm");
+    if (!modal) return resolve(false);
+
+    const titleEl = document.getElementById("confirmTitle");
+    const msgEl   = document.getElementById("confirmMsg");
+    const btnOk   = document.getElementById("confirmOk");
+    const btnNo   = document.getElementById("confirmCancel");
+
+    titleEl.textContent = title;
+    msgEl.textContent = msg;
+
+    btnOk.textContent = okText;
+    btnNo.textContent = cancelText;
+
+    // estilo del botón OK
+    btnOk.classList.toggle("btn-danger", danger);
+    btnOk.classList.toggle("btn-primary", !danger);
+
+    modal.hidden = false;
+    document.body.classList.add("is-loading"); // bloquea fondo
+
+    __confirmResolve = (val) => {
+      modal.hidden = true;
+      document.body.classList.remove("is-loading");
+      resolve(val);
+    };
+
+    btnOk.onclick = () => __confirmResolve(true);
+    btnNo.onclick = () => __confirmResolve(false);
+  });
+}
 
 let hasEntradaToday = false;
 let hasSalidaToday  = false;
@@ -4004,7 +4061,13 @@ async function discDeleteStudent_(studentName){
   const student = normalizeStudent_(studentName);
   if (!student) return;
 
-  const ok = confirm(`¿Seguro que deseas eliminar a "${student}"?\n\nSe borrarán TODOS sus reportes del mes actual.`);
+  const ok = await confirmPro({
+    title: "Eliminar estudiante (Disciplina)",
+    msg: `¿Seguro que deseas eliminar a "${student}"?\n\nSe borrarán TODOS sus reportes del mes actual.`,
+    okText: "Sí, eliminar",
+    cancelText: "Cancelar",
+    danger: true
+  });
   if (!ok) return;
 
   try {
@@ -4043,6 +4106,7 @@ async function discDeleteStudent_(studentName){
     setLoading(false);
   }
 }
+
 
 
 
@@ -4602,7 +4666,13 @@ async function piercDeleteStudent_(studentName){
   const student = piercNormalizeStudent_(studentName);
   if (!student) return;
 
-  const ok = confirm(`¿Seguro que deseas eliminar a "${student}"?\n\nSe borrarán TODOS sus reportes del mes actual.`);
+  const ok = await confirmPro({
+    title: "Eliminar estudiante (Piercing)",
+    msg: `¿Seguro que deseas eliminar a "${student}"?\n\nSe borrarán TODOS sus reportes del mes actual.`,
+    okText: "Sí, eliminar",
+    cancelText: "Cancelar",
+    danger: true
+  });
   if (!ok) return;
 
   try {
@@ -4633,6 +4703,7 @@ async function piercDeleteStudent_(studentName){
     setLoading(false);
   }
 }
+
 
 async function piercDoMarkLevel(level) {
   const profile = requireLogin();
@@ -5253,7 +5324,13 @@ async function uniDeleteStudent_(studentName){
   const student = uniNormalizeStudent_(studentName);
   if (!student) return;
 
-  const ok = confirm(`¿Seguro que deseas eliminar a "${student}"?\n\nSe borrarán TODOS sus reportes del mes actual.`);
+  const ok = await confirmPro({
+    title: "Eliminar estudiante (Uniforme)",
+    msg: `¿Seguro que deseas eliminar a "${student}"?\n\nSe borrarán TODOS sus reportes del mes actual.`,
+    okText: "Sí, eliminar",
+    cancelText: "Cancelar",
+    danger: true
+  });
   if (!ok) return;
 
   try {
@@ -5285,6 +5362,7 @@ async function uniDeleteStudent_(studentName){
     setLoading(false);
   }
 }
+
 
 async function uniDoMarkLevel(level) {
   const profile = requireLogin();
