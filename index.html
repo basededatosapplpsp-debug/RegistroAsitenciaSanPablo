@@ -4926,6 +4926,7 @@ function uniNormalizeStudent_(s) {
 }
 function uniSetHint_(t){ if (uniHintEl) uniHintEl.textContent = String(t||""); }
 // ✅ DOT Uniforme: oculto si NO hay reportes
+// ✅ DOT Uniforme: oculto si NO hay reportes
 function uniSetDotByLevel_(level) {
   if (!uniLevelDot) return;
 
@@ -4940,16 +4941,37 @@ function uniSetDotByLevel_(level) {
   uniLevelDot.style.visibility = "visible";
   uniLevelDot.className = "dot" + (lv >= 4 ? " bad" : (lv >= 2 ? " warn" : ""));
 }
-function uniApplyLevelUI_(maxLevel){
+
+// ✅ faltaba esta función (estaba rompiendo Uniforme)
+function uniClearLevelUI_() {
   if (!uniformModal) return;
-  uniClearLevelUI_();
-  uniformModal.querySelectorAll(".disc-level").forEach(btn=>{
-    const lvl = Number(btn.getAttribute("data-level") || 0);
-    if (!lvl) return;
-    if (lvl <= maxLevel) btn.classList.add("active");
-    if (lvl > maxLevel + 1) btn.disabled = true;
+  uniformModal.querySelectorAll(".disc-level").forEach(btn => {
+    btn.classList.remove("active");
+    btn.disabled = false; // ✅ importantísimo: re-habilita todo antes de aplicar regla
   });
 }
+
+function uniApplyLevelUI_(maxLevel) {
+  if (!uniformModal) return;
+
+  uniClearLevelUI_();
+
+  const max = Number(maxLevel || 0);
+
+  // activa 1..max
+  for (let i = 1; i <= max; i++) {
+    const btn = uniformModal.querySelector(`.disc-level[data-level="${i}"]`);
+    if (btn) btn.classList.add("active");
+  }
+
+  // regla de bloqueo: solo deja habilitado hasta max+1
+  uniformModal.querySelectorAll(".disc-level").forEach(btn => {
+    const lvl = Number(btn.getAttribute("data-level") || 0);
+    if (!lvl) return;
+    if (lvl > max + 1) btn.disabled = true;
+  });
+}
+
 function uniRenderWho_(whoArr){
   if (!uniWhoList) return;
 
@@ -5350,28 +5372,9 @@ function uniBindUI_() {
 if (uniStudentEl) {
   uniStudentEl.addEventListener("input", () => {
     const raw = String(uniStudentEl.value || "");
-    const s = uniNormalizeStudent_(raw);
-    __uniCurrentStudent = s;
-
-    // 1) siempre actualiza el box “Seleccionado” (punto, niveles, who)
-    uniUpdateSelectedBox_(s);
-
-    // 2) si el estudiante está reportado este mes => entra a DETALLE
-    const item = s ? uniFindInCache_(s) : null;
-    if (item) {
-      __uniView = "detail";
-      uniRenderDetailView_();
-      if (btnUniBack) btnUniBack.hidden = false;
-      return;
-    }
-
-    // 3) si NO está reportado => vista LISTA normal
-    __uniView = "list";
-    uniRenderReportedList_(__uniCacheList);
-    if (btnUniBack) btnUniBack.hidden = true;
+    uniOnStudentChange_(raw);
   });
 }
-
 
 }
 
