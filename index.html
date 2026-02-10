@@ -3222,9 +3222,10 @@ function discSetDotByLevel_(level) {
 
 // ✅ pinta el recuadro “Seleccionado”
 function discUpdateSelectedBox_(studentName){
-  const s = discNormalizeStudent_(studentName);
+  const s = normalizeStudent_(studentName);
   __discCurrentStudent = s;
 
+  // ✅ mantener input sincronizado
   if (discStudentEl) discStudentEl.value = s || "";
 
   if (!discSelectedNameEl || !discSelectedMetaEl) return;
@@ -3239,32 +3240,26 @@ function discUpdateSelectedBox_(studentName){
   }
 
   const item = discFindInCache_(s);
-
   const maxLevel = item ? Number(item.maxLevel || 0) : 0;
   const total = item ? Number(item.totalMarks || 0) : 0;
   const teachersCount = item ? Number(item.teachersCount || 0) : 0;
 
-  let lastDate = "—";
-  if (item && Array.isArray(item.who) && item.who.length) {
-    const sorted = [...item.who].sort((a,b)=>{
-      return Date.parse(b.date || "") - Date.parse(a.date || "");
-    });
-    lastDate = sorted[0]?.date || "—";
-  }
-
   discSelectedNameEl.textContent = s;
 
-  discSelectedMetaEl.textContent = item
-    ? `Nivel ${maxLevel} • Llamados: ${total} • Docentes: ${teachersCount} • Último: ${lastDate}`
-    : `Nuevo (sin reportes este mes aún)`;
+  if (item) {
+    discSelectedMetaEl.textContent = `Nivel ${maxLevel} • Llamados: ${total} • Docentes: ${teachersCount}`;
+  } else {
+    discSelectedMetaEl.textContent = `Nuevo (sin reportes este mes aún)`;
+  }
 
   discSetDotByLevel_(maxLevel);
   discApplyLevelUI_(maxLevel);
 
-  if (item && Array.isArray(item.who) && item.who.length)
+  if (item && Array.isArray(item.who) && item.who.length) {
     discRenderWho_(item.who);
-  else if (discWhoList)
-    discWhoList.textContent = "—";
+  } else {
+    if (discWhoList) discWhoList.textContent = "—";
+  }
 }
 
 
@@ -3286,28 +3281,21 @@ function discApplyLevelUI_(level) {
   }
 }
 
-function discRenderWho_(whoArr){
+function discRenderWho_(whoArr) {
   if (!discWhoList) return;
-
   const list = Array.isArray(whoArr) ? whoArr : [];
-
   if (!list.length) {
     discWhoList.textContent = "—";
     return;
   }
 
+  // ✅ Muestra: Docente + nivel que puso
   discWhoList.innerHTML = list.map(x => {
-    const teacher = escapeHtml(x.teacher || "");
+    const name = escapeHtml(x.teacher || "");
     const lvl = escapeHtml(String(x.level || ""));
-    const date = escapeHtml(x.date || "—");
-    return `
-      <span class="disc-pill">
-        ${teacher} • Nivel ${lvl} • ${date}
-      </span>
-    `;
+    return `<span class="disc-pill">${name} • Nivel ${lvl}</span>`;
   }).join("");
 }
-
 
 // ✅ LISTA “Reportados del mes” = solo nombres ordenados, click selecciona
 function discRenderReportedList_(items) {
@@ -4028,16 +4016,14 @@ async function discDoMarkLevel(level) {
   try {
     setLoading(true, "Guardando…", "Registrando llamado de atención.");
 
-  const markData = discBuildMarkPayload_(student, lvl);
-
-const resp = await gsDisciplineMark({
-  month: discMonthKey_(),
-  ...markData,
-  teacher: profile.name,
-  email: profile.email,
-  device_id: getDeviceId()
-});
-
+    const resp = await gsDisciplineMark({
+      month: discMonthKey_(),
+      student,
+      level: lvl,
+      teacher: profile.name,
+      email: profile.email,
+      device_id: getDeviceId()
+    });
 
     if (resp && Array.isArray(resp.list)) {
       __discCacheList = resp.list;
@@ -4876,30 +4862,6 @@ async function gsUniformDeleteStudent(payload) {
 }
 
 /* ======= helpers ======= */
-function nowParts() {
-  const d = new Date();
-  const yyyy = d.getFullYear();
-  const mm = pad(d.getMonth()+1);
-  const dd = pad(d.getDate());
-  const hh = pad(d.getHours());
-  const mi = pad(d.getMinutes());
-  const ss = pad(d.getSeconds());
-  return { date:`${yyyy}-${mm}-${dd}`, time:`${hh}:${mi}:${ss}`, iso:d.toISOString() };
-}
-
-// ✅ NUEVA FUNCIÓN (PEGAR AQUÍ)
-function discBuildMarkPayload_(student, level){
-  const t = nowParts();
-
-  return {
-    student: student,
-    level: Number(level),
-    date: t.date,
-    time: t.time
-  };
-}
-
-  
 function uniMonthKey_() {
   // usa la misma lógica del mes actual que ya usas en disciplina/piercing
   // si ya tienes discMonthKey_ / piercMonthKey_, esto mantiene el mismo mes
@@ -6272,8 +6234,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
 </body>
 </html>
-
-
 
 
 
