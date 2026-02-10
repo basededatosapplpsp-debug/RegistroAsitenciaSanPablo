@@ -4840,16 +4840,10 @@ function initAllModalCourses_() {
     defaultCourse
   });
 
-// ========= UNI =========
-mountStudentSelectIntoInput_(uniStudentEl, uniStudentSelectEl);
+  // ========= UNI =========
+  mountStudentSelectIntoInput_(uniStudentEl, uniStudentSelectEl);
 bindStudentSelectToInput_(uniStudentSelectEl, uniStudentEl, (name) => {
-  // ✅ Al seleccionar desde el combo, abrir la vista detalle (como Piercing)
-  if (typeof uniOpenDetail_ === "function") {
-    uniOpenDetail_(name);
-  } else if (typeof uniUpdateSelectedBox_ === "function") {
-    // fallback por si falta uniOpenDetail_
-    uniUpdateSelectedBox_(name);
-  }
+  uniOnStudentChange_(name);
 });
 
 
@@ -4983,6 +4977,32 @@ function uniFindInCache_(student){
   const key = normalizeKey(student);
   return (__uniCacheList || []).find(it => normalizeKey(it.student) === key) || null;
 }
+
+
+
+function uniOnStudentChange_(studentName) {
+  const s = uniNormalizeStudent_(studentName);
+  __uniCurrentStudent = s;
+
+  // siempre actualizar box de seleccionado (punto, niveles, who)
+  uniUpdateSelectedBox_(s);
+
+  // si está en los reportados del mes => abrir detalle
+  const item = s ? uniFindInCache_(s) : null;
+  if (item) {
+    __uniView = "detail";
+    uniRenderDetailView_();
+    if (btnUniBack) btnUniBack.hidden = false;
+    return;
+  }
+
+  // si no está reportado => quedarse en lista normal
+  __uniView = "list";
+  uniRenderReportedList_(__uniCacheList);
+  if (btnUniBack) btnUniBack.hidden = true;
+}
+
+
 
 /* ======= render list ======= */
 function uniRenderReportedList_(items){
@@ -5327,36 +5347,10 @@ function uniBindUI_() {
     });
   }
 
- if (uniStudentEl) {
+if (uniStudentEl) {
   uniStudentEl.addEventListener("input", () => {
     const raw = String(uniStudentEl.value || "");
-    const s = uniNormalizeStudent_(raw);
-    __uniCurrentStudent = s;
-
-    // Si está vacío => vuelve a lista normal
-    if (!s) {
-      __uniView = "list";
-      uniUpdateSelectedBox_("");
-      uniRenderReportedList_(__uniCacheList);
-      if (btnUniBack) btnUniBack.hidden = true;
-      uniSetHint_("");
-      return;
-    }
-
-    // Actualiza box seleccionado (nivel, llamados, docentes, who)
-    uniUpdateSelectedBox_(s);
-
-    // Si el nombre coincide EXACTO con un reportado del mes => abre detalle como Piercing
-    const item = uniFindInCache_(s);
-    if (item) {
-      uniOpenDetail_(s);
-      return;
-    }
-
-    // Si no existe en cache (aún no reportado este mes) => deja vista lista
-    __uniView = "list";
-    uniRenderReportedList_(__uniCacheList);
-    if (btnUniBack) btnUniBack.hidden = true;
+    uniOnStudentChange_(raw);
   });
 }
 
