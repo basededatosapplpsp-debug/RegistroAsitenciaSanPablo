@@ -970,6 +970,39 @@ body:not(.is-admin) #adminMonthSummary{
 }
 
 
+/* ✅ Input con flecha integrada (select invisible encima del lado derecho) */
+.input-with-select {
+  position: relative;
+}
+
+.input-with-select > input,
+.input-with-select > .modal-input.input-real {
+  padding-right: 44px; /* espacio para la flecha */
+}
+
+.input-with-select > select.student-overlay {
+  position: absolute;
+  top: 0;
+  right: 0;
+  height: 100%;
+  width: 44px;          /* zona tocable de la flecha */
+  opacity: 0;           /* invisible */
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.input-with-select::after {
+  content: "▾";
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none; /* deja que el toque lo reciba el select invisible */
+  opacity: .9;
+}
+
+
 
 </style>
 </head>
@@ -1347,12 +1380,12 @@ body:not(.is-admin) #adminMonthSummary{
       </div>
     </div>
 
-    <!-- ✅ NUEVO: Curso + Autocomplete -->
+    <!-- ✅ NUEVO: Curso + Autocomplete 
     <label class="modal-label" for="discCourse">Curso</label>
     <select id="discCourse" class="modal-input"></select>
     <datalist id="discStudentsList"></datalist>
     <label class="modal-label" for="discStudentSelect">Estudiante (lista)</label>
-<select id="discStudentSelect" class="modal-input"></select>
+<select id="discStudentSelect" class="modal-input"></select>-->
 
 
     <label class="modal-label" for="discStudent">Estudiante</label>
@@ -1412,12 +1445,12 @@ body:not(.is-admin) #adminMonthSummary{
       </div>
     </div>
 
-    <!-- ✅ NUEVO: Curso + Autocomplete -->
+    <!-- ✅ NUEVO: Curso + Autocomplete 
     <label class="modal-label" for="piercCourse">Curso</label>
     <select id="piercCourse" class="modal-input"></select>
     <datalist id="piercStudentsList"></datalist>
     <label class="modal-label" for="piercStudentSelect">Estudiante (lista)</label>
-<select id="piercStudentSelect" class="modal-input"></select>
+<select id="piercStudentSelect" class="modal-input"></select> -->
 
 
     <label class="modal-label" for="piercStudent">Estudiante</label>
@@ -1477,12 +1510,12 @@ body:not(.is-admin) #adminMonthSummary{
       </div>
     </div>
 
-    <!-- ✅ NUEVO: Curso + Autocomplete -->
+    <!-- ✅ NUEVO: Curso + Autocomplete 
     <label class="modal-label" for="uniCourse">Curso</label>
     <select id="uniCourse" class="modal-input"></select>
     <datalist id="uniStudentsList"></datalist>
     <label class="modal-label" for="uniStudentSelect">Estudiante (lista)</label>
-<select id="uniStudentSelect" class="modal-input"></select>
+<select id="uniStudentSelect" class="modal-input"></select>  -->
 
 
     <label class="modal-label" for="uniStudent">Estudiante</label>
@@ -3551,6 +3584,36 @@ function bindStudentSelectToInput_(studentSelectEl, studentInputEl, onPick) {
   studentSelectEl.addEventListener("change", apply);
 }
 
+
+// ✅ Mete el select "lista de estudiantes" dentro del input (overlay a la derecha)
+function mountStudentSelectIntoInput_(studentInputEl, studentSelectEl) {
+  if (!studentInputEl || !studentSelectEl) return;
+
+  // evitar duplicar
+  if (studentInputEl.dataset.selectOverlayMounted === "1") return;
+  studentInputEl.dataset.selectOverlayMounted = "1";
+
+  // crear wrapper
+  const wrap = document.createElement("div");
+  wrap.className = "input-with-select";
+
+  // inserta wrapper donde estaba el input
+  const parent = studentInputEl.parentElement;
+  parent.insertBefore(wrap, studentInputEl);
+
+  // mover input dentro
+  wrap.appendChild(studentInputEl);
+
+  // marcar input para que tome padding
+  studentInputEl.classList.add("input-real");
+
+  // mover select dentro y convertirlo en overlay
+  studentSelectEl.classList.add("student-overlay");
+  wrap.appendChild(studentSelectEl);
+}
+
+
+
 // ✅ Inicializa el combo de cursos y, al cambiar, carga estudiantes en datalist + select
 function initCourseComboForModal({
   courseSelectEl,
@@ -4560,6 +4623,13 @@ function initAllModalCourses_() {
   bindStudentSelectToInput_(discStudentSelectEl, discStudentEl);
   bindStudentSelectToInput_(piercStudentSelectEl, piercStudentEl);
   bindStudentSelectToInput_(uniStudentSelectEl, uniStudentEl);
+
+
+  // ✅ Integrar select dentro del input (flecha a la derecha)
+mountStudentSelectIntoInput_(discStudentEl, discStudentSelectEl);
+mountStudentSelectIntoInput_(piercStudentEl, piercStudentSelectEl);
+mountStudentSelectIntoInput_(uniStudentEl, uniStudentSelectEl);
+
 
   initCourseComboForModal({
     selectEl: discCourseEl,
@@ -5993,22 +6063,7 @@ window.addEventListener("error", (e) => {
   console.error("❌ Error JS:", e.message, e.filename, e.lineno);
 });
 
-// ✅ INIT combos Curso/Estudiante (Disciplina)
-(function initDiscCourseStudentCombo_() {
-  const discCourseEl = document.getElementById("discCourse");
-  const discStudentEl = document.getElementById("discStudent");
-  const discStudentsListEl = document.getElementById("discStudentsList");
-  const discStudentSelectEl = document.getElementById("discStudentSelect");
 
-  bindStudentSelectToInput_(discStudentSelectEl, discStudentEl);
-
-  initCourseComboForModal({
-    courseSelectEl: discCourseEl,
-    studentInputEl: discStudentEl,
-    studentsDatalistEl: discStudentsListEl,
-    studentSelectEl: discStudentSelectEl
-  });
-})();
 
 
 </script>
