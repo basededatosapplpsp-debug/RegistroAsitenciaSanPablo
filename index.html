@@ -995,17 +995,39 @@ body:not(.is-admin) #adminMonthSummary{
 .input-with-select::after {
   content: "▾";
   position: absolute;
-  right: 14px;
+  right: 12px;
   top: 50%;
   transform: translateY(-50%);
-  pointer-events: none; /* deja que el toque lo reciba el select invisible */
-  opacity: .9;
+  pointer-events: none;
+
+  font-size: 22px;      /* 🔥 tamaño de la flecha */
+  font-weight: 700;     /* más gruesa */
+  line-height: 1;
+  opacity: 0.9;
 }
+
 
 /* ❌ Ocultar label "Estudiante (lista)" porque el select va dentro del input */
 label[for="discStudentSelect"],
 label[for="piercStudentSelect"],
 label[for="uniStudentSelect"] {
+  display: none !important;
+}
+
+
+/* ❌ Quitar flecha nativa del datalist en inputs */
+input[list] {
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+/* Android / Chrome */
+input[list]::-webkit-calendar-picker-indicator {
+  display: none !important;
+}
+
+/* Firefox */
+input[list]::-moz-list-dropdown {
   display: none !important;
 }
 
