@@ -2195,6 +2195,9 @@ function setAdminMode(on) {
   // Si entro como admin: cerrar login modal y bloquear “docente”
   if (on) {
     loginModal.hidden = true;
+    // ✅ cargar cursos/estudiantes para los 3 modales
+initAllModalCourses_();
+
     teacherNameEl.value = "ADMINISTRADOR";
     teacherNameEl.disabled = true;
     teacherNameEl.classList.add("is-locked");
@@ -3640,15 +3643,19 @@ function bindStudentSelectToInput_(selectEl, inputEl, onInputCb) {
 // Inicializa un modal (select curso -> carga estudiantes -> datalist)
 // Inicializa un modal (select curso -> carga estudiantes -> datalist)
 // ✅ Ahora es "re-ejecutable" sin duplicar event listeners
+// ✅ Curso -> carga estudiantes en DATAlist + SELECT (sin romper nada)
 async function initCourseComboForModal({
-  selectEl,
-  datalistEl,
-  studentInputEl,
+  selectEl,         // <select> de cursos
+  datalistEl,       // <datalist> (opcional)
+  studentInputEl,   // <input> donde escribes estudiante (opcional)
+  studentSelectEl,  // <select> lista estudiantes (opcional)
   defaultCourse
 }) {
-  if (!selectEl || !datalistEl || !studentInputEl) return;
+  if (!selectEl) return;
 
   try {
+    console.log("📚 Cargando cursos para:", selectEl.id);
+
     const courses = await gsCoursesList();
     fillSelect_(selectEl, courses, "Selecciona el curso…");
 
@@ -3660,33 +3667,49 @@ async function initCourseComboForModal({
 
     async function loadStudentsForSelectedCourse() {
       const course = String(selectEl.value || "").trim();
+
+      // limpia UI si no hay curso
       if (!course) {
-        fillDatalist_(datalistEl, []);
+        if (datalistEl) fillDatalist_(datalistEl, []);
+        if (studentSelectEl) fillStudentsUI_([], datalistEl, studentSelectEl, null);
         return;
       }
-      const students = await gsCourseStudents(course);
-      fillDatalist_(datalistEl, students);
 
-      // ✅ si el usuario ya había escrito algo, no lo borramos;
-      // pero si el valor no existe en el nuevo curso, solo queda como texto (normal).
+      console.log("👥 Cargando estudiantes del curso:", course, "para:", selectEl.id);
+
+      const students = await gsCourseStudents(course);
+
+      // ✅ llena datalist + select de estudiantes
+      if (studentSelectEl) {
+        fillStudentsUI_(students, datalistEl, studentSelectEl, null);
+      } else if (datalistEl) {
+        fillDatalist_(datalistEl, students);
+      }
+
+      // NO borro el input para no romper tu flujo (pero si quieres limpiar, me dices)
     }
 
-    // ✅ evita duplicar listeners si esta función se llama de nuevo
+    // ✅ evita duplicar listeners si se llama de nuevo
     if (selectEl.__courseChangeHandler) {
       selectEl.removeEventListener("change", selectEl.__courseChangeHandler);
     }
     selectEl.__courseChangeHandler = loadStudentsForSelectedCourse;
     selectEl.addEventListener("change", selectEl.__courseChangeHandler);
 
-    // carga inicial si hay curso seleccionado
+    // carga inicial
     await loadStudentsForSelectedCourse();
 
+    console.log("✅ Cursos cargados:", courses.length, "en:", selectEl.id);
+
   } catch (e) {
-    // No rompas nada si falla: solo deja vacío
     console.warn("⚠️ No se pudo cargar cursos/estudiantes:", e);
-    fillDatalist_(datalistEl, []);
+    // deja vacío sin romper
+    try { fillSelect_(selectEl, [], "— Sin cursos —"); } catch {}
+    try { if (datalistEl) fillDatalist_(datalistEl, []); } catch {}
+    try { if (studentSelectEl) fillStudentsUI_([], datalistEl, studentSelectEl, null); } catch {}
   }
 }
+
 
 
   
@@ -4516,24 +4539,33 @@ function piercBindUI_() {
   }
 }
 
-// ======= Curso + Autocomplete en modales =======
-const discCourseEl  = document.getElementById("discCourse");
-const discStudentsDL = document.getElementById("discStudentsList");
+// ======= Curso + Autocomplete en modales (Cursos + Select estudiantes) =======
+const discCourseEl        = document.getElementById("discCourse");
+const discStudentsDL      = document.getElementById("discStudentsList");
+const discStudentSelectEl = document.getElementById("discStudentSelect");
 
-const piercCourseEl = document.getElementById("piercCourse");
-const piercStudentsDL = document.getElementById("piercStudentsList");
+const piercCourseEl        = document.getElementById("piercCourse");
+const piercStudentsDL      = document.getElementById("piercStudentsList");
+const piercStudentSelectEl = document.getElementById("piercStudentSelect");
 
-const uniCourseEl   = document.getElementById("uniCourse");
-const uniStudentsDL  = document.getElementById("uniStudentsList");
+const uniCourseEl        = document.getElementById("uniCourse");
+const uniStudentsDL      = document.getElementById("uniStudentsList");
+const uniStudentSelectEl = document.getElementById("uniStudentSelect");
 
-// Llama esto cuando la app ya está lista (por ejemplo después del login o al cargar)
+// ✅ Llama esto cuando la app ya está lista (después del login o al cargar)
 function initAllModalCourses_() {
   const defaultCourse = (loginCourseEl && loginCourseEl.value) ? loginCourseEl.value.trim() : "";
+
+  // vincula select->input (discStudentEl / piercStudentEl / uniStudentEl ya existen en tu app)
+  bindStudentSelectToInput_(discStudentSelectEl, discStudentEl);
+  bindStudentSelectToInput_(piercStudentSelectEl, piercStudentEl);
+  bindStudentSelectToInput_(uniStudentSelectEl, uniStudentEl);
 
   initCourseComboForModal({
     selectEl: discCourseEl,
     datalistEl: discStudentsDL,
     studentInputEl: discStudentEl,
+    studentSelectEl: discStudentSelectEl,
     defaultCourse
   });
 
@@ -4541,6 +4573,7 @@ function initAllModalCourses_() {
     selectEl: piercCourseEl,
     datalistEl: piercStudentsDL,
     studentInputEl: piercStudentEl,
+    studentSelectEl: piercStudentSelectEl,
     defaultCourse
   });
 
@@ -4548,6 +4581,7 @@ function initAllModalCourses_() {
     selectEl: uniCourseEl,
     datalistEl: uniStudentsDL,
     studentInputEl: uniStudentEl,
+    studentSelectEl: uniStudentSelectEl,
     defaultCourse
   });
 }
