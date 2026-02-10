@@ -2073,6 +2073,19 @@ function normalizeKey(s) {
     .replace(/\s+/g, " ");            // colapsa espacios
 }
 
+
+  function formatDateShort_(iso) {
+  if (!iso) return "";
+  const d = new Date(iso);
+  if (isNaN(d)) return "";
+  return d.toLocaleDateString("es-CO", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric"
+  });
+}
+
+
 function samePersonName(a, b) {
   return normalizeKey(a) === normalizeKey(b);
 }
@@ -3290,11 +3303,17 @@ function discRenderWho_(whoArr) {
   }
 
   // ✅ Muestra: Docente + nivel que puso
-  discWhoList.innerHTML = list.map(x => {
-    const name = escapeHtml(x.teacher || "");
-    const lvl = escapeHtml(String(x.level || ""));
-    return `<span class="disc-pill">${name} • Nivel ${lvl}</span>`;
-  }).join("");
+discWhoList.innerHTML = list.map(x => {
+  const name = escapeHtml(x.teacher || "");
+  const lvl  = escapeHtml(String(x.level || ""));
+  const date = formatDateShort_(x.date);
+  return `
+    <span class="disc-pill">
+      ${name} • Nivel ${lvl}${date ? ` • ${date}` : ""}
+    </span>
+  `;
+}).join("");
+
 }
 
 // ✅ LISTA “Reportados del mes” = solo nombres ordenados, click selecciona
@@ -4016,14 +4035,16 @@ async function discDoMarkLevel(level) {
   try {
     setLoading(true, "Guardando…", "Registrando llamado de atención.");
 
-    const resp = await gsDisciplineMark({
-      month: discMonthKey_(),
-      student,
-      level: lvl,
-      teacher: profile.name,
-      email: profile.email,
-      device_id: getDeviceId()
-    });
+  const resp = await gsDisciplineMark({
+  month: discMonthKey_(),
+  student,
+  level: lvl,
+  teacher: profile.name,
+  email: profile.email,
+  device_id: getDeviceId(),
+  date: new Date().toISOString()
+});
+
 
     if (resp && Array.isArray(resp.list)) {
       __discCacheList = resp.list;
@@ -4282,11 +4303,17 @@ function piercRenderWho_(whoArr) {
   const list = Array.isArray(whoArr) ? whoArr : [];
   if (!list.length) { piercWhoList.textContent = "—"; return; }
 
-  piercWhoList.innerHTML = list.map(x => {
-    const name = escapeHtml(x.teacher || "");
-    const lvl = escapeHtml(String(x.level || ""));
-    return `<span class="disc-pill">${name} • Nivel ${lvl}</span>`;
-  }).join("");
+ piercWhoList.innerHTML = list.map(x => {
+  const name = escapeHtml(x.teacher || "");
+  const lvl  = escapeHtml(String(x.level || ""));
+  const date = formatDateShort_(x.date);
+  return `
+    <span class="disc-pill">
+      ${name} • Nivel ${lvl}${date ? ` • ${date}` : ""}
+    </span>
+  `;
+}).join("");
+
 }
 
 function piercUpdateSelectedBox_(studentName){
@@ -4565,14 +4592,16 @@ async function piercDoMarkLevel(level) {
   try {
     setLoading(true, "Guardando…", "Registrando reporte de piercing/perforaciones.");
 
-    const resp = await gsPiercingMark({
-      month: piercMonthKey_(),
-      student,
-      level: lvl,
-      teacher: profile.name,
-      email: profile.email,
-      device_id: getDeviceId()
-    });
+  const resp = await gsPiercingMark({
+  month: piercMonthKey_(),
+  student,
+  level: lvl,
+  teacher: profile.name,
+  email: profile.email,
+  device_id: getDeviceId(),
+  date: new Date().toISOString()
+});
+
 
     if (resp && Array.isArray(resp.list)) __piercCacheList = resp.list;
     else await piercReloadReportedList(false);
@@ -4907,11 +4936,17 @@ function uniRenderWho_(whoArr){
   }
 
   // ✅ Igual que Disciplina/Piercing: Docente • Nivel X (en pills)
-  uniWhoList.innerHTML = list.map(x => {
-    const name = escapeHtml(x.teacher || "");
-    const lvl  = escapeHtml(String(x.level || ""));
-    return `<span class="disc-pill">${name} • Nivel ${lvl}</span>`;
-  }).join("");
+ uniWhoList.innerHTML = list.map(x => {
+  const name = escapeHtml(x.teacher || "");
+  const lvl  = escapeHtml(String(x.level || ""));
+  const date = formatDateShort_(x.date);
+  return `
+    <span class="disc-pill">
+      ${name} • Nivel ${lvl}${date ? ` • ${date}` : ""}
+    </span>
+  `;
+}).join("");
+
 }
 
 function uniFindInCache_(student){
@@ -5154,14 +5189,16 @@ async function uniDoMarkLevel(level) {
   try {
     setLoading(true, "Guardando…", "Registrando porte del uniforme.");
 
-    const resp = await gsUniformMark({
-      month: uniMonthKey_(),
-      student,
-      level: lvl,
-      teacher: profile.name,
-      email: profile.email,
-      device_id: getDeviceId()
-    });
+const resp = await gsUniformMark({
+  month: uniMonthKey_(),
+  student,
+  level: lvl,
+  teacher: profile.name,
+  email: profile.email,
+  device_id: getDeviceId(),
+  date: new Date().toISOString()
+});
+
 
     if (resp && Array.isArray(resp.list)) __uniCacheList = resp.list;
     else await uniReloadReportedList(false);
