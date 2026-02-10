@@ -1049,6 +1049,11 @@ input[list]::-moz-list-dropdown {
   display: none !important;
 }
 
+.dot.yellow{
+  /* usa el MISMO color del lvl-dot lvl-2 (amarillo) */
+  background: rgba(234,179,8,.95);   /* amarillo */
+  box-shadow: 0 0 0 4px rgba(234,179,8,.20);
+}
 
 </style>
 </head>
@@ -2109,6 +2114,16 @@ function normalizeKey(s) {
     year: "numeric"
   });
 }
+
+function dotClassByLevel_(lv) {
+  const n = Number(lv || 0);
+  if (n <= 0) return "dot";
+  if (n >= 4) return "dot bad";
+  if (n === 3) return "dot warn";      // naranja
+  if (n === 2) return "dot yellow";    // amarillo (nuevo)
+  return "dot";                        // nivel 1 (verde)
+}
+
 
 
 function samePersonName(a, b) {
@@ -3253,9 +3268,9 @@ function discSetDotByLevel_(level) {
     return;
   }
 
-  discLevelDot.style.visibility = "visible";
-  // 1 = verde (dot), 2-3 = warn, 4 = bad
-  discLevelDot.className = "dot" + (lv >= 4 ? " bad" : (lv >= 2 ? " warn" : ""));
+ discLevelDot.style.visibility = "visible";
+discLevelDot.className = dotClassByLevel_(lv);
+
 }
 
 // ✅ pinta el recuadro “Seleccionado”
@@ -4300,8 +4315,9 @@ function piercSetDotByLevel_(level) {
     return;
   }
 
-  piercLevelDot.style.visibility = "visible";
-  piercLevelDot.className = "dot" + (lv >= 4 ? " bad" : (lv >= 2 ? " warn" : ""));
+piercLevelDot.style.visibility = "visible";
+piercLevelDot.className = dotClassByLevel_(lv);
+
 }
 
 function piercFindInCache_(studentName) {
@@ -4938,8 +4954,9 @@ function uniSetDotByLevel_(level) {
     return;
   }
 
-  uniLevelDot.style.visibility = "visible";
-  uniLevelDot.className = "dot" + (lv >= 4 ? " bad" : (lv >= 2 ? " warn" : ""));
+ uniLevelDot.style.visibility = "visible";
+uniLevelDot.className = dotClassByLevel_(lv);
+
 }
 
 // ✅ faltaba esta función (estaba rompiendo Uniforme)
