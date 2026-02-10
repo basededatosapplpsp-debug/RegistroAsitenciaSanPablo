@@ -1844,26 +1844,7 @@ function updateDailyButtonsState(records) {
 
 // ======= Helpers =======
 
-function safeFormatDate_(ts) {
-  if (!ts) return "";
 
-  // Si ya es yyyy-MM-dd, devolver tal cual
-  if (/^\d{4}-\d{2}-\d{2}$/.test(ts)) {
-    return ts;
-  }
-
-  // Si es ISO con Z
-  try {
-    const d = Utilities.parseDate(
-      ts,
-      "UTC",
-      "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'"
-    );
-    return Utilities.formatDate(d, TIMEZONE, "yyyy-MM-dd");
-  } catch (e) {
-    return "";
-  }
-}
 
   
 function pad(n){ return String(n).padStart(2,"0"); }
@@ -6294,6 +6275,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 </body>
 </html>
+
 
 
 
