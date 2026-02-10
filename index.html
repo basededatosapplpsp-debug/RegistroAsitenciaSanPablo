@@ -3203,10 +3203,21 @@ function discSetHint_(msg) {
 }
 
 // ✅ colores del puntico según nivel
-function discSetDotByLevel_(level){
-  if (!discLevelDotEl) return;
+// ✅ DOT Disciplina: oculto si NO hay reportes
+function discSetDotByLevel_(level) {
+  if (!discLevelDot) return;
+
   const lv = Number(level || 0);
-  discLevelDotEl.className = "dot" + (lv ? ` lvl-${lv}` : "");
+
+  if (lv <= 0) {
+    discLevelDot.style.visibility = "hidden"; // 👈 no se ve si no hay reportes
+    discLevelDot.className = "dot";
+    return;
+  }
+
+  discLevelDot.style.visibility = "visible";
+  // 1 = verde (dot), 2-3 = warn, 4 = bad
+  discLevelDot.className = "dot" + (lv >= 4 ? " bad" : (lv >= 2 ? " warn" : ""));
 }
 
 // ✅ pinta el recuadro “Seleccionado”
@@ -4231,10 +4242,20 @@ function piercSetHint_(msg) {
   piercHint.className = "modal-hint muted small";
 }
 
-function piercSetDotByLevel_(level){
-  if (!piercLevelDotEl) return;
+// ✅ DOT Piercing: oculto si NO hay reportes
+function piercSetDotByLevel_(level) {
+  if (!piercLevelDot) return;
+
   const lv = Number(level || 0);
-  piercLevelDotEl.className = "dot" + (lv ? ` lvl-${lv}` : "");
+
+  if (lv <= 0) {
+    piercLevelDot.style.visibility = "hidden";
+    piercLevelDot.className = "dot";
+    return;
+  }
+
+  piercLevelDot.style.visibility = "visible";
+  piercLevelDot.className = "dot" + (lv >= 4 ? " bad" : (lv >= 2 ? " warn" : ""));
 }
 
 function piercFindInCache_(studentName) {
@@ -4851,16 +4872,20 @@ function uniNormalizeStudent_(s) {
   return String(s || "").trim().replace(/\s+/g, " ");
 }
 function uniSetHint_(t){ if (uniHintEl) uniHintEl.textContent = String(t||""); }
-function uniSetDotByLevel_(lvl){
-  if (!uniLevelDotEl) return;
-  uniLevelDotEl.className = (lvl ? `lvl-dot lvl-${lvl}` : "lvl-dot");
-}
-function uniClearLevelUI_(){
-  if (!uniformModal) return;
-  uniformModal.querySelectorAll(".disc-level").forEach(btn=>{
-    btn.classList.remove("active");
-    btn.disabled = false;
-  });
+// ✅ DOT Uniforme: oculto si NO hay reportes
+function uniSetDotByLevel_(level) {
+  if (!uniLevelDot) return;
+
+  const lv = Number(level || 0);
+
+  if (lv <= 0) {
+    uniLevelDot.style.visibility = "hidden";
+    uniLevelDot.className = "dot";
+    return;
+  }
+
+  uniLevelDot.style.visibility = "visible";
+  uniLevelDot.className = "dot" + (lv >= 4 ? " bad" : (lv >= 2 ? " warn" : ""));
 }
 function uniApplyLevelUI_(maxLevel){
   if (!uniformModal) return;
