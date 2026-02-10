@@ -1002,6 +1002,12 @@ body:not(.is-admin) #adminMonthSummary{
   opacity: .9;
 }
 
+/* ❌ Ocultar label "Estudiante (lista)" porque el select va dentro del input */
+label[for="discStudentSelect"],
+label[for="piercStudentSelect"],
+label[for="uniStudentSelect"] {
+  display: none !important;
+}
 
 
 </style>
