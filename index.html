@@ -1799,6 +1799,67 @@ const adminRecordsFilters = $("adminRecordsFilters");
 const recordsMonthSelect = $("recordsMonthSelect");
 const recordsTeacherSelect = $("recordsTeacherSelect");
 
+
+/**
+ * Alert moderno tipo modal (Promise-based)
+ * Uso: await alertPro({title, msg, okText, danger})
+ */
+function alertPro({
+  title = "Aviso",
+  msg = "",
+  okText = "Entendido",
+  danger = false
+} = {}) {
+  return new Promise(resolve => {
+    const modal = document.getElementById("appConfirm");
+    if (!modal) {
+      window.alert(`${title}\n\n${msg}`);
+      resolve(true);
+      return;
+    }
+
+    const titleEl = document.getElementById("confirmTitle");
+    const msgEl   = document.getElementById("confirmMsg");
+    const btnOk   = document.getElementById("confirmOk");
+    const btnNo   = document.getElementById("confirmCancel");
+
+    if (!titleEl || !msgEl || !btnOk || !btnNo) {
+      window.alert(`${title}\n\n${msg}`);
+      resolve(true);
+      return;
+    }
+
+    titleEl.textContent = title;
+    msgEl.textContent = msg;
+
+    btnOk.textContent = okText;
+
+    // ocultar botón cancelar en modo alert
+    btnNo.hidden = true;
+
+    // estilos
+    btnOk.classList.toggle("btn-danger", !!danger);
+    btnOk.classList.toggle("btn-primary", !danger);
+
+    // abrir modal + bloquear fondo (igual que loader)
+    modal.hidden = false;
+    document.body.classList.add("is-loading");
+
+    const cleanup = () => {
+      btnOk.onclick = null;
+      // restaurar botón cancelar para futuras confirmaciones
+      btnNo.hidden = false;
+    };
+
+    btnOk.onclick = () => {
+      cleanup();
+      modal.hidden = true;
+      document.body.classList.remove("is-loading");
+      resolve(true);
+    };
+  });
+}
+
 let __confirmResolve = null;
 
 function confirmPro({
@@ -4185,9 +4246,15 @@ if (btnDiscBack) btnDiscBack.hidden = true;
   if (waUrl) {
     window.open(waUrl, "_blank"); // abre chat de la coordinadora con el mensaje listo
     openedWa = true;
-  } else {
-    alert("⚠️ No llegó el link de WhatsApp desde el servidor (wa_url).");
-  }
+ } else {
+  await alertPro({
+    title: "WhatsApp no disponible",
+    msg: "⚠️ No llegó el link de WhatsApp desde el servidor (wa_url).\n\nIntenta recargar la lista o vuelve a registrar el nivel 4.",
+    okText: "Entendido",
+    danger: true
+  });
+}
+
 }
 
 
@@ -4746,10 +4813,20 @@ async function piercDoMarkLevel(level) {
     piercRenderReportedList_(__piercCacheList);
     if (btnPiercBack) btnPiercBack.hidden = true;
 
-    if (resp && resp.ok && resp.justReported && lvl >= 4) {
-      const waUrl = String(resp.wa_url || "").trim();
-      if (waUrl) window.open(waUrl, "_blank");
-    }
+   if (resp && resp.ok && resp.justReported && lvl >= 4) {
+  const waUrl = String(resp.wa_url || "").trim();
+  if (waUrl) {
+    window.open(waUrl, "_blank");
+  } else {
+    await alertPro({
+      title: "WhatsApp no disponible",
+      msg: "⚠️ No llegó el link de WhatsApp desde el servidor (wa_url).",
+      okText: "Entendido",
+      danger: true
+    });
+  }
+}
+
 
     piercSetHint_(lvl >= 4 ? "Nivel 4 registrado ✅" : "Registrado ✅");
 
@@ -5405,10 +5482,20 @@ const resp = await gsUniformMark({
     uniRenderReportedList_(__uniCacheList);
     if (btnUniBack) btnUniBack.hidden = true;
 
-    if (resp && resp.ok && resp.justReported && lvl >= 4) {
-      const waUrl = String(resp.wa_url || "").trim();
-      if (waUrl) window.open(waUrl, "_blank");
-    }
+  if (resp && resp.ok && resp.justReported && lvl >= 4) {
+  const waUrl = String(resp.wa_url || "").trim();
+  if (waUrl) {
+    window.open(waUrl, "_blank");
+  } else {
+    await alertPro({
+      title: "WhatsApp no disponible",
+      msg: "⚠️ No llegó el link de WhatsApp desde el servidor (wa_url).",
+      okText: "Entendido",
+      danger: true
+    });
+  }
+}
+
 
     uniSetHint_(lvl >= 4 ? "Nivel 4 registrado ✅" : "Registrado ✅");
   } catch (e) {
