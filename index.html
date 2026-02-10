@@ -4869,7 +4869,7 @@ const btnUniBack = document.getElementById("btnUniBack");
 
 const uniSelectedNameEl = document.getElementById("uniSelectedName");
 const uniSelectedMetaEl = document.getElementById("uniSelectedMeta");
-const uniLevelDotEl = document.getElementById("uniLevelDot");
+const uniLevelDot = document.getElementById("uniLevelDot");
 const uniWhoList = document.getElementById("uniWhoList");
 const uniStudentEl = document.getElementById("uniStudent");
 const uniReportedList = document.getElementById("uniReportedList");
@@ -5350,9 +5350,28 @@ function uniBindUI_() {
 if (uniStudentEl) {
   uniStudentEl.addEventListener("input", () => {
     const raw = String(uniStudentEl.value || "");
-    uniOnStudentChange_(raw);
+    const s = uniNormalizeStudent_(raw);
+    __uniCurrentStudent = s;
+
+    // 1) siempre actualiza el box “Seleccionado” (punto, niveles, who)
+    uniUpdateSelectedBox_(s);
+
+    // 2) si el estudiante está reportado este mes => entra a DETALLE
+    const item = s ? uniFindInCache_(s) : null;
+    if (item) {
+      __uniView = "detail";
+      uniRenderDetailView_();
+      if (btnUniBack) btnUniBack.hidden = false;
+      return;
+    }
+
+    // 3) si NO está reportado => vista LISTA normal
+    __uniView = "list";
+    uniRenderReportedList_(__uniCacheList);
+    if (btnUniBack) btnUniBack.hidden = true;
   });
 }
+
 
 }
 
