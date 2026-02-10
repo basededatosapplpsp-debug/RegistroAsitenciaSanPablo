@@ -1458,7 +1458,7 @@ input[list]::-moz-list-dropdown {
 
 <!-- ======= MODAL PIERCING Y PERFORACIONES ======= -->
 <div id="piercingModal" class="modal-backdrop" hidden>
-  <div class="modal-card" style="width:min(720px,100%);">
+  <div class="modal-card" style="width:min(720px,100%); max-height:90vh; overflow-y:auto;">
     <h2 class="modal-title">Piercing y perforaciones</h2>
     <p class="modal-sub">
       Reporta piercing/perforaciones no permitidas. Marca el nivel (1 a 4). Al llegar a 4 se notifica por WhatsApp.
@@ -1473,18 +1473,19 @@ input[list]::-moz-list-dropdown {
       </div>
     </div>
 
-    <!-- ✅ NUEVO: Curso + Autocomplete -->
     <label class="modal-label" for="piercCourse">Curso</label>
     <select id="piercCourse" class="modal-input"></select>
-    <datalist id="piercStudentsList"></datalist>
-    <label class="modal-label" for="piercStudentSelect">Estudiante (lista)</label>
-<select id="piercStudentSelect" class="modal-input"></select>
 
+    <datalist id="piercStudentsList"></datalist>
+
+    <label class="modal-label" for="piercStudentSelect">Estudiante (lista)</label>
+    <select id="piercStudentSelect" class="modal-input"></select>
 
     <label class="modal-label" for="piercStudent">Estudiante</label>
     <input id="piercStudent" class="modal-input" type="text"
-           list="piercStudentsList"
-           placeholder="Escribe el nombre del estudiante…" autocomplete="off" />
+      list="piercStudentsList"
+      placeholder="Escribe el nombre del estudiante…" autocomplete="off" />
+
     <div class="muted small" style="margin-top:6px;">
       Tip: también puedes tocar un nombre en “Reportados” para cargarlo arriba.
     </div>
@@ -1497,7 +1498,9 @@ input[list]::-moz-list-dropdown {
     </div>
 
     <div class="disc-who">
-      <div class="muted small" style="margin-bottom:6px;">Docentes que han marcado niveles</div>
+      <div class="muted small" style="margin-bottom:6px;">
+        Docentes que han marcado niveles
+      </div>
       <div id="piercWhoList" class="disc-who-list">—</div>
     </div>
 
@@ -1507,7 +1510,6 @@ input[list]::-moz-list-dropdown {
       </div>
 
       <div id="piercReportedList" class="disc-reported-list"></div>
-
       <div id="piercHint" class="modal-hint muted small"></div>
 
       <div class="modal-actions" style="justify-content:flex-end;">
@@ -1520,15 +1522,15 @@ input[list]::-moz-list-dropdown {
 </div>
 
 
+
 <!-- ======= MODAL: PORTE DEL UNIFORME ======= -->
 <div id="uniformModal" class="modal-backdrop" hidden>
-  <div class="modal-card" style="width:min(720px,100%);">
+  <div class="modal-card" style="width:min(720px,100%); max-height:90vh; overflow-y:auto;">
     <h2 class="modal-title">Porte del uniforme</h2>
     <p class="modal-sub">
       Reporta porte incorrecto del uniforme. Marca el nivel (1 a 4). Al llegar a 4 se notifica por WhatsApp.
     </p>
 
-    <!-- ✅ Seleccionado -->
     <label class="modal-label">Seleccionado</label>
     <div id="uniSelectedBox" class="status" style="margin-top:6px;">
       <span class="dot" id="uniLevelDot"></span>
@@ -1538,23 +1540,23 @@ input[list]::-moz-list-dropdown {
       </div>
     </div>
 
-    <!-- ✅ NUEVO: Curso + Autocomplete -->
     <label class="modal-label" for="uniCourse">Curso</label>
     <select id="uniCourse" class="modal-input"></select>
-    <datalist id="uniStudentsList"></datalist>
-    <label class="modal-label" for="uniStudentSelect">Estudiante (lista)</label>
-<select id="uniStudentSelect" class="modal-input"></select>
 
+    <datalist id="uniStudentsList"></datalist>
+
+    <label class="modal-label" for="uniStudentSelect">Estudiante (lista)</label>
+    <select id="uniStudentSelect" class="modal-input"></select>
 
     <label class="modal-label" for="uniStudent">Estudiante</label>
     <input id="uniStudent" class="modal-input" type="text"
-           list="uniStudentsList"
-           placeholder="Escribe el nombre del estudiante…" autocomplete="off" />
+      list="uniStudentsList"
+      placeholder="Escribe el nombre del estudiante…" autocomplete="off" />
+
     <div class="muted small" style="margin-top:6px;">
       Tip: también puedes tocar un nombre en “Reportados” para cargarlo arriba.
     </div>
 
-    <!-- ✅ Niveles -->
     <div class="disc-levels">
       <button type="button" class="disc-level" data-level="1">1 • Leve</button>
       <button type="button" class="disc-level" data-level="2">2</button>
@@ -1562,23 +1564,21 @@ input[list]::-moz-list-dropdown {
       <button type="button" class="disc-level danger" data-level="4">4 • Grave</button>
     </div>
 
-    <!-- ✅ Who list -->
     <div class="disc-who">
-      <div class="muted small" style="margin-bottom:6px;">Docentes que han marcado niveles</div>
+      <div class="muted small" style="margin-bottom:6px;">
+        Docentes que han marcado niveles
+      </div>
       <div id="uniWhoList" class="disc-who-list">—</div>
     </div>
 
-    <!-- ✅ Reportados -->
     <div class="disc-reported">
       <div class="row row-between" style="margin-top:12px;">
         <div class="muted small">Reportados (mes actual)</div>
       </div>
 
       <div id="uniReportedList" class="disc-reported-list"></div>
-
       <div id="uniHint" class="modal-hint muted small"></div>
 
-      <!-- ✅ Botones -->
       <div class="modal-actions" style="justify-content:flex-end;">
         <button id="btnUniBack" type="button" class="btn btn-ghost" hidden>← Atrás</button>
         <button id="btnUniReload" type="button" class="btn btn-ghost">Recargar</button>
@@ -1587,6 +1587,7 @@ input[list]::-moz-list-dropdown {
     </div>
   </div>
 </div>
+
 
 
 
@@ -6275,6 +6276,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 </body>
 </html>
+
 
 
 
