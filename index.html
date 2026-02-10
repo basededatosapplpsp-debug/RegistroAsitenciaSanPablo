@@ -1380,12 +1380,12 @@ body:not(.is-admin) #adminMonthSummary{
       </div>
     </div>
 
-    <!-- ✅ NUEVO: Curso + Autocomplete 
+    <!-- ✅ NUEVO: Curso + Autocomplete -->
     <label class="modal-label" for="discCourse">Curso</label>
     <select id="discCourse" class="modal-input"></select>
     <datalist id="discStudentsList"></datalist>
     <label class="modal-label" for="discStudentSelect">Estudiante (lista)</label>
-<select id="discStudentSelect" class="modal-input"></select>-->
+<select id="discStudentSelect" class="modal-input"></select>
 
 
     <label class="modal-label" for="discStudent">Estudiante</label>
@@ -1445,12 +1445,12 @@ body:not(.is-admin) #adminMonthSummary{
       </div>
     </div>
 
-    <!-- ✅ NUEVO: Curso + Autocomplete 
+    <!-- ✅ NUEVO: Curso + Autocomplete -->
     <label class="modal-label" for="piercCourse">Curso</label>
     <select id="piercCourse" class="modal-input"></select>
     <datalist id="piercStudentsList"></datalist>
     <label class="modal-label" for="piercStudentSelect">Estudiante (lista)</label>
-<select id="piercStudentSelect" class="modal-input"></select> -->
+<select id="piercStudentSelect" class="modal-input"></select>
 
 
     <label class="modal-label" for="piercStudent">Estudiante</label>
@@ -1510,12 +1510,12 @@ body:not(.is-admin) #adminMonthSummary{
       </div>
     </div>
 
-    <!-- ✅ NUEVO: Curso + Autocomplete 
+    <!-- ✅ NUEVO: Curso + Autocomplete -->
     <label class="modal-label" for="uniCourse">Curso</label>
     <select id="uniCourse" class="modal-input"></select>
     <datalist id="uniStudentsList"></datalist>
     <label class="modal-label" for="uniStudentSelect">Estudiante (lista)</label>
-<select id="uniStudentSelect" class="modal-input"></select>  -->
+<select id="uniStudentSelect" class="modal-input"></select>
 
 
     <label class="modal-label" for="uniStudent">Estudiante</label>
@@ -4619,18 +4619,17 @@ const uniStudentSelectEl = document.getElementById("uniStudentSelect");
 function initAllModalCourses_() {
   const defaultCourse = (loginCourseEl && loginCourseEl.value) ? loginCourseEl.value.trim() : "";
 
-  // vincula select->input (discStudentEl / piercStudentEl / uniStudentEl ya existen en tu app)
+  // ✅ 1) Integrar select dentro del input (flecha a la derecha)
+  mountStudentSelectIntoInput_(discStudentEl, discStudentSelectEl);
+  mountStudentSelectIntoInput_(piercStudentEl, piercStudentSelectEl);
+  mountStudentSelectIntoInput_(uniStudentEl, uniStudentSelectEl);
+
+  // ✅ 2) Vincula select -> input (para que el valor se copie al input real)
   bindStudentSelectToInput_(discStudentSelectEl, discStudentEl);
   bindStudentSelectToInput_(piercStudentSelectEl, piercStudentEl);
   bindStudentSelectToInput_(uniStudentSelectEl, uniStudentEl);
 
-
-  // ✅ Integrar select dentro del input (flecha a la derecha)
-mountStudentSelectIntoInput_(discStudentEl, discStudentSelectEl);
-mountStudentSelectIntoInput_(piercStudentEl, piercStudentSelectEl);
-mountStudentSelectIntoInput_(uniStudentEl, uniStudentSelectEl);
-
-
+  // ✅ 3) Cursos -> Estudiantes
   initCourseComboForModal({
     selectEl: discCourseEl,
     datalistEl: discStudentsDL,
@@ -4655,6 +4654,7 @@ mountStudentSelectIntoInput_(uniStudentEl, uniStudentSelectEl);
     defaultCourse
   });
 }
+
 
 
 /************ UNIFORME (UI) ************/
