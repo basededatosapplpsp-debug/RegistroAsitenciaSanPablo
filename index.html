@@ -3523,6 +3523,107 @@ function fillStudentsUI_(students, datalistEl, selectEl, inputEl) {
   if (inputEl) inputEl.value = "";
 }
 
+
+// ✅ Vincula el <select> de estudiantes con el <input> (para que tu lógica existente use el input)
+function bindStudentSelectToInput_(studentSelectEl, studentInputEl, onPick) {
+  if (!studentSelectEl || !studentInputEl) return;
+
+  // evitar doble bind si se llama varias veces
+  if (studentSelectEl.dataset.boundToInput === "1") return;
+  studentSelectEl.dataset.boundToInput = "1";
+
+  const apply = () => {
+    const v = String(studentSelectEl.value || "").trim();
+    if (!v) return;
+
+    studentInputEl.value = v;
+
+    // dispara eventos para que cualquier lógica que ya tengas en el input se ejecute
+    studentInputEl.dispatchEvent(new Event("input", { bubbles: true }));
+    studentInputEl.dispatchEvent(new Event("change", { bubbles: true }));
+
+    if (typeof onPick === "function") onPick(v);
+  };
+
+  studentSelectEl.addEventListener("change", apply);
+}
+
+// ✅ Inicializa el combo de cursos y, al cambiar, carga estudiantes en datalist + select
+function initCourseComboForModal({
+  courseSelectEl,
+  studentInputEl,
+  studentsDatalistEl,
+  studentSelectEl
+}) {
+  if (!courseSelectEl) return;
+
+  // evitar doble bind
+  if (courseSelectEl.dataset.courseStudentsInit === "1") return;
+  courseSelectEl.dataset.courseStudentsInit = "1";
+
+  let loading = false;
+
+  const clearStudentsUI = () => {
+    fillStudentsUI_([], studentsDatalistEl, studentSelectEl, studentInputEl);
+    if (studentInputEl) studentInputEl.value = "";
+    if (studentSelectEl) studentSelectEl.value = "";
+  };
+
+  const loadCourses = async () => {
+    if (loading) return;
+    loading = true;
+    try {
+      const courses = await gsCoursesList();
+      fillSelect_(courseSelectEl, courses, "— Selecciona curso —");
+    } catch (e) {
+      console.warn("❌ No se pudieron cargar cursos:", e);
+      fillSelect_(courseSelectEl, [], "— Sin cursos —");
+    } finally {
+      loading = false;
+    }
+  };
+
+  const loadStudentsForCourse = async (course) => {
+    const c = String(course || "").trim();
+    if (!c) {
+      clearStudentsUI();
+      return;
+    }
+
+    // UI rápida mientras carga
+    fillStudentsUI_([], studentsDatalistEl, studentSelectEl, studentInputEl);
+
+    try {
+      console.log("📚 Cargando estudiantes del curso:", c);
+      const students = await gsCourseStudents(c);
+      fillStudentsUI_(students, studentsDatalistEl, studentSelectEl, studentInputEl);
+      console.log("✅ Estudiantes cargados:", (students || []).length);
+    } catch (e) {
+      console.warn("❌ No se pudieron cargar estudiantes del curso:", c, e);
+      clearStudentsUI();
+    }
+  };
+
+  // 1) cargar cursos una vez
+  loadCourses();
+
+  // 2) cuando cambia el curso => cargar estudiantes
+  courseSelectEl.addEventListener("change", () => {
+    const course = String(courseSelectEl.value || "").trim();
+    // limpia selección previa antes de cargar
+    if (studentInputEl) studentInputEl.value = "";
+    if (studentSelectEl) studentSelectEl.value = "";
+    loadStudentsForCourse(course);
+  });
+
+  // 3) si ya venía un curso seleccionado (por restore), cargar estudiantes
+  if (String(courseSelectEl.value || "").trim()) {
+    loadStudentsForCourse(courseSelectEl.value);
+  }
+}
+
+
+
 function bindStudentSelectToInput_(selectEl, inputEl, onInputCb) {
   if (!selectEl || !inputEl) return;
 
@@ -5858,13 +5959,28 @@ window.addEventListener("error", (e) => {
   console.error("❌ Error JS:", e.message, e.filename, e.lineno);
 });
 
+// ✅ INIT combos Curso/Estudiante (Disciplina)
+(function initDiscCourseStudentCombo_() {
+  const discCourseEl = document.getElementById("discCourse");
+  const discStudentEl = document.getElementById("discStudent");
+  const discStudentsListEl = document.getElementById("discStudentsList");
+  const discStudentSelectEl = document.getElementById("discStudentSelect");
+
+  bindStudentSelectToInput_(discStudentSelectEl, discStudentEl);
+
+  initCourseComboForModal({
+    courseSelectEl: discCourseEl,
+    studentInputEl: discStudentEl,
+    studentsDatalistEl: discStudentsListEl,
+    studentSelectEl: discStudentSelectEl
+  });
+})();
 
 
 </script>
 
 </body>
 </html>
-
 
 
 
