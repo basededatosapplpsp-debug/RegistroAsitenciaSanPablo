@@ -3479,6 +3479,79 @@ async function gsDisciplineList(month) {
 }
 
 /************ CURSOS + ESTUDIANTES (AUTOCOMPLETE) ************/
+/************ CACHE CURSOS/ESTUDIANTES ************/
+const LS_COURSES_CACHE = "courses_cache_v1";
+const LS_STUDENTS_CACHE_PREFIX = "course_students_cache_v1:"; // + course
+const CACHE_TTL_MS = 6 * 60 * 60 * 1000; // 6 horas (ajústalo)
+
+function cacheSet_(key, value) {
+  try {
+    localStorage.setItem(key, JSON.stringify({ t: Date.now(), v: value }));
+  } catch {}
+}
+
+function cacheGet_(key) {
+  try {
+    const raw = localStorage.getItem(key);
+    if (!raw) return null;
+    const obj = JSON.parse(raw);
+    if (!obj || !obj.t) return null;
+    if ((Date.now() - obj.t) > CACHE_TTL_MS) return null;
+    return obj.v;
+  } catch {
+    return null;
+  }
+}
+
+async function gsCoursesListCached() {
+  const cached = cacheGet_(LS_COURSES_CACHE);
+  if (Array.isArray(cached) && cached.length) return cached;
+
+  const fresh = await gsCoursesList();
+  if (Array.isArray(fresh)) cacheSet_(LS_COURSES_CACHE, fresh);
+  return fresh;
+}
+
+async function gsCourseStudentsCached(course) {
+  const c = String(course || "").trim();
+  if (!c) return [];
+
+  const key = LS_STUDENTS_CACHE_PREFIX + c;
+  const cached = cacheGet_(key);
+  if (Array.isArray(cached) && cached.length) return cached;
+
+  const fresh = await gsCourseStudents(c);
+  if (Array.isArray(fresh)) cacheSet_(key, fresh);
+  return fresh;
+}
+
+// ✅ Precarga cursos + estudiantes del curso por defecto
+async function prewarmCoursesAndStudents_() {
+  try {
+    console.log("🔥 Preload: cursos/estudiantes…");
+
+    const courses = await gsCoursesListCached();
+    console.log("✅ Preload cursos:", (courses || []).length);
+
+    // Curso por defecto: el del perfil o el del login
+    const profile = (typeof loadProfile === "function") ? loadProfile() : null;
+    const defaultCourse =
+      (profile && profile.course) ? String(profile.course).trim() :
+      (typeof loginCourseEl !== "undefined" && loginCourseEl && loginCourseEl.value) ? loginCourseEl.value.trim() :
+      "";
+
+    if (defaultCourse) {
+      const st = await gsCourseStudentsCached(defaultCourse);
+      console.log("✅ Preload estudiantes de", defaultCourse, ":", (st || []).length);
+    }
+
+  } catch (e) {
+    console.warn("⚠️ Preload falló (se seguirá cargando normal):", e);
+  }
+}
+
+
+
 async function gsCoursesList() {
   const res = await fetch(GS_WEBAPP_URL, {
     method: "POST",
@@ -3645,7 +3718,7 @@ function initCourseComboForModal({
     if (loading) return;
     loading = true;
     try {
-      const courses = await gsCoursesList();
+      const courses = await gsCoursesListCached();
       fillSelect_(courseSelectEl, courses, "— Selecciona curso —");
     } catch (e) {
       console.warn("❌ No se pudieron cargar cursos:", e);
@@ -3746,7 +3819,7 @@ async function initCourseComboForModal({
 
       console.log("👥 Cargando estudiantes del curso:", course, "para:", selectEl.id);
 
-      const students = await gsCourseStudents(course);
+      const students = await gsCourseStudentsCached(course);
 
       // ✅ llena datalist + select de estudiantes
       if (studentSelectEl) {
@@ -6070,6 +6143,16 @@ window.addEventListener("error", (e) => {
 });
 
 
+document.addEventListener("DOMContentLoaded", () => {
+  // precarga en segundo plano (no rompe si aún no hay login)
+  prewarmCoursesAndStudents_();
+
+  // si ya hay perfil guardado, deja listos los combos también
+  try {
+    const p = (typeof loadProfile === "function") ? loadProfile() : null;
+    if (p && p.course) initAllModalCourses_();
+  } catch {}
+});
 
 
 </script>
