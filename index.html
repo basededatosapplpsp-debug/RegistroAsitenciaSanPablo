@@ -820,51 +820,69 @@ body:not(.is-admin) #adminMonthSummary{
 
 
 
-   /* ================================
-   MODAL LLAMADO DE ATENCIÓN: responsive + scroll en Reportados
+/* ================================
+   MODALES FALTAS (DISC / PIERC / UNI)
+   responsive + scroll SOLO en Reportados
 ================================ */
 
-/* el backdrop ya centra; solo aseguramos que no “rompa” en pantallas pequeñas */
-#disciplineModal{
+/* padding seguro en móviles (notch/safe-area) */
+#disciplineModal,
+#piercingModal,
+#uniformModal{
   padding: max(12px, env(safe-area-inset-top)) 12px max(12px, env(safe-area-inset-bottom));
 }
 
-/* el card del modal se adapta a cualquier alto y permite layout interno */
-#disciplineModal .modal-card{
+/* el card se adapta a altura y NO scrollea */
+#disciplineModal .modal-card,
+#piercingModal .modal-card,
+#uniformModal .modal-card{
   width: min(720px, 100%);
   max-height: calc(100dvh - 24px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
   display: flex;
   flex-direction: column;
-  overflow: hidden; /* evita doble scroll feo */
+  overflow: hidden; /* evita doble scroll */
 }
 
-/* si el contenido crece, el card “cede” y el scroll lo toma Reportados */
-#disciplineModal .disc-reported{
+/* contenedor de “Reportados” en columna, permitiendo que la lista sea la que scrollee */
+#disciplineModal .disc-reported,
+#piercingModal .disc-reported,
+#uniformModal .disc-reported{
   display: flex;
   flex-direction: column;
-  min-height: 0; /* ✅ CLAVE para que el hijo pueda scrollear */
+  min-height: 0; /* CLAVE para overflow del hijo */
 }
 
-/* la lista es la que scrollea cuando haga falta */
-#disciplineModal .disc-reported-list{
-  margin-top:10px;
+/* SOLO la lista scrollea */
+#disciplineModal .disc-reported-list,
+#piercingModal .disc-reported-list,
+#uniformModal .disc-reported-list{
+  margin-top: 10px;
   flex: 1 1 auto;
-  min-height: 120px; /* evita que quede en 0 */
+  min-height: 120px;
   overflow: auto;
   -webkit-overflow-scrolling: touch;
 
-  border:1px solid var(--line);
-  border-radius:14px;
-  padding:10px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 10px;
   background: rgba(0,0,0,.10);
 }
 
-/* opcional: compactar un poquito en pantallas muy bajas */
+/* opcional: compactar en pantallas muy bajas */
 @media (max-height: 640px){
-  #disciplineModal .modal-sub{ display:none; }
-  #disciplineModal .disc-who{ padding:8px; }
-  #disciplineModal .disc-level{ padding:10px 8px; }
+  #disciplineModal .modal-sub,
+  #piercingModal .modal-sub,
+  #uniformModal .modal-sub{ display:none; }
+
+  #disciplineModal .disc-who,
+  #piercingModal .disc-who,
+  #uniformModal .disc-who{ padding: 8px; }
+
+  #disciplineModal .disc-level,
+  #piercingModal .disc-level,
+  #uniformModal .disc-level{ padding: 10px 8px; }
 }
+
 
 
 
@@ -1458,7 +1476,8 @@ input[list]::-moz-list-dropdown {
 
 <!-- ======= MODAL PIERCING Y PERFORACIONES ======= -->
 <div id="piercingModal" class="modal-backdrop" hidden>
-  <div class="modal-card" style="width:min(720px,100%); max-height:90vh; overflow-y:auto;">
+  <div class="modal-card" style="width:min(720px,100%);">
+
     <h2 class="modal-title">Piercing y perforaciones</h2>
     <p class="modal-sub">
       Reporta piercing/perforaciones no permitidas. Marca el nivel (1 a 4). Al llegar a 4 se notifica por WhatsApp.
@@ -1525,7 +1544,8 @@ input[list]::-moz-list-dropdown {
 
 <!-- ======= MODAL: PORTE DEL UNIFORME ======= -->
 <div id="uniformModal" class="modal-backdrop" hidden>
-  <div class="modal-card" style="width:min(720px,100%); max-height:90vh; overflow-y:auto;">
+  <div class="modal-card" style="width:min(720px,100%);">
+
     <h2 class="modal-title">Porte del uniforme</h2>
     <p class="modal-sub">
       Reporta porte incorrecto del uniforme. Marca el nivel (1 a 4). Al llegar a 4 se notifica por WhatsApp.
@@ -6276,7 +6296,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
 </body>
 </html>
-
 
 
 
