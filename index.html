@@ -4177,11 +4177,36 @@ async function shareTextNative_(text) {
       await navigator.share({ text: String(text || "") });
       return true;
     }
-  } catch (e) {
-    // si el usuario cancela, no pasa nada
-  }
+  } catch (e) {}
   return false;
 }
+
+async function copyTextToClipboard_(text) {
+  const t = String(text || "");
+  try {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      await navigator.clipboard.writeText(t);
+      return true;
+    }
+  } catch (e) {}
+
+  try {
+    const ta = document.createElement("textarea");
+    ta.value = t;
+    ta.setAttribute("readonly", "");
+    ta.style.position = "fixed";
+    ta.style.top = "-1000px";
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand("copy");
+    document.body.removeChild(ta);
+    return true;
+  } catch (e) {}
+
+  return false;
+}
+
+
 
 const WHATSAPP_GROUP_LINK = "https://chat.whatsapp.com/EztQUrHgqC6L7di7rvaNwu?mode=gi_t";
 
@@ -4210,16 +4235,15 @@ async function discDoMarkLevel(level) {
   try {
     setLoading(true, "Guardando…", "Registrando llamado de atención.");
 
-  const resp = await gsDisciplineMark({
-  month: discMonthKey_(),
-  student,
-  level: lvl,
-  teacher: profile.name,
-  email: profile.email,
-  device_id: getDeviceId(),
-  date: new Date().toISOString()
-});
-
+    const resp = await gsDisciplineMark({
+      month: discMonthKey_(),
+      student,
+      level: lvl,
+      teacher: profile.name,
+      email: profile.email,
+      device_id: getDeviceId(),
+      date: new Date().toISOString()
+    });
 
     if (resp && Array.isArray(resp.list)) {
       __discCacheList = resp.list;
@@ -4227,39 +4251,48 @@ async function discDoMarkLevel(level) {
       await discReloadReportedList(false);
     }
 
-  // ✅ actualizar seleccionado (arriba) + volver a lista actualizada
-discUpdateSelectedBox_(student);
+    // ✅ actualizar seleccionado (arriba) + volver a lista actualizada
+    discUpdateSelectedBox_(student);
 
-__discView = "list";
-discRenderReportedList_(__discCacheList);
+    __discView = "list";
+    discRenderReportedList_(__discCacheList);
 
-// ocultar Atrás porque estamos en lista
-if (btnDiscBack) btnDiscBack.hidden = true;
+    // ocultar Atrás porque estamos en lista
+    if (btnDiscBack) btnDiscBack.hidden = true;
 
-
-    let openedWa = false;
+    let openedShare = false;
 
     // ✅ Solo cuando es reporte por primera vez (nivel 4)
-   if (resp && resp.ok && resp.justReported && lvl >= 4) {
-  const waUrl = String(resp.wa_url || "").trim();
+    if (resp && resp.ok && resp.justReported && lvl >= 4) {
+      const msg = String(resp.wa_msg || "").trim();
 
-  if (waUrl) {
-    window.open(waUrl, "_blank"); // abre chat de la coordinadora con el mensaje listo
-    openedWa = true;
- } else {
-  await alertPro({
-    title: "WhatsApp no disponible",
-    msg: "⚠️ No llegó el link de WhatsApp desde el servidor (wa_url).\n\nIntenta recargar la lista o vuelve a registrar el nivel 4.",
-    okText: "Entendido",
-    danger: true
-  });
-}
-
-}
-
+      if (msg) {
+        const shared = await shareTextNative_(msg);
+        if (shared) {
+          openedShare = true;
+        } else {
+          const copied = await copyTextToClipboard_(msg);
+          await alertPro({
+            title: copied ? "Copiado ✅" : "Mensaje listo",
+            msg: copied
+              ? "No se pudo abrir el menú de compartir. El mensaje quedó copiado para pegarlo donde quieras."
+              : ("Copia y pega este mensaje donde quieras:\n\n" + msg),
+            okText: "Entendido",
+            danger: false
+          });
+        }
+      } else {
+        await alertPro({
+          title: "Sin mensaje",
+          msg: "⚠️ El servidor no devolvió wa_msg para compartir.",
+          okText: "Entendido",
+          danger: true
+        });
+      }
+    }
 
     if (lvl >= 4) {
-      discSetHint_(openedWa ? "Nivel 4 registrado. Grupo abierto ✅" : "Nivel 4 registrado ✅");
+      discSetHint_(openedShare ? "Nivel 4 registrado. Compartir abierto ✅" : "Nivel 4 registrado ✅");
     } else {
       discSetHint_("Registrado ✅");
     }
@@ -4270,6 +4303,7 @@ if (btnDiscBack) btnDiscBack.hidden = true;
     setLoading(false);
   }
 }
+
 
 
 
@@ -4794,16 +4828,15 @@ async function piercDoMarkLevel(level) {
   try {
     setLoading(true, "Guardando…", "Registrando reporte de piercing/perforaciones.");
 
-  const resp = await gsPiercingMark({
-  month: piercMonthKey_(),
-  student,
-  level: lvl,
-  teacher: profile.name,
-  email: profile.email,
-  device_id: getDeviceId(),
-  date: new Date().toISOString()
-});
-
+    const resp = await gsPiercingMark({
+      month: piercMonthKey_(),
+      student,
+      level: lvl,
+      teacher: profile.name,
+      email: profile.email,
+      device_id: getDeviceId(),
+      date: new Date().toISOString()
+    });
 
     if (resp && Array.isArray(resp.list)) __piercCacheList = resp.list;
     else await piercReloadReportedList(false);
@@ -4813,20 +4846,32 @@ async function piercDoMarkLevel(level) {
     piercRenderReportedList_(__piercCacheList);
     if (btnPiercBack) btnPiercBack.hidden = true;
 
-   if (resp && resp.ok && resp.justReported && lvl >= 4) {
-  const waUrl = String(resp.wa_url || "").trim();
-  if (waUrl) {
-    window.open(waUrl, "_blank");
-  } else {
-    await alertPro({
-      title: "WhatsApp no disponible",
-      msg: "⚠️ No llegó el link de WhatsApp desde el servidor (wa_url).",
-      okText: "Entendido",
-      danger: true
-    });
-  }
-}
+    // ✅ Solo cuando es reporte por primera vez (nivel 4)
+    if (resp && resp.ok && resp.justReported && lvl >= 4) {
+      const msg = String(resp.wa_msg || "").trim();
 
+      if (msg) {
+        const shared = await shareTextNative_(msg);
+        if (!shared) {
+          const copied = await copyTextToClipboard_(msg);
+          await alertPro({
+            title: copied ? "Copiado ✅" : "Mensaje listo",
+            msg: copied
+              ? "No se pudo abrir el menú de compartir. El mensaje quedó copiado para pegarlo donde quieras."
+              : ("Copia y pega este mensaje donde quieras:\n\n" + msg),
+            okText: "Entendido",
+            danger: false
+          });
+        }
+      } else {
+        await alertPro({
+          title: "Sin mensaje",
+          msg: "⚠️ El servidor no devolvió wa_msg para compartir.",
+          okText: "Entendido",
+          danger: true
+        });
+      }
+    }
 
     piercSetHint_(lvl >= 4 ? "Nivel 4 registrado ✅" : "Registrado ✅");
 
@@ -4836,6 +4881,7 @@ async function piercDoMarkLevel(level) {
     setLoading(false);
   }
 }
+
 
 /* ======= Poll ======= */
 function piercStartPolling_() {
@@ -5463,16 +5509,15 @@ async function uniDoMarkLevel(level) {
   try {
     setLoading(true, "Guardando…", "Registrando porte del uniforme.");
 
-const resp = await gsUniformMark({
-  month: uniMonthKey_(),
-  student,
-  level: lvl,
-  teacher: profile.name,
-  email: profile.email,
-  device_id: getDeviceId(),
-  date: new Date().toISOString()
-});
-
+    const resp = await gsUniformMark({
+      month: uniMonthKey_(),
+      student,
+      level: lvl,
+      teacher: profile.name,
+      email: profile.email,
+      device_id: getDeviceId(),
+      date: new Date().toISOString()
+    });
 
     if (resp && Array.isArray(resp.list)) __uniCacheList = resp.list;
     else await uniReloadReportedList(false);
@@ -5482,20 +5527,32 @@ const resp = await gsUniformMark({
     uniRenderReportedList_(__uniCacheList);
     if (btnUniBack) btnUniBack.hidden = true;
 
-  if (resp && resp.ok && resp.justReported && lvl >= 4) {
-  const waUrl = String(resp.wa_url || "").trim();
-  if (waUrl) {
-    window.open(waUrl, "_blank");
-  } else {
-    await alertPro({
-      title: "WhatsApp no disponible",
-      msg: "⚠️ No llegó el link de WhatsApp desde el servidor (wa_url).",
-      okText: "Entendido",
-      danger: true
-    });
-  }
-}
+    // ✅ Solo cuando es reporte por primera vez (nivel 4)
+    if (resp && resp.ok && resp.justReported && lvl >= 4) {
+      const msg = String(resp.wa_msg || "").trim();
 
+      if (msg) {
+        const shared = await shareTextNative_(msg);
+        if (!shared) {
+          const copied = await copyTextToClipboard_(msg);
+          await alertPro({
+            title: copied ? "Copiado ✅" : "Mensaje listo",
+            msg: copied
+              ? "No se pudo abrir el menú de compartir. El mensaje quedó copiado para pegarlo donde quieras."
+              : ("Copia y pega este mensaje donde quieras:\n\n" + msg),
+            okText: "Entendido",
+            danger: false
+          });
+        }
+      } else {
+        await alertPro({
+          title: "Sin mensaje",
+          msg: "⚠️ El servidor no devolvió wa_msg para compartir.",
+          okText: "Entendido",
+          danger: true
+        });
+      }
+    }
 
     uniSetHint_(lvl >= 4 ? "Nivel 4 registrado ✅" : "Registrado ✅");
   } catch (e) {
@@ -5504,6 +5561,7 @@ const resp = await gsUniformMark({
     setLoading(false);
   }
 }
+
 
 /* ======= modal open/close/bind ======= */
 function openUniformModal() {
@@ -6554,7 +6612,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
 </body>
 </html>
-
 
 
 
