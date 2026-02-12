@@ -1744,6 +1744,31 @@ let REQUIRED_ACCURACY_METERS = 30;
 const GS_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbzqLGNfjp0CJi51woGWje8EmKT8rk7uBFhtCHCS-H_R9x4H5NICgYA-S9yu1K6mR7kc/exec"; // ej: https://script.google.com/macros/s/XXXX/exec
 const GS_API_KEY = "deimerDh2191docentesRegistros2026appandoidios";        // igual que en Code.gs
 
+
+// ==============================
+// ✅ Helper faltante: gsPost()
+// (Arregla: "gsPost is not defined")
+// ==============================
+if (typeof window.gsPost !== "function") {
+  window.gsPost = async function (payload) {
+    const res = await fetch(GS_WEBAPP_URL, {
+      method: "POST",
+      body: JSON.stringify({ ...(payload || {}), key: GS_API_KEY }),
+    });
+
+    let data = null;
+    try {
+      data = await res.json();
+    } catch (e) {
+      throw new Error("Respuesta inválida del servidor (no JSON).");
+    }
+
+    // OJO: aquí NO lanzamos error automático porque tu código a veces valida con resp.ok
+    return data;
+  };
+}
+
+
 // ======= UI =======
 const $ = (id) => document.getElementById(id);
 
@@ -3297,19 +3322,51 @@ function faltasUpdateWho_(item) {
 }
 
 // ✅ Cerrar modal (botón) — con preventDefault por si está dentro de form
-if (btnFaltasClose) {
-  btnFaltasClose.addEventListener("click", (e) => {
-    try { e.preventDefault(); e.stopPropagation(); } catch {}
-    closeFaltasModal_();
-  });
-}
+// ==============================
+// ✅ Cierre modal FALTAS (robusto)
+// ==============================
+(function bindFaltasCloseOnce_() {
+  if (window.__faltasCloseBound) return;
+  window.__faltasCloseBound = true;
 
-// ✅ Cerrar tocando fuera (backdrop)
-if (faltasModal) {
-  faltasModal.addEventListener("click", (e) => {
-    if (e.target === faltasModal) closeFaltasModal_();
+  function closeFaltasModal_() {
+    const m = document.getElementById("faltasModal");
+    if (m) m.hidden = true;
+  }
+
+  // Cerrar por botón (captura para que nada lo bloquee)
+  document.addEventListener(
+    "click",
+    (e) => {
+      const btn = e.target && e.target.closest && e.target.closest("#btnFaltasClose");
+      if (!btn) return;
+      e.preventDefault();
+      e.stopPropagation();
+      closeFaltasModal_();
+    },
+    true
+  );
+
+  // Cerrar tocando el backdrop
+  document.addEventListener(
+    "click",
+    (e) => {
+      const m = document.getElementById("faltasModal");
+      if (!m || m.hidden) return;
+      if (e.target === m) closeFaltasModal_();
+    },
+    true
+  );
+
+  // ESC para cerrar
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") {
+      const m = document.getElementById("faltasModal");
+      if (m && !m.hidden) closeFaltasModal_();
+    }
   });
-}
+})();
+
 
 // ✅ Cerrar con ESC
 document.addEventListener("keydown", (e) => {
