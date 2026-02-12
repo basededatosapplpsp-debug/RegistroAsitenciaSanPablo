@@ -1096,6 +1096,21 @@ input[list]::-moz-list-dropdown {
     <button id="btnUniform" class="menu-item" type="button" role="menuitem">Porte del uniforme</button>
   </div>
 
+<!-- ✅ NUEVO: Botón que abre el submenú "Faltas" (TIPOS) -->
+<button id="btnFaltasTiposMenu" class="menu-item" type="button" role="menuitem" aria-haspopup="true" aria-expanded="false">
+  Faltas <span class="muted small" aria-hidden="true">›</span>
+</button>
+
+<!-- ✅ Submenú "Faltas" (Tipos 1/2/3) -->
+<div id="faltasTiposSubMenu" class="menu-subpanel" hidden>
+  <div class="muted small" style="padding:6px 8px;">Faltas</div>
+
+  <button id="btnFaltaTipo1" class="menu-item" type="button" role="menuitem">Tipo 1</button>
+  <button id="btnFaltaTipo2" class="menu-item" type="button" role="menuitem">Tipo 2</button>
+  <button id="btnFaltaTipo3" class="menu-item" type="button" role="menuitem">Tipo 3</button>
+</div>
+
+
   <button id="btnLogout" class="menu-item danger" type="button" role="menuitem">Cerrar sesión</button>
 </div>
 
@@ -2520,7 +2535,10 @@ function closeFaltasSubMenu_(){
 function toggleFaltasSubMenu_(){
   if (!faltasSubMenu) return;
   const willOpen = !!faltasSubMenu.hidden;
+  closeFaltasTiposSubMenu_();
   faltasSubMenu.hidden = !willOpen;
+  
+
   if (btnFaltasMenu) btnFaltasMenu.setAttribute("aria-expanded", willOpen ? "true" : "false");
 }
 
@@ -2548,6 +2566,70 @@ document.addEventListener("click", (e) => {
   const inside = (e.target && (faltasSubMenu.contains(e.target) || btnFaltasMenu.contains(e.target)));
   if (!inside) closeFaltasSubMenu_();
 });
+
+
+// ===== Submenú Faltas (TIPOS 1/2/3) =====
+const btnFaltasTiposMenu = document.getElementById("btnFaltasTiposMenu");
+const faltasTiposSubMenu = document.getElementById("faltasTiposSubMenu");
+
+function closeFaltasTiposSubMenu_(){
+  if (!faltasTiposSubMenu) return;
+  faltasTiposSubMenu.hidden = true;
+  if (btnFaltasTiposMenu) btnFaltasTiposMenu.setAttribute("aria-expanded", "false");
+}
+
+function toggleFaltasTiposSubMenu_(){
+  if (!faltasTiposSubMenu) return;
+  const willOpen = !!faltasTiposSubMenu.hidden;
+
+  // ✅ Si abro "Faltas", cierro el otro submenú (Llamados) para que no se monten
+  closeFaltasSubMenu_();
+
+  faltasTiposSubMenu.hidden = !willOpen;
+  if (btnFaltasTiposMenu) btnFaltasTiposMenu.setAttribute("aria-expanded", willOpen ? "true" : "false");
+}
+
+if (btnFaltasTiposMenu) {
+  btnFaltasTiposMenu.addEventListener("click", (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    toggleFaltasTiposSubMenu_();
+  });
+}
+
+// ✅ Click dentro => cierra submenú y ejecuta acción
+if (faltasTiposSubMenu) {
+  faltasTiposSubMenu.addEventListener("click", () => {
+    closeFaltasTiposSubMenu_();
+  });
+}
+
+// ✅ Click fuera => cierra submenú
+document.addEventListener("click", (e) => {
+  if (!faltasTiposSubMenu || !btnFaltasTiposMenu) return;
+  const inside = (e.target && (faltasTiposSubMenu.contains(e.target) || btnFaltasTiposMenu.contains(e.target)));
+  if (!inside) closeFaltasTiposSubMenu_();
+});
+
+// ✅ Acciones Tipo 1/2/3 (por ahora placeholder)
+const btnFaltaTipo1 = document.getElementById("btnFaltaTipo1");
+const btnFaltaTipo2 = document.getElementById("btnFaltaTipo2");
+const btnFaltaTipo3 = document.getElementById("btnFaltaTipo3");
+
+if (btnFaltaTipo1) btnFaltaTipo1.addEventListener("click", () => openFaltaTipo_(1));
+if (btnFaltaTipo2) btnFaltaTipo2.addEventListener("click", () => openFaltaTipo_(2));
+if (btnFaltaTipo3) btnFaltaTipo3.addEventListener("click", () => openFaltaTipo_(3));
+
+// ✅ Define esta función si no existe aún
+function openFaltaTipo_(tipo) {
+  alertPro({
+    title: "Faltas",
+    msg: "Abriste Faltas Tipo " + tipo,
+    okText: "Cerrar",
+    danger: false
+  });
+}
+
 
 
 // Estado inicial
