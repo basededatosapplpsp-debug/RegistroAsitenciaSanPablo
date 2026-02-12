@@ -1656,54 +1656,79 @@ input[list]::-moz-list-dropdown {
 
 <!-- ======= MODAL FALTAS (TIPO 1/2/3) ======= -->
 <div id="faltasModal" class="modal-backdrop" hidden>
-  <div class="modal-card" style="width:min(720px,100%);">
+  <div class="modal-card" style="width:min(920px,100%);">
     <h2 class="modal-title" id="faltasTitle">Faltas</h2>
     <p class="modal-sub" id="faltasSub">
       Reporte por tipo de falta (1/2/3). Selecciona curso y estudiante, escribe el asunto.
     </p>
 
-    <div style="display:flex; gap:10px; align-items:flex-start; flex-wrap:wrap;">
-      <!-- IZQUIERDA: Curso -->
-      <div style="flex:1; min-width:220px;">
-        <label class="modal-label" for="faltasCourse">Curso</label>
-        <select id="faltasCourse" class="modal-input"></select>
+    <div style="display:flex; gap:14px; align-items:flex-start; flex-wrap:wrap;">
+
+      <!-- COLUMNA IZQUIERDA: Formulario -->
+      <div style="flex:1; min-width:300px;">
+        <div style="display:flex; gap:10px; align-items:flex-start; flex-wrap:wrap;">
+          <!-- Curso -->
+          <div style="flex:1; min-width:220px;">
+            <label class="modal-label" for="faltasCourse">Curso</label>
+            <select id="faltasCourse" class="modal-input"></select>
+          </div>
+
+          <!-- Estudiante -->
+          <div style="flex:1; min-width:220px;">
+            <label class="modal-label" for="faltasStudent">Estudiante</label>
+            <input id="faltasStudent" class="modal-input"
+                   placeholder="Escribe o selecciona." list="faltasStudentsList" autocomplete="off" />
+            <datalist id="faltasStudentsList"></datalist>
+          </div>
+
+          <!-- Botón info -->
+          <div style="display:flex; align-items:flex-end;">
+            <button id="btnFaltaInfo" class="btn btn-ghost" type="button" title="Ver definición">
+              <i class="fa-solid fa-circle-info"></i>
+            </button>
+          </div>
+        </div>
+
+        <label class="modal-label" for="faltasSubject" style="margin-top:10px;">Asunto</label>
+        <input id="faltasSubject" class="modal-input"
+               placeholder="Ej: Agresión verbal, conflicto, irrespeto, etc." />
+
+        <div id="faltasHint" class="modal-hint muted small"></div>
+
+        <div class="modal-actions" style="justify-content:flex-end; margin-top:10px;">
+          <button id="btnFaltaReload" type="button" class="btn btn-ghost" title="Recargar reportados">
+            <i class="fa-solid fa-rotate-right"></i> Recargar
+          </button>
+          <button id="btnFaltaReport" type="button" class="btn btn-primary">
+            <i class="fa-solid fa-flag"></i> Reportar
+          </button>
+          <button id="btnFaltaClose" type="button" class="btn btn-ghost">Cerrar</button>
+        </div>
       </div>
 
- <!-- DERECHA: Estudiante -->
-<div style="flex:1; min-width:220px;">
-  <datalist id="faltasStudentsList"></datalist>
+      <!-- COLUMNA DERECHA: Reportados + Quién reportó -->
+      <div style="flex:1; min-width:320px;">
+        <div class="disc-reported" style="margin-top:0;">
+          <div class="disc-header">
+            <div class="disc-title">Reportados (este mes)</div>
+            <div class="disc-sub" id="faltasReportedSub">—</div>
+          </div>
+          <div id="faltasReportedList"></div>
+        </div>
 
-  <!-- (se oculta por CSS porque el select se mete dentro del input) -->
-  <label class="modal-label" for="faltasStudentSelect">Estudiante (lista)</label>
-  <select id="faltasStudentSelect" class="modal-input"></select>
-
-  <label class="modal-label" for="faltasStudent">Estudiante</label>
-  <input id="faltasStudent" class="modal-input"
-         placeholder="Escribe o selecciona."
-         list="faltasStudentsList"
-         autocomplete="off" />
-</div>
-
-
-      <!-- Botón info -->
-      <div style="display:flex; align-items:flex-end;">
-        <button id="btnFaltaInfo" class="btn btn-ghost" type="button" title="Ver definición">
-          <i class="fa-solid fa-circle-info"></i>
-        </button>
+        <div class="disc-who" style="margin-top:10px;">
+          <div class="disc-header">
+            <div class="disc-title">Docente(s) que reportaron</div>
+            <div class="disc-sub" id="faltasWhoSub">Selecciona un estudiante</div>
+          </div>
+          <div id="faltasWhoList"></div>
+        </div>
       </div>
-    </div>
 
-    <label class="modal-label" for="faltasSubject" style="margin-top:10px;">Asunto</label>
-    <input id="faltasSubject" class="modal-input" placeholder="Ej: Agresión verbal, conflicto, irrespeto, etc." />
-
-    <div id="faltasHint" class="modal-hint muted small"></div>
-
-    <div class="modal-actions" style="justify-content:flex-end;">
-      <button id="btnFaltasClose" type="button" class="btn btn-ghost">Cerrar</button>
-      <button id="btnFaltaReport" type="button" class="btn btn-primary">Reportar falta</button>
     </div>
   </div>
 </div>
+
 
 
 
@@ -2902,53 +2927,43 @@ function faltasApplyTipoHeader_(tipo) {
 }
 
 // ✅ Abrir MODAL por tipo (carga cursos + estudiantes)
+// ✅ Abrir MODAL por tipo (carga cursos + estudiantes + reportados del mes)
 async function openFaltaTipo_(tipo) {
   __faltaTipo = Number(tipo || 1);
 
-  // ✅ abre modal (ya NO se incrusta)
-    // ✅ abre modal (ya NO se incrusta)
   if (faltasModal) faltasModal.hidden = false;
-
-  // ✅ NUEVO: flecha (select) dentro del input, igual a Disc/Pierc/Uni
-  try {
-    if (typeof mountStudentSelectIntoInput_ === "function") {
-      mountStudentSelectIntoInput_(faltasStudentEl, faltasStudentSelectEl);
-    }
-    if (typeof bindStudentSelectToInput_ === "function") {
-      bindStudentSelectToInput_(faltasStudentSelectEl, faltasStudentEl);
-    }
-  } catch (e) {}
-
-  
-
-  // header del modal
   faltasApplyTipoHeader_(__faltaTipo);
 
-  // cierra el menú si tienes esa función
+  // cierra el menú si existe
   try { setMenuOpen(false); } catch (e) {}
 
   try {
-    setLoading(true, "Cargando…", "Cargando cursos y estudiantes.");
+    setLoading(true, "Cargando…", "Cargando cursos, estudiantes y reportados.");
 
+    // cursos
     if (!__faltasCourses.length) {
       await faltasLoadCourses_();
     }
 
     const course = String((faltasCourseEl && faltasCourseEl.value) || __faltasCourses[0] || "").trim();
-if (faltasCourseEl && course) {
-  const prev = String(faltasCourseEl.value || "");
-  faltasCourseEl.value = course;
 
-  // si el valor no cambió, igual forzamos carga (evita “no cargó” al abrir)
-  if (prev === course) {
-    await faltasLoadStudentsForCourse_(course);
-  }
-}
+    if (faltasCourseEl && course) {
+      const prev = String(faltasCourseEl.value || "");
+      faltasCourseEl.value = course;
+
+      // si el valor no cambió, igual fuerza carga
+      if (prev === course) {
+        await faltasLoadStudentsForCourse_(course);
+      }
+    }
 
     if (course) await faltasLoadStudentsForCourse_(course);
 
     if (faltasStudentEl) faltasStudentEl.value = "";
     if (faltasSubjectEl) faltasSubjectEl.value = "";
+
+    // ✅ cargar reportados del mes según tipo
+    await faltasReloadReportedList_(true);
 
     faltasSetHint_(`Faltas Tipo ${__faltaTipo} listo ✅`);
   } catch (e) {
@@ -2957,6 +2972,7 @@ if (faltasCourseEl && course) {
     setLoading(false);
   }
 }
+
 
 // ✅ click Tipo 1/2/3 del submenú
 const btnFaltaTipo1 = document.getElementById("btnFaltaTipo1");
@@ -3039,6 +3055,161 @@ if (btnFaltaReport) {
     }
   });
 }
+
+/***********************
+ * FALTAS: LISTADO + WHO
+ ***********************/
+const btnFaltaReload = document.getElementById("btnFaltaReload");
+const faltasReportedListEl = document.getElementById("faltasReportedList");
+const faltasWhoListEl = document.getElementById("faltasWhoList");
+const faltasReportedSubEl = document.getElementById("faltasReportedSub");
+const faltasWhoSubEl = document.getElementById("faltasWhoSub");
+
+let __faltasReportedCache = [];
+let __faltasSelectedStudent = "";
+
+if (btnFaltaReload) {
+  btnFaltaReload.addEventListener("click", async () => {
+    try {
+      setLoading(true, "Cargando…", "Actualizando reportados.");
+      await faltasReloadReportedList_(true);
+      faltasSetHint_("Reportados actualizados ✅");
+    } catch (e) {
+      faltasSetHint_(String(e && e.message ? e.message : e));
+    } finally {
+      setLoading(false);
+    }
+  });
+}
+
+// ✅ Cuando se reporte una falta, refresca lista automáticamente
+if (btnFaltaReport) {
+  const _old = btnFaltaReport.onclick; // por si tienes inline (normalmente null)
+  btnFaltaReport.addEventListener("click", async () => {
+    // Espera un tick para que tu handler actual termine (no rompemos tu lógica)
+    setTimeout(async () => {
+      try { await faltasReloadReportedList_(false); } catch (e) {}
+    }, 0);
+  });
+}
+
+async function faltasReloadReportedList_(keepSelection) {
+  const month = (typeof discMonthKey_ === "function" ? discMonthKey_() : "");
+  const tipo = Number(__faltaTipo || 1);
+
+  const resp = await gsPost({
+    action: "faltas_list",
+    month,
+    tipo
+  });
+
+  if (!resp || !resp.ok) {
+    throw new Error(String((resp && resp.msg) ? resp.msg : "No se pudo cargar el listado."));
+  }
+
+  __faltasReportedCache = Array.isArray(resp.items) ? resp.items : [];
+  faltasRenderReportedList_(__faltasReportedCache, keepSelection);
+}
+
+function faltasRenderReportedList_(items, keepSelection) {
+  if (!faltasReportedListEl) return;
+
+  const total = items.length;
+  if (faltasReportedSubEl) {
+    const t = Number(__faltaTipo || 1);
+    faltasReportedSubEl.textContent = `${total} estudiante(s) en Tipo ${t}`;
+  }
+
+  if (!total) {
+    faltasReportedListEl.innerHTML = `<div class="muted small">No hay reportados en este tipo (este mes).</div>`;
+    faltasUpdateWho_(null);
+    __faltasSelectedStudent = "";
+    return;
+  }
+
+  // mantener selección si se pide
+  if (!keepSelection || !__faltasSelectedStudent) {
+    __faltasSelectedStudent = items[0].student || "";
+  } else {
+    const exists = items.some(x => String(x.student || "") === String(__faltasSelectedStudent));
+    if (!exists) __faltasSelectedStudent = items[0].student || "";
+  }
+
+  const html = items.map(it => {
+    const student = String(it.student || "");
+    const course = String(it.course || "");
+    const subject = String(it.subject || "");
+    const whoCount = Number(it.teachersCount || 0);
+
+    const isSel = student === __faltasSelectedStudent;
+    const cls = isSel ? "disc-item selected" : "disc-item";
+
+    return `
+      <div class="${cls}" data-student="${escapeHtml(student)}">
+        <div class="disc-left">
+          <div class="disc-student">${escapeHtml(student)}</div>
+          <div class="disc-meta muted small">
+            ${escapeHtml(course)} · ${escapeHtml(subject)}
+          </div>
+        </div>
+        <div class="disc-right">
+          <span class="disc-badge">👤 ${whoCount}</span>
+        </div>
+      </div>
+    `;
+  }).join("");
+
+  faltasReportedListEl.innerHTML = html;
+
+  // bind click
+  const nodes = faltasReportedListEl.querySelectorAll(".disc-item");
+  nodes.forEach(n => {
+    n.addEventListener("click", () => {
+      __faltasSelectedStudent = String(n.getAttribute("data-student") || "");
+      // re-render para marcar selected
+      faltasRenderReportedList_(__faltasReportedCache, true);
+
+      const it = __faltasReportedCache.find(x => String(x.student || "") === __faltasSelectedStudent) || null;
+      faltasUpdateWho_(it);
+    });
+  });
+
+  // pintar who del seleccionado actual
+  const selected = items.find(x => String(x.student || "") === __faltasSelectedStudent) || items[0];
+  faltasUpdateWho_(selected);
+}
+
+function faltasUpdateWho_(item) {
+  if (!faltasWhoListEl) return;
+
+  if (!item) {
+    faltasWhoListEl.innerHTML = `<div class="muted small">Selecciona un estudiante para ver quién reportó.</div>`;
+    if (faltasWhoSubEl) faltasWhoSubEl.textContent = "—";
+    return;
+  }
+
+  const who = Array.isArray(item.who) ? item.who : [];
+  if (faltasWhoSubEl) {
+    faltasWhoSubEl.textContent = `${who.length} reporte(s)`;
+  }
+
+  if (!who.length) {
+    faltasWhoListEl.innerHTML = `<div class="muted small">Sin detalle de docentes.</div>`;
+    return;
+  }
+
+  faltasWhoListEl.innerHTML = who.map(w => {
+    const teacher = String(w.teacher || "");
+    const dt = String(w.dt || "");
+    return `
+      <div class="disc-who-item">
+        <div class="disc-who-teacher">${escapeHtml(teacher)}</div>
+        <div class="disc-who-meta muted small">${escapeHtml(dt)}</div>
+      </div>
+    `;
+  }).join("");
+}
+
 
 // ✅ Cerrar modal (botón)
 if (btnFaltasClose) {
