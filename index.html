@@ -2685,13 +2685,33 @@ function faltasSetHint_(msg) {
   if (faltasHintEl) faltasHintEl.textContent = String(msg || "");
 }
 
-// ---- API wrappers (usa tu gsPost existente)
+// ---- API wrappers (FALTAS) ✅ usar las funciones reales que ya funcionan en la app
 async function gsCoursesList_() {
-  return await gsPost({ action: "courses_list" });
+  // usa cache si existe; si no, usa el fetch estándar
+  if (typeof gsCoursesListCached === "function") return await gsCoursesListCached();
+  return await gsCoursesList(); // devuelve array
 }
+
 async function gsCourseStudents_(course) {
-  return await gsPost({ action: "course_students", course });
+  if (typeof gsCourseStudentsCached === "function") return await gsCourseStudentsCached(course);
+  return await gsCourseStudents(course); // devuelve array
 }
+
+async function gsFaltasReport(payload) {
+  const res = await fetch(GS_WEBAPP_URL, {
+    method: "POST",
+    body: JSON.stringify({ action: "faltas_report", ...payload, key: GS_API_KEY })
+  });
+
+  let data = null;
+  try { data = await res.json(); }
+  catch { throw new Error("Respuesta inválida del servidor"); }
+
+  if (!data.ok) throw new Error(data.msg || data.error || "faltas_report_failed");
+  return data;
+}
+
+
 
 // ---- Render
 function faltasRenderCourses_(courses) {
@@ -2949,18 +2969,18 @@ if (btnFaltaReport) {
     try {
       setLoading(true, "Guardando…", "Registrando falta.");
 
-      const resp = await gsPost({
-        action: "faltas_report",
-        tipo: __faltaTipo,
-        month: (typeof discMonthKey_ === "function" ? discMonthKey_() : ""),
-        course,
-        student,
-        subject,
-        teacher: profile.name,
-        email: profile.email,
-        device_id: getDeviceId(),
-        date: new Date().toISOString()
-      });
+    const resp = await gsFaltasReport({
+  tipo: __faltaTipo,
+  month: (typeof discMonthKey_ === "function" ? discMonthKey_() : ""),
+  course,
+  student,
+  subject,
+  teacher: profile.name,
+  email: profile.email,
+  device_id: getDeviceId(),
+  date: new Date().toISOString()
+});
+
 
       if (!resp || !resp.ok) {
         faltasSetHint_(String((resp && resp.msg) ? resp.msg : "No se pudo registrar la falta."));
@@ -5566,6 +5586,17 @@ bindStudentSelectToInput_(uniStudentSelectEl, uniStudentEl, (name) => {
     studentSelectEl: uniStudentSelectEl,
     defaultCourse
   });
+
+
+  // ========= FALTAS =========
+initCourseComboForModal({
+  selectEl: faltasCourseEl,
+  datalistEl: faltasStudentsListEl,
+  studentInputEl: faltasStudentEl,
+  studentSelectEl: null, // en FALTAS usas <input + datalist>
+  defaultCourse
+});
+
 }
 
 
