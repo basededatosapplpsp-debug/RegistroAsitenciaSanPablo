@@ -1656,79 +1656,54 @@ input[list]::-moz-list-dropdown {
 
 <!-- ======= MODAL FALTAS (TIPO 1/2/3) ======= -->
 <div id="faltasModal" class="modal-backdrop" hidden>
-  <div class="modal-card" style="width:min(920px,100%);">
+  <div class="modal-card" style="width:min(720px,100%);">
     <h2 class="modal-title" id="faltasTitle">Faltas</h2>
     <p class="modal-sub" id="faltasSub">
       Reporte por tipo de falta (1/2/3). Selecciona curso y estudiante, escribe el asunto.
     </p>
 
-    <div style="display:flex; gap:14px; align-items:flex-start; flex-wrap:wrap;">
-
-      <!-- COLUMNA IZQUIERDA: Formulario -->
-      <div style="flex:1; min-width:300px;">
-        <div style="display:flex; gap:10px; align-items:flex-start; flex-wrap:wrap;">
-          <!-- Curso -->
-          <div style="flex:1; min-width:220px;">
-            <label class="modal-label" for="faltasCourse">Curso</label>
-            <select id="faltasCourse" class="modal-input"></select>
-          </div>
-
-          <!-- Estudiante -->
-          <div style="flex:1; min-width:220px;">
-            <label class="modal-label" for="faltasStudent">Estudiante</label>
-            <input id="faltasStudent" class="modal-input"
-                   placeholder="Escribe o selecciona." list="faltasStudentsList" autocomplete="off" />
-            <datalist id="faltasStudentsList"></datalist>
-          </div>
-
-          <!-- Botón info -->
-          <div style="display:flex; align-items:flex-end;">
-            <button id="btnFaltaInfo" class="btn btn-ghost" type="button" title="Ver definición">
-              <i class="fa-solid fa-circle-info"></i>
-            </button>
-          </div>
-        </div>
-
-        <label class="modal-label" for="faltasSubject" style="margin-top:10px;">Asunto</label>
-        <input id="faltasSubject" class="modal-input"
-               placeholder="Ej: Agresión verbal, conflicto, irrespeto, etc." />
-
-        <div id="faltasHint" class="modal-hint muted small"></div>
-
-        <div class="modal-actions" style="justify-content:flex-end; margin-top:10px;">
-          <button id="btnFaltaReload" type="button" class="btn btn-ghost" title="Recargar reportados">
-            <i class="fa-solid fa-rotate-right"></i> Recargar
-          </button>
-          <button id="btnFaltaReport" type="button" class="btn btn-primary">
-            <i class="fa-solid fa-flag"></i> Reportar
-          </button>
-          <button id="btnFaltaClose" type="button" class="btn btn-ghost">Cerrar</button>
-        </div>
+    <div style="display:flex; gap:10px; align-items:flex-start; flex-wrap:wrap;">
+      <!-- IZQUIERDA: Curso -->
+      <div style="flex:1; min-width:220px;">
+        <label class="modal-label" for="faltasCourse">Curso</label>
+        <select id="faltasCourse" class="modal-input"></select>
       </div>
 
-      <!-- COLUMNA DERECHA: Reportados + Quién reportó -->
-      <div style="flex:1; min-width:320px;">
-        <div class="disc-reported" style="margin-top:0;">
-          <div class="disc-header">
-            <div class="disc-title">Reportados (este mes)</div>
-            <div class="disc-sub" id="faltasReportedSub">—</div>
-          </div>
-          <div id="faltasReportedList"></div>
-        </div>
+ <!-- DERECHA: Estudiante -->
+<div style="flex:1; min-width:220px;">
+  <datalist id="faltasStudentsList"></datalist>
 
-        <div class="disc-who" style="margin-top:10px;">
-          <div class="disc-header">
-            <div class="disc-title">Docente(s) que reportaron</div>
-            <div class="disc-sub" id="faltasWhoSub">Selecciona un estudiante</div>
-          </div>
-          <div id="faltasWhoList"></div>
-        </div>
+  <!-- (se oculta por CSS porque el select se mete dentro del input) -->
+  <label class="modal-label" for="faltasStudentSelect">Estudiante (lista)</label>
+  <select id="faltasStudentSelect" class="modal-input"></select>
+
+  <label class="modal-label" for="faltasStudent">Estudiante</label>
+  <input id="faltasStudent" class="modal-input"
+         placeholder="Escribe o selecciona."
+         list="faltasStudentsList"
+         autocomplete="off" />
+</div>
+
+
+      <!-- Botón info -->
+      <div style="display:flex; align-items:flex-end;">
+        <button id="btnFaltaInfo" class="btn btn-ghost" type="button" title="Ver definición">
+          <i class="fa-solid fa-circle-info"></i>
+        </button>
       </div>
+    </div>
 
+    <label class="modal-label" for="faltasSubject" style="margin-top:10px;">Asunto</label>
+    <input id="faltasSubject" class="modal-input" placeholder="Ej: Agresión verbal, conflicto, irrespeto, etc." />
+
+    <div id="faltasHint" class="modal-hint muted small"></div>
+
+    <div class="modal-actions" style="justify-content:flex-end;">
+      <button id="btnFaltasClose" type="button" class="btn btn-ghost">Cerrar</button>
+      <button id="btnFaltaReport" type="button" class="btn btn-primary">Reportar falta</button>
     </div>
   </div>
 </div>
-
 
 
 
@@ -7175,7 +7150,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
 </body>
 </html>
-
 
 
 
