@@ -1030,9 +1030,11 @@ body:not(.is-admin) #adminMonthSummary{
 /* ❌ Ocultar label "Estudiante (lista)" porque el select va dentro del input */
 label[for="discStudentSelect"],
 label[for="piercStudentSelect"],
-label[for="uniStudentSelect"] {
+label[for="uniStudentSelect"],
+label[for="faltasStudentSelect"] {
   display: none !important;
 }
+
 
 
 /* ❌ Quitar flecha nativa del datalist en inputs */
@@ -1667,13 +1669,21 @@ input[list]::-moz-list-dropdown {
         <select id="faltasCourse" class="modal-input"></select>
       </div>
 
-      <!-- DERECHA: Estudiante -->
-      <div style="flex:1; min-width:220px;">
-        <label class="modal-label" for="faltasStudent">Estudiante</label>
-        <input id="faltasStudent" class="modal-input"
-               placeholder="Escribe o selecciona..." list="faltasStudentsList" autocomplete="off" />
-        <datalist id="faltasStudentsList"></datalist>
-      </div>
+ <!-- DERECHA: Estudiante -->
+<div style="flex:1; min-width:220px;">
+  <datalist id="faltasStudentsList"></datalist>
+
+  <!-- (se oculta por CSS porque el select se mete dentro del input) -->
+  <label class="modal-label" for="faltasStudentSelect">Estudiante (lista)</label>
+  <select id="faltasStudentSelect" class="modal-input"></select>
+
+  <label class="modal-label" for="faltasStudent">Estudiante</label>
+  <input id="faltasStudent" class="modal-input"
+         placeholder="Escribe o selecciona."
+         list="faltasStudentsList"
+         autocomplete="off" />
+</div>
+
 
       <!-- Botón info -->
       <div style="display:flex; align-items:flex-end;">
@@ -2675,6 +2685,8 @@ const faltasSubEl = document.getElementById("faltasSub");
 
 const faltasCourseEl = document.getElementById("faltasCourse");
 const faltasStudentEl = document.getElementById("faltasStudent");
+const faltasStudentSelectEl = document.getElementById("faltasStudentSelect");
+
 const faltasStudentsListEl = document.getElementById("faltasStudentsList");
 const faltasSubjectEl = document.getElementById("faltasSubject");
 const faltasHintEl = document.getElementById("faltasHint");
@@ -2738,7 +2750,25 @@ function faltasRenderStudents_(students) {
     });
   }
 
-  // 2) select (por si tu UI usa <select id="faltasStudent">)
+  // 2) select overlay (la flecha dentro del input)
+  if (faltasStudentSelectEl) {
+    faltasStudentSelectEl.innerHTML = "";
+
+    // opción vacía para que al abrir no "seleccione" a alguien solo
+    const ph = document.createElement("option");
+    ph.value = "";
+    ph.textContent = "";
+    faltasStudentSelectEl.appendChild(ph);
+
+    list.forEach(s => {
+      const opt = document.createElement("option");
+      opt.value = String(s || "");
+      opt.textContent = String(s || "");
+      faltasStudentSelectEl.appendChild(opt);
+    });
+  }
+
+  // 3) compat: si algún día cambiaste el input por <select id="faltasStudent">
   if (faltasStudentEl && String(faltasStudentEl.tagName || "").toUpperCase() === "SELECT") {
     faltasStudentEl.innerHTML = "";
     list.forEach(s => {
@@ -2749,6 +2779,7 @@ function faltasRenderStudents_(students) {
     });
   }
 }
+
 
 function faltasPickArray_(resp, keys) {
   // resp puede venir como {ok, courses:[...]} o {ok, data:{courses:[...]}} o {ok, list:[...]} etc.
@@ -2875,7 +2906,20 @@ async function openFaltaTipo_(tipo) {
   __faltaTipo = Number(tipo || 1);
 
   // ✅ abre modal (ya NO se incrusta)
+    // ✅ abre modal (ya NO se incrusta)
   if (faltasModal) faltasModal.hidden = false;
+
+  // ✅ NUEVO: flecha (select) dentro del input, igual a Disc/Pierc/Uni
+  try {
+    if (typeof mountStudentSelectIntoInput_ === "function") {
+      mountStudentSelectIntoInput_(faltasStudentEl, faltasStudentSelectEl);
+    }
+    if (typeof bindStudentSelectToInput_ === "function") {
+      bindStudentSelectToInput_(faltasStudentSelectEl, faltasStudentEl);
+    }
+  } catch (e) {}
+
+  
 
   // header del modal
   faltasApplyTipoHeader_(__faltaTipo);
