@@ -2927,43 +2927,53 @@ function faltasApplyTipoHeader_(tipo) {
 }
 
 // ✅ Abrir MODAL por tipo (carga cursos + estudiantes)
-// ✅ Abrir MODAL por tipo (carga cursos + estudiantes + reportados del mes)
 async function openFaltaTipo_(tipo) {
   __faltaTipo = Number(tipo || 1);
 
+  // ✅ abre modal (ya NO se incrusta)
+    // ✅ abre modal (ya NO se incrusta)
   if (faltasModal) faltasModal.hidden = false;
+
+  // ✅ NUEVO: flecha (select) dentro del input, igual a Disc/Pierc/Uni
+  try {
+    if (typeof mountStudentSelectIntoInput_ === "function") {
+      mountStudentSelectIntoInput_(faltasStudentEl, faltasStudentSelectEl);
+    }
+    if (typeof bindStudentSelectToInput_ === "function") {
+      bindStudentSelectToInput_(faltasStudentSelectEl, faltasStudentEl);
+    }
+  } catch (e) {}
+
+  
+
+  // header del modal
   faltasApplyTipoHeader_(__faltaTipo);
 
-  // cierra el menú si existe
+  // cierra el menú si tienes esa función
   try { setMenuOpen(false); } catch (e) {}
 
   try {
-    setLoading(true, "Cargando…", "Cargando cursos, estudiantes y reportados.");
+    setLoading(true, "Cargando…", "Cargando cursos y estudiantes.");
 
-    // cursos
     if (!__faltasCourses.length) {
       await faltasLoadCourses_();
     }
 
     const course = String((faltasCourseEl && faltasCourseEl.value) || __faltasCourses[0] || "").trim();
+if (faltasCourseEl && course) {
+  const prev = String(faltasCourseEl.value || "");
+  faltasCourseEl.value = course;
 
-    if (faltasCourseEl && course) {
-      const prev = String(faltasCourseEl.value || "");
-      faltasCourseEl.value = course;
-
-      // si el valor no cambió, igual fuerza carga
-      if (prev === course) {
-        await faltasLoadStudentsForCourse_(course);
-      }
-    }
+  // si el valor no cambió, igual forzamos carga (evita “no cargó” al abrir)
+  if (prev === course) {
+    await faltasLoadStudentsForCourse_(course);
+  }
+}
 
     if (course) await faltasLoadStudentsForCourse_(course);
 
     if (faltasStudentEl) faltasStudentEl.value = "";
     if (faltasSubjectEl) faltasSubjectEl.value = "";
-
-    // ✅ cargar reportados del mes según tipo
-    await faltasReloadReportedList_(true);
 
     faltasSetHint_(`Faltas Tipo ${__faltaTipo} listo ✅`);
   } catch (e) {
@@ -2972,7 +2982,6 @@ async function openFaltaTipo_(tipo) {
     setLoading(false);
   }
 }
-
 
 // ✅ click Tipo 1/2/3 del submenú
 const btnFaltaTipo1 = document.getElementById("btnFaltaTipo1");
