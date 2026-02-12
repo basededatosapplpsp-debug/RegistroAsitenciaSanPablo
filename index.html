@@ -2660,19 +2660,17 @@ document.addEventListener("click", (e) => {
 });
 
 /***********************
- * FALTAS (TIPO 1/2/3) - MODAL
- * Requiere: gsPost({action:"courses_list"}) y gsPost({action:"course_students", course})
+ * FALTAS (TIPO 1/2/3)
+ * Reusa el mismo sistema de Cursos/Estudiantes que ya funciona en llamados:
+ *   - gsCoursesListCached()
+ *   - gsCourseStudentsCached(course)
+ *   - fillSelect_()
+ *   - fillDatalist_()
+ *   - initCourseComboForModal()  (si existe en tu archivo)
  ***********************/
 let __faltaTipo = 1;
-let __faltasCourses = [];
-let __faltasStudents = [];
 
-// ✅ MODAL elements (ya NO es faltasView)
-const faltasModal = document.getElementById("faltasModal");
-const btnFaltasClose = document.getElementById("btnFaltasClose");
-const faltasTitleEl = document.getElementById("faltasTitle");
-const faltasSubEl = document.getElementById("faltasSub");
-
+const faltasView = document.getElementById("faltasView");
 const faltasCourseEl = document.getElementById("faltasCourse");
 const faltasStudentEl = document.getElementById("faltasStudent");
 const faltasStudentsListEl = document.getElementById("faltasStudentsList");
@@ -2685,58 +2683,16 @@ function faltasSetHint_(msg) {
   if (faltasHintEl) faltasHintEl.textContent = String(msg || "");
 }
 
-// ---- API wrappers (usa tu gsPost existente)
-async function gsCoursesList_() {
-  return await gsPost({ action: "courses_list" });
-}
-async function gsCourseStudents_(course) {
-  return await gsPost({ action: "course_students", course });
-}
-
-// ---- Render
-function faltasRenderCourses_(courses) {
-  if (!faltasCourseEl) return;
-  faltasCourseEl.innerHTML = "";
-  (courses || []).forEach(c => {
-    const opt = document.createElement("option");
-    opt.value = c;
-    opt.textContent = c;
-    faltasCourseEl.appendChild(opt);
-  });
+function faltasMonthKey_() {
+  // usa la misma lógica de mes que ya tienes en disciplina/piercing
+  return (typeof discMonthKey_ === "function")
+    ? discMonthKey_()
+    : (typeof piercMonthKey_ === "function" ? piercMonthKey_() : "");
 }
 
-function faltasRenderStudents_(students) {
-  if (!faltasStudentsListEl) return;
-  faltasStudentsListEl.innerHTML = "";
-  (students || []).forEach(s => {
-    const opt = document.createElement("option");
-    opt.value = s;
-    faltasStudentsListEl.appendChild(opt);
-  });
-}
-
-async function faltasLoadCourses_() {
-  const resp = await gsCoursesList_();
-  if (!resp || !resp.ok || !Array.isArray(resp.courses)) {
-    throw new Error("No pude cargar cursos.");
-  }
-  __faltasCourses = resp.courses;
-  faltasRenderCourses_(__faltasCourses);
-}
-
-async function faltasLoadStudentsForCourse_(course) {
-  const resp = await gsCourseStudents_(course);
-  if (!resp || !resp.ok || !Array.isArray(resp.students)) {
-    throw new Error("No pude cargar estudiantes del curso.");
-  }
-  __faltasStudents = resp.students;
-  faltasRenderStudents_(__faltasStudents);
-}
-
-// ✅ Info según Manual (resumen)
+// ✅ Info según Manual (resumen) (tu misma función)
 function faltasInfoText_(tipo) {
   const t = Number(tipo || 1);
-
   if (t === 1) {
     return (
       "FALTA TIPO I\n\n" +
@@ -2749,7 +2705,6 @@ function faltasInfoText_(tipo) {
       "• Trabajo manuscrito, anotación en observador, llamado de atención, compromiso escrito."
     );
   }
-
   if (t === 2) {
     return (
       "FALTA TIPO II\n\n" +
@@ -2762,7 +2717,6 @@ function faltasInfoText_(tipo) {
       "• Trabajo más extenso, anotación, compromisos, citación formal, acciones pedagógicas."
     );
   }
-
   return (
     "FALTA TIPO III\n\n" +
     "• Presunto delito sexual u otro delito penal.\n\n" +
@@ -2773,44 +2727,88 @@ function faltasInfoText_(tipo) {
   );
 }
 
-// ✅ Ajusta título/sub del modal según tipo (visual pro)
-function faltasApplyTipoHeader_(tipo) {
-  const t = Number(tipo || 1);
-  if (faltasTitleEl) faltasTitleEl.textContent = `Faltas Tipo ${t}`;
+// ✅ Inicializa el combo de cursos/estudiantes SOLO UNA VEZ (reusa tu helper pro)
+let __faltasComboReady = false;
+async function faltasEnsureCourseCombo_() {
+  if (__faltasComboReady) return;
+  if (!faltasCourseEl) throw new Error("No existe #faltasCourse");
+  if (!faltasStudentsListEl) throw new Error("No existe #faltasStudentsList");
 
-  if (!faltasSubEl) return;
-  faltasSubEl.textContent =
-    (t === 1)
-      ? "Situaciones esporádicas que afectan el clima escolar (Tipo I)."
-      : (t === 2)
-        ? "Agresión/bullying/ciberbullying NO constitutivo de delito (Tipo II)."
-        : "Presunto delito o situación grave (Tipo III).";
+  // Si tienes el helper que ya usas en llamados, úsalo (es lo más seguro)
+  if (typeof initCourseComboForModal === "function") {
+    const profile = (typeof loadProfile === "function") ? loadProfile() : null;
+    const defaultCourse =
+      (profile && profile.course) ? String(profile.course).trim() :
+      (typeof loginCourseEl !== "undefined" && loginCourseEl && loginCourseEl.value) ? loginCourseEl.value.trim() :
+      "";
+
+    await initCourseComboForModal({
+      selectEl: faltasCourseEl,
+      datalistEl: faltasStudentsListEl,
+      studentInputEl: faltasStudentEl,
+      studentSelectEl: null, // <- Faltas solo usa input + datalist (como pediste)
+      defaultCourse
+    });
+
+    __faltasComboReady = true;
+    return;
+  }
+
+  // Fallback (por si NO existe initCourseComboForModal):
+  if (typeof gsCoursesListCached !== "function" || typeof gsCourseStudentsCached !== "function") {
+    throw new Error("Faltan gsCoursesListCached / gsCourseStudentsCached en tu archivo.");
+  }
+
+  const courses = await gsCoursesListCached();
+  fillSelect_(faltasCourseEl, courses, "— Selecciona curso —");
+
+  // carga estudiantes del curso seleccionado / primero
+  const course = String(faltasCourseEl.value || courses[0] || "").trim();
+  if (course) {
+    if (faltasCourseEl.value !== course) faltasCourseEl.value = course;
+    const students = await gsCourseStudentsCached(course);
+    fillDatalist_(faltasStudentsListEl, students);
+  } else {
+    fillDatalist_(faltasStudentsListEl, []);
+  }
+
+  // listener change (sin duplicar)
+  if (faltasCourseEl.__faltasChangeHandler) {
+    faltasCourseEl.removeEventListener("change", faltasCourseEl.__faltasChangeHandler);
+  }
+  faltasCourseEl.__faltasChangeHandler = async () => {
+    try {
+      setLoading(true, "Cargando…", "Cargando estudiantes del curso.");
+      const c = String(faltasCourseEl.value || "").trim();
+      const st = c ? await gsCourseStudentsCached(c) : [];
+      fillDatalist_(faltasStudentsListEl, st);
+      if (faltasStudentEl) faltasStudentEl.value = "";
+      faltasSetHint_("Lista actualizada ✅");
+    } catch (e) {
+      faltasSetHint_(String(e && e.message ? e.message : e));
+    } finally {
+      setLoading(false);
+    }
+  };
+  faltasCourseEl.addEventListener("change", faltasCourseEl.__faltasChangeHandler);
+
+  __faltasComboReady = true;
 }
 
-// ✅ Abrir MODAL por tipo (carga cursos + estudiantes)
+// ✅ Abrir Faltas (Tipo 1/2/3)
 async function openFaltaTipo_(tipo) {
   __faltaTipo = Number(tipo || 1);
 
-  // ✅ abre modal (ya NO se incrusta)
-  if (faltasModal) faltasModal.hidden = false;
+  // muestra tu vista (si luego la conviertes a modal-backdrop, esto igual sirve)
+  if (faltasView) faltasView.hidden = false;
 
-  // header del modal
-  faltasApplyTipoHeader_(__faltaTipo);
-
-  // cierra el menú si tienes esa función
+  // cierra el menú si existe
   try { setMenuOpen(false); } catch (e) {}
 
   try {
     setLoading(true, "Cargando…", "Cargando cursos y estudiantes.");
 
-    if (!__faltasCourses.length) {
-      await faltasLoadCourses_();
-    }
-
-    const course = String((faltasCourseEl && faltasCourseEl.value) || __faltasCourses[0] || "").trim();
-    if (faltasCourseEl && course) faltasCourseEl.value = course;
-
-    if (course) await faltasLoadStudentsForCourse_(course);
+    await faltasEnsureCourseCombo_();
 
     if (faltasStudentEl) faltasStudentEl.value = "";
     if (faltasSubjectEl) faltasSubjectEl.value = "";
@@ -2832,25 +2830,18 @@ if (btnFaltaTipo1) btnFaltaTipo1.addEventListener("click", () => openFaltaTipo_(
 if (btnFaltaTipo2) btnFaltaTipo2.addEventListener("click", () => openFaltaTipo_(2));
 if (btnFaltaTipo3) btnFaltaTipo3.addEventListener("click", () => openFaltaTipo_(3));
 
-// ✅ cambiar curso => recargar estudiantes
-if (faltasCourseEl) {
-  faltasCourseEl.addEventListener("change", async () => {
-    try {
-      setLoading(true, "Cargando…", "Cargando estudiantes del curso.");
-      await faltasLoadStudentsForCourse_(faltasCourseEl.value);
-      if (faltasStudentEl) faltasStudentEl.value = "";
-      faltasSetHint_("Lista actualizada ✅");
-    } catch (e) {
-      faltasSetHint_(String(e && e.message ? e.message : e));
-    } finally {
-      setLoading(false);
-    }
-  });
-}
-
-// ✅ botón info
+// ✅ botón info (asegura que el alert quede por encima)
 if (btnFaltaInfo) {
-  btnFaltaInfo.addEventListener("click", async () => {
+  btnFaltaInfo.addEventListener("click", async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    // TIP clave: si tu alert/modal está anidado dentro de otra cosa, sácalo al body (igual que hiciste con piercing)
+    const appAlert = document.getElementById("appAlert"); // si tu alertPro usa otro id, cámbialo aquí
+    if (appAlert && appAlert.parentElement !== document.body) {
+      document.body.appendChild(appAlert);
+    }
+
     await alertPro({
       title: `Definición Falta Tipo ${__faltaTipo}`,
       msg: faltasInfoText_(__faltaTipo),
@@ -2860,8 +2851,8 @@ if (btnFaltaInfo) {
   });
 }
 
-// ✅ Reportar falta con asunto (front listo)
-// NOTA: requiere endpoint GAS: action:"faltas_report"
+// ✅ Reportar falta con asunto
+// Requiere endpoint GAS: action:"faltas_report"
 if (btnFaltaReport) {
   btnFaltaReport.addEventListener("click", async () => {
     const profile = requireLogin();
@@ -2881,7 +2872,7 @@ if (btnFaltaReport) {
       const resp = await gsPost({
         action: "faltas_report",
         tipo: __faltaTipo,
-        month: (typeof discMonthKey_ === "function" ? discMonthKey_() : ""),
+        month: faltasMonthKey_(),
         course,
         student,
         subject,
@@ -2892,7 +2883,7 @@ if (btnFaltaReport) {
       });
 
       if (!resp || !resp.ok) {
-        faltasSetHint_(String((resp && resp.msg) ? resp.msg : "No se pudo registrar la falta."));
+        faltasSetHint_(String(resp && resp.msg ? resp.msg : "No se pudo registrar la falta."));
         return;
       }
 
@@ -2904,6 +2895,7 @@ if (btnFaltaReport) {
     }
   });
 }
+
 
 // ✅ Cerrar modal (botón)
 if (btnFaltasClose) {
