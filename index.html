@@ -6,6 +6,8 @@
   <meta name="theme-color" content="#0b5fff" />
   <meta name="description" content="Registro de asistencia de docentes con validación por ubicación." />
 
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="icon" sizes="32x32" href="favicon-32.png" />
   <link rel="icon" sizes="16x16" href="favicon-16.png" />
@@ -1647,6 +1649,45 @@ input[list]::-moz-list-dropdown {
   </div>
 </div>
 
+<!-- ========================= -->
+<!-- FALTAS (TIPO 1/2/3) VIEW -->
+<!-- ========================= -->
+<section id="faltasView" hidden>
+  <div class="card">
+    <div style="display:flex; gap:10px; align-items:flex-start; flex-wrap:wrap;">
+      <!-- IZQUIERDA: Curso -->
+      <div style="flex:1; min-width:220px;">
+        <div class="muted small">Curso</div>
+        <select id="faltasCourse" class="input"></select>
+      </div>
+
+      <!-- DERECHA: Estudiante -->
+      <div style="flex:1; min-width:220px;">
+        <div class="muted small">Estudiante</div>
+        <input id="faltasStudent" class="input" placeholder="Escribe o selecciona..." list="faltasStudentsList" />
+        <datalist id="faltasStudentsList"></datalist>
+      </div>
+
+      <!-- Botón info (sutil/pro) -->
+      <div style="display:flex; align-items:flex-end;">
+        <button id="btnFaltaInfo" class="btn btn-ghost" type="button" title="Ver definición">
+          <i class="fa-solid fa-circle-info"></i>
+        </button>
+      </div>
+    </div>
+
+    <div style="margin-top:10px;">
+      <div class="muted small">Asunto</div>
+      <input id="faltasSubject" class="input" placeholder="Ej: Agresión verbal, conflicto, irrespeto, etc." />
+    </div>
+
+    <div style="margin-top:12px; display:flex; gap:10px; justify-content:flex-end; flex-wrap:wrap;">
+      <button id="btnFaltaReport" class="btn" type="button">Reportar falta</button>
+    </div>
+
+    <div id="faltasHint" class="hint"></div>
+  </div>
+</section>
 
 
 <script>
@@ -2611,7 +2652,144 @@ document.addEventListener("click", (e) => {
   if (!inside) closeFaltasTiposSubMenu_();
 });
 
-// ✅ Acciones Tipo 1/2/3 (por ahora placeholder)
+/***********************
+ * FALTAS (TIPO 1/2/3)
+ * Requiere: gsPost({action:"courses_list"}) y gsPost({action:"course_students", course})
+ ***********************/
+let __faltaTipo = 1;
+let __faltasCourses = [];
+let __faltasStudents = [];
+
+const faltasView = document.getElementById("faltasView");
+const faltasCourseEl = document.getElementById("faltasCourse");
+const faltasStudentEl = document.getElementById("faltasStudent");
+const faltasStudentsListEl = document.getElementById("faltasStudentsList");
+const faltasSubjectEl = document.getElementById("faltasSubject");
+const faltasHintEl = document.getElementById("faltasHint");
+const btnFaltaInfo = document.getElementById("btnFaltaInfo");
+const btnFaltaReport = document.getElementById("btnFaltaReport");
+
+function faltasSetHint_(msg) {
+  if (faltasHintEl) faltasHintEl.textContent = String(msg || "");
+}
+
+// ---- API wrappers (usa tu gsPost existente)
+async function gsCoursesList_() {
+  return await gsPost({ action: "courses_list" });
+}
+async function gsCourseStudents_(course) {
+  return await gsPost({ action: "course_students", course });
+}
+
+// ---- Render
+function faltasRenderCourses_(courses) {
+  if (!faltasCourseEl) return;
+  faltasCourseEl.innerHTML = "";
+  (courses || []).forEach(c => {
+    const opt = document.createElement("option");
+    opt.value = c;
+    opt.textContent = c;
+    faltasCourseEl.appendChild(opt);
+  });
+}
+function faltasRenderStudents_(students) {
+  if (!faltasStudentsListEl) return;
+  faltasStudentsListEl.innerHTML = "";
+  (students || []).forEach(s => {
+    const opt = document.createElement("option");
+    opt.value = s;
+    faltasStudentsListEl.appendChild(opt);
+  });
+}
+
+async function faltasLoadCourses_() {
+  const resp = await gsCoursesList_();
+  if (!resp || !resp.ok || !Array.isArray(resp.courses)) {
+    throw new Error("No pude cargar cursos.");
+  }
+  __faltasCourses = resp.courses;
+  faltasRenderCourses_(__faltasCourses);
+}
+
+async function faltasLoadStudentsForCourse_(course) {
+  const resp = await gsCourseStudents_(course);
+  if (!resp || !resp.ok || !Array.isArray(resp.students)) {
+    throw new Error("No pude cargar estudiantes del curso.");
+  }
+  __faltasStudents = resp.students;
+  faltasRenderStudents_(__faltasStudents);
+}
+
+// ✅ Info según Manual (resumen)
+function faltasInfoText_(tipo) {
+  const t = Number(tipo || 1);
+  if (t === 1) {
+    return (
+      "FALTA TIPO I\n\n" +
+      "• Conflictos/situaciones esporádicas que afectan el clima escolar.\n" +
+      "• NO generan daños al cuerpo o a la salud.\n\n" +
+      "Protocolo (resumen):\n" +
+      "• Registro + diálogo reflexivo + compromisos.\n" +
+      "• Si reincide: citación acudiente + anotación/seguimiento.\n\n" +
+      "Sanciones (según manual):\n" +
+      "• Trabajo manuscrito, anotación en observador, llamado de atención, compromiso escrito."
+    );
+  }
+  if (t === 2) {
+    return (
+      "FALTA TIPO II\n\n" +
+      "• Agresión escolar/bullying/ciberbullying NO constitutivo de delito.\n" +
+      "• Repetida/sistemática y/o daño sin incapacidad.\n\n" +
+      "Protocolo (resumen):\n" +
+      "• Recolección de info, descargos, informar acudientes.\n" +
+      "• Medidas restaurativas + seguimiento.\n\n" +
+      "Sanciones (según manual):\n" +
+      "• Trabajo más extenso, anotación, compromisos, citación formal, acciones pedagógicas."
+    );
+  }
+  return (
+    "FALTA TIPO III\n\n" +
+    "• Presunto delito sexual u otro delito penal.\n\n" +
+    "Protocolo (resumen):\n" +
+    "• Atención inmediata (si aplica), acta, informar acudientes.\n" +
+    "• Poner en conocimiento de autoridades competentes.\n" +
+    "• No conciliación."
+  );
+}
+
+// ✅ Abrir vista por tipo (carga cursos + estudiantes)
+async function openFaltaTipo_(tipo) {
+  __faltaTipo = Number(tipo || 1);
+
+  if (faltasView) faltasView.hidden = false;
+
+  // cierra el menú si tienes esa función
+  try { setMenuOpen(false); } catch (e) {}
+
+  try {
+    setLoading(true, "Cargando…", "Cargando cursos y estudiantes.");
+
+    if (!__faltasCourses.length) {
+      await faltasLoadCourses_();
+    }
+
+    const course = String((faltasCourseEl && faltasCourseEl.value) || __faltasCourses[0] || "").trim();
+    if (faltasCourseEl && course) faltasCourseEl.value = course;
+
+    if (course) await faltasLoadStudentsForCourse_(course);
+
+    if (faltasStudentEl) faltasStudentEl.value = "";
+    if (faltasSubjectEl) faltasSubjectEl.value = "";
+
+    faltasSetHint_(`Faltas Tipo ${__faltaTipo} listo ✅`);
+  } catch (e) {
+    faltasSetHint_(String(e && e.message ? e.message : e));
+  } finally {
+    setLoading(false);
+  }
+}
+
+// ✅ click Tipo 1/2/3 del submenú
 const btnFaltaTipo1 = document.getElementById("btnFaltaTipo1");
 const btnFaltaTipo2 = document.getElementById("btnFaltaTipo2");
 const btnFaltaTipo3 = document.getElementById("btnFaltaTipo3");
@@ -2620,13 +2798,76 @@ if (btnFaltaTipo1) btnFaltaTipo1.addEventListener("click", () => openFaltaTipo_(
 if (btnFaltaTipo2) btnFaltaTipo2.addEventListener("click", () => openFaltaTipo_(2));
 if (btnFaltaTipo3) btnFaltaTipo3.addEventListener("click", () => openFaltaTipo_(3));
 
-// ✅ Define esta función si no existe aún
-function openFaltaTipo_(tipo) {
-  alertPro({
-    title: "Faltas",
-    msg: "Abriste Faltas Tipo " + tipo,
-    okText: "Cerrar",
-    danger: false
+// ✅ cambiar curso => recargar estudiantes
+if (faltasCourseEl) {
+  faltasCourseEl.addEventListener("change", async () => {
+    try {
+      setLoading(true, "Cargando…", "Cargando estudiantes del curso.");
+      await faltasLoadStudentsForCourse_(faltasCourseEl.value);
+      if (faltasStudentEl) faltasStudentEl.value = "";
+      faltasSetHint_("Lista actualizada ✅");
+    } catch (e) {
+      faltasSetHint_(String(e && e.message ? e.message : e));
+    } finally {
+      setLoading(false);
+    }
+  });
+}
+
+// ✅ botón info
+if (btnFaltaInfo) {
+  btnFaltaInfo.addEventListener("click", async () => {
+    await alertPro({
+      title: `Definición Falta Tipo ${__faltaTipo}`,
+      msg: faltasInfoText_(__faltaTipo),
+      okText: "Entendido",
+      danger: false
+    });
+  });
+}
+
+// ✅ Reportar falta con asunto (front listo)
+// NOTA: requiere endpoint GAS: action:"faltas_report"
+if (btnFaltaReport) {
+  btnFaltaReport.addEventListener("click", async () => {
+    const profile = requireLogin();
+    if (!profile) return;
+
+    const course = String(faltasCourseEl && faltasCourseEl.value || "").trim();
+    const student = String(faltasStudentEl && faltasStudentEl.value || "").trim();
+    const subject = String(faltasSubjectEl && faltasSubjectEl.value || "").trim();
+
+    if (!course) return faltasSetHint_("Selecciona un curso.");
+    if (!student) return faltasSetHint_("Selecciona un estudiante.");
+    if (!subject) return faltasSetHint_("Escribe el asunto (breve).");
+
+    try {
+      setLoading(true, "Guardando…", "Registrando falta.");
+
+      const resp = await gsPost({
+        action: "faltas_report",
+        tipo: __faltaTipo,
+        month: (typeof discMonthKey_ === "function" ? discMonthKey_() : ""),
+        course,
+        student,
+        subject,
+        teacher: profile.name,
+        email: profile.email,
+        device_id: getDeviceId(),
+        date: new Date().toISOString()
+      });
+
+      if (!resp || !resp.ok) {
+        faltasSetHint_(String(resp && resp.msg ? resp.msg : "No se pudo registrar la falta."));
+        return;
+      }
+
+      faltasSetHint_("Falta registrada ✅");
+    } catch (e) {
+      faltasSetHint_(String(e && e.message ? e.message : e));
+    } finally {
+      setLoading(false);
+    }
   });
 }
 
