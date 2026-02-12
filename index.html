@@ -1744,31 +1744,6 @@ let REQUIRED_ACCURACY_METERS = 30;
 const GS_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbzqLGNfjp0CJi51woGWje8EmKT8rk7uBFhtCHCS-H_R9x4H5NICgYA-S9yu1K6mR7kc/exec"; // ej: https://script.google.com/macros/s/XXXX/exec
 const GS_API_KEY = "deimerDh2191docentesRegistros2026appandoidios";        // igual que en Code.gs
 
-
-// ==============================
-// ✅ Helper faltante: gsPost()
-// (Arregla: "gsPost is not defined")
-// ==============================
-if (typeof window.gsPost !== "function") {
-  window.gsPost = async function (payload) {
-    const res = await fetch(GS_WEBAPP_URL, {
-      method: "POST",
-      body: JSON.stringify({ ...(payload || {}), key: GS_API_KEY }),
-    });
-
-    let data = null;
-    try {
-      data = await res.json();
-    } catch (e) {
-      throw new Error("Respuesta inválida del servidor (no JSON).");
-    }
-
-    // OJO: aquí NO lanzamos error automático porque tu código a veces valida con resp.ok
-    return data;
-  };
-}
-
-
 // ======= UI =======
 const $ = (id) => document.getElementById(id);
 
@@ -2952,43 +2927,53 @@ function faltasApplyTipoHeader_(tipo) {
 }
 
 // ✅ Abrir MODAL por tipo (carga cursos + estudiantes)
-// ✅ Abrir MODAL por tipo (carga cursos + estudiantes + reportados del mes)
 async function openFaltaTipo_(tipo) {
   __faltaTipo = Number(tipo || 1);
 
+  // ✅ abre modal (ya NO se incrusta)
+    // ✅ abre modal (ya NO se incrusta)
   if (faltasModal) faltasModal.hidden = false;
+
+  // ✅ NUEVO: flecha (select) dentro del input, igual a Disc/Pierc/Uni
+  try {
+    if (typeof mountStudentSelectIntoInput_ === "function") {
+      mountStudentSelectIntoInput_(faltasStudentEl, faltasStudentSelectEl);
+    }
+    if (typeof bindStudentSelectToInput_ === "function") {
+      bindStudentSelectToInput_(faltasStudentSelectEl, faltasStudentEl);
+    }
+  } catch (e) {}
+
+  
+
+  // header del modal
   faltasApplyTipoHeader_(__faltaTipo);
 
-  // cierra el menú si existe
+  // cierra el menú si tienes esa función
   try { setMenuOpen(false); } catch (e) {}
 
   try {
-    setLoading(true, "Cargando…", "Cargando cursos, estudiantes y reportados.");
+    setLoading(true, "Cargando…", "Cargando cursos y estudiantes.");
 
-    // cursos
     if (!__faltasCourses.length) {
       await faltasLoadCourses_();
     }
 
     const course = String((faltasCourseEl && faltasCourseEl.value) || __faltasCourses[0] || "").trim();
+if (faltasCourseEl && course) {
+  const prev = String(faltasCourseEl.value || "");
+  faltasCourseEl.value = course;
 
-    if (faltasCourseEl && course) {
-      const prev = String(faltasCourseEl.value || "");
-      faltasCourseEl.value = course;
-
-      // si el valor no cambió, igual fuerza carga
-      if (prev === course) {
-        await faltasLoadStudentsForCourse_(course);
-      }
-    }
+  // si el valor no cambió, igual forzamos carga (evita “no cargó” al abrir)
+  if (prev === course) {
+    await faltasLoadStudentsForCourse_(course);
+  }
+}
 
     if (course) await faltasLoadStudentsForCourse_(course);
 
     if (faltasStudentEl) faltasStudentEl.value = "";
     if (faltasSubjectEl) faltasSubjectEl.value = "";
-
-    // ✅ cargar reportados del mes según tipo
-    await faltasReloadReportedList_(true);
 
     faltasSetHint_(`Faltas Tipo ${__faltaTipo} listo ✅`);
   } catch (e) {
@@ -2997,7 +2982,6 @@ async function openFaltaTipo_(tipo) {
     setLoading(false);
   }
 }
-
 
 // ✅ click Tipo 1/2/3 del submenú
 const btnFaltaTipo1 = document.getElementById("btnFaltaTipo1");
@@ -3081,298 +3065,19 @@ if (btnFaltaReport) {
   });
 }
 
-/***********************
- * FALTAS: LISTADO + WHO  ✅ (AGRUPA por estudiante)
- ***********************/
-const btnFaltaReload = document.getElementById("btnFaltaReload");
-const faltasReportedListEl = document.getElementById("faltasReportedList");
-const faltasWhoListEl = document.getElementById("faltasWhoList");
-const faltasReportedSubEl = document.getElementById("faltasReportedSub");
-const faltasWhoSubEl = document.getElementById("faltasWhoSub");
-
-let __faltasReportedCache = [];     // lista AGRUPADA (por estudiante)
-let __faltasRawCache = [];          // filas crudas del servidor
-let __faltasSelectedStudent = "";
-
-// helper: usa tu escapeHtml si existe, si no, fallback
-function escapeHtmlSafe_(s) {
-  if (typeof escapeHtml === "function") return escapeHtml(String(s ?? ""));
-  return String(s ?? "")
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#039;");
-}
-
-// ✅ Cierre único (para botón, backdrop y ESC)
-function closeFaltasModal_() {
-  if (faltasModal) faltasModal.hidden = true;
-}
-
-// ✅ Agrupa filas planas -> por estudiante con who[]
-function faltasGroupByStudent_(rows) {
-  const map = new Map(); // student -> item
-
-  (rows || []).forEach(r => {
-    const student = String(r.student || "").trim();
-    if (!student) return;
-
-    const course = String(r.course || "").trim();
-    const subject = String(r.subject || "").trim();
-    const teacher = String(r.teacher || "").trim();
-    const dt = String(r.dt || r.date || "").trim();
-    const ts = String(r.ts || "").trim();
-
-    if (!map.has(student)) {
-      map.set(student, {
-        student,
-        course,
-        subject,
-        latestTs: ts,
-        teachersCount: 0,
-        who: [] // {teacher, dt, ts}
-      });
-    }
-
-    const it = map.get(student);
-
-    // actualiza “último” (para mostrar materia/curso más recientes)
-    const itTime = Date.parse(it.latestTs || "") || 0;
-    const rTime  = Date.parse(ts || "") || 0;
-    if (rTime >= itTime) {
-      it.latestTs = ts;
-      if (course) it.course = course;
-      if (subject) it.subject = subject;
-    }
-
-    if (teacher) {
-      it.who.push({ teacher, dt, ts });
-    }
-  });
-
-  // limpiar + contar únicos por docente
-  const out = Array.from(map.values()).map(it => {
-    // ordenar who desc por ts
-    it.who.sort((a,b) => (Date.parse(b.ts||"")||0) - (Date.parse(a.ts||"")||0));
-
-    const seen = new Set();
-    it.who = it.who.filter(w => {
-      const k = String(w.teacher||"").toLowerCase();
-      if (!k) return false;
-      if (seen.has(k)) return false;
-      seen.add(k);
-      return true;
-    });
-
-    it.teachersCount = it.who.length;
-    return it;
-  });
-
-  // ordenar por más reciente (latestTs desc)
-  out.sort((a,b) => (Date.parse(b.latestTs||"")||0) - (Date.parse(a.latestTs||"")||0));
-
-  return out;
-}
-
-if (btnFaltaReload) {
-  btnFaltaReload.addEventListener("click", async () => {
-    try {
-      setLoading(true, "Cargando…", "Actualizando reportados.");
-      await faltasReloadReportedList_(true);
-      faltasSetHint_("Reportados actualizados ✅");
-    } catch (e) {
-      faltasSetHint_(String(e && e.message ? e.message : e));
-    } finally {
-      setLoading(false);
-    }
+// ✅ Cerrar modal (botón)
+if (btnFaltasClose) {
+  btnFaltasClose.addEventListener("click", () => {
+    if (faltasModal) faltasModal.hidden = true;
   });
 }
 
-// ✅ Cuando se reporte una falta, refresca lista automáticamente (sin romper tu handler)
-if (btnFaltaReport) {
-  btnFaltaReport.addEventListener("click", () => {
-    setTimeout(async () => {
-      try { await faltasReloadReportedList_(true); } catch (e) {}
-    }, 0);
+// ✅ Cerrar tocando fuera (backdrop)
+if (faltasModal) {
+  faltasModal.addEventListener("click", (e) => {
+    if (e.target === faltasModal) faltasModal.hidden = true;
   });
 }
-
-async function faltasReloadReportedList_(keepSelection) {
-  const month = (typeof discMonthKey_ === "function" ? discMonthKey_() : "");
-  const tipo = Number(__faltaTipo || 1);
-
-  // OJO: usamos gsPost porque es el que ya te funciona en disciplina/uniforme
-  const resp = await gsPost({
-    action: "faltas_list",
-    month,
-    tipo
-  });
-
-  if (!resp || !resp.ok) {
-    throw new Error(String((resp && (resp.msg || resp.error)) ? (resp.msg || resp.error) : "No se pudo cargar el listado."));
-  }
-
-  // ✅ backend devuelve filas planas: [{student, teacher, dt, course, subject, ...}]
-  __faltasRawCache = Array.isArray(resp.items) ? resp.items : [];
-
-  // ✅ agrupamos por estudiante
-  __faltasReportedCache = faltasGroupByStudent_(__faltasRawCache);
-
-  faltasRenderReportedList_(__faltasReportedCache, keepSelection);
-}
-
-function faltasRenderReportedList_(items, keepSelection) {
-  if (!faltasReportedListEl) return;
-
-  const total = items.length;
-  if (faltasReportedSubEl) {
-    const t = Number(__faltaTipo || 1);
-    faltasReportedSubEl.textContent = `${total} estudiante(s) en Tipo ${t}`;
-  }
-
-  if (!total) {
-    faltasReportedListEl.innerHTML = `<div class="muted small">No hay reportados en este tipo (este mes).</div>`;
-    faltasUpdateWho_(null);
-    __faltasSelectedStudent = "";
-    return;
-  }
-
-  // mantener selección si se pide
-  if (!keepSelection || !__faltasSelectedStudent) {
-    __faltasSelectedStudent = items[0].student || "";
-  } else {
-    const exists = items.some(x => String(x.student || "") === String(__faltasSelectedStudent));
-    if (!exists) __faltasSelectedStudent = items[0].student || "";
-  }
-
-  const html = items.map(it => {
-    const student = String(it.student || "");
-    const course = String(it.course || "");
-    const subject = String(it.subject || "");
-    const whoCount = Number(it.teachersCount || 0);
-
-    const isSel = student === __faltasSelectedStudent;
-    const cls = isSel ? "disc-item selected" : "disc-item";
-
-    return `
-      <div class="${cls}" data-student="${escapeHtmlSafe_(student)}">
-        <div class="disc-left">
-          <div class="disc-student">${escapeHtmlSafe_(student)}</div>
-          <div class="disc-meta muted small">
-            ${escapeHtmlSafe_(course)} · ${escapeHtmlSafe_(subject)}
-          </div>
-        </div>
-        <div class="disc-right">
-          <span class="disc-badge">👤 ${whoCount}</span>
-        </div>
-      </div>
-    `;
-  }).join("");
-
-  faltasReportedListEl.innerHTML = html;
-
-  // bind click
-  const nodes = faltasReportedListEl.querySelectorAll(".disc-item");
-  nodes.forEach(n => {
-    n.addEventListener("click", () => {
-      __faltasSelectedStudent = String(n.getAttribute("data-student") || "");
-      // re-render para marcar selected
-      faltasRenderReportedList_(__faltasReportedCache, true);
-
-      const it = __faltasReportedCache.find(x => String(x.student || "") === __faltasSelectedStudent) || null;
-      faltasUpdateWho_(it);
-    });
-  });
-
-  // pintar who del seleccionado actual
-  const selected = items.find(x => String(x.student || "") === __faltasSelectedStudent) || items[0];
-  faltasUpdateWho_(selected);
-}
-
-function faltasUpdateWho_(item) {
-  if (!faltasWhoListEl) return;
-
-  if (!item) {
-    faltasWhoListEl.innerHTML = `<div class="muted small">Selecciona un estudiante para ver quién reportó.</div>`;
-    if (faltasWhoSubEl) faltasWhoSubEl.textContent = "—";
-    return;
-  }
-
-  const who = Array.isArray(item.who) ? item.who : [];
-  if (faltasWhoSubEl) {
-    faltasWhoSubEl.textContent = `${who.length} docente(s)`;
-  }
-
-  if (!who.length) {
-    faltasWhoListEl.innerHTML = `<div class="muted small">Sin detalle de docentes.</div>`;
-    return;
-  }
-
-  faltasWhoListEl.innerHTML = who.map(w => {
-    const teacher = String(w.teacher || "");
-    const dt = String(w.dt || "");
-    return `
-      <div class="disc-who-item">
-        <div class="disc-who-teacher">${escapeHtmlSafe_(teacher)}</div>
-        <div class="disc-who-meta muted small">${escapeHtmlSafe_(dt)}</div>
-      </div>
-    `;
-  }).join("");
-}
-
-// ✅ Cerrar modal (botón) — con preventDefault por si está dentro de form
-// ==============================
-// ✅ Cierre modal FALTAS (robusto)
-// ==============================
-(function bindFaltasCloseOnce_() {
-  if (window.__faltasCloseBound) return;
-  window.__faltasCloseBound = true;
-
-  function closeFaltasModal_() {
-    const m = document.getElementById("faltasModal");
-    if (m) m.hidden = true;
-  }
-
-  // Cerrar por botón (captura para que nada lo bloquee)
-  document.addEventListener(
-    "click",
-    (e) => {
-      const btn = e.target && e.target.closest && e.target.closest("#btnFaltasClose");
-      if (!btn) return;
-      e.preventDefault();
-      e.stopPropagation();
-      closeFaltasModal_();
-    },
-    true
-  );
-
-  // Cerrar tocando el backdrop
-  document.addEventListener(
-    "click",
-    (e) => {
-      const m = document.getElementById("faltasModal");
-      if (!m || m.hidden) return;
-      if (e.target === m) closeFaltasModal_();
-    },
-    true
-  );
-
-  // ESC para cerrar
-  document.addEventListener("keydown", (e) => {
-    if (e.key === "Escape") {
-      const m = document.getElementById("faltasModal");
-      if (m && !m.hidden) closeFaltasModal_();
-    }
-  });
-})();
-
-
-// ✅ Cerrar con ESC
-document.addEventListener("keydown", (e) => {
-  if (e.key === "Escape" && faltasModal && !faltasModal.hidden) closeFaltasModal_();
-});
-
 
 
 
