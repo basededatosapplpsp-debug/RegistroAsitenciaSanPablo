@@ -4181,6 +4181,73 @@ async function shareTextNative_(text) {
   return false;
 }
 
+async function confirmAndShareReport_(opts) {
+  const student = String(opts?.student || "").trim();
+  const msg = String(opts?.msg || "").trim();
+  const title = String(opts?.title || "Compartir reporte").trim();
+
+  if (!msg) {
+    await alertPro({
+      title: "Sin mensaje",
+      msg: "⚠️ El servidor no devolvió wa_msg para compartir.",
+      okText: "Entendido",
+      danger: true
+    });
+    return { didConfirm: false, didShare: false, didCopy: false };
+  }
+
+  // ✅ Importante: apagamos loader antes del modal
+  try { setLoading(false); } catch (e) {}
+
+  const res = await alertPro({
+    title,
+    msg: `¿Quieres compartir el reporte de "${student}"?`,
+    okText: "Compartir",
+    cancelText: "Cancelar",
+    danger: false
+  });
+
+  // Soporta distintos retornos (true/false o {ok:true} etc.)
+  const didConfirm =
+    res === true ||
+    res === "ok" ||
+    (res && (res.ok === true || res.confirmed === true || res.value === true));
+
+  if (!didConfirm) {
+    // ✅ Canceló: aseguramos loader off
+    try { setLoading(false); } catch (e) {}
+    return { didConfirm: false, didShare: false, didCopy: false };
+  }
+
+  // ✅ Antes de abrir compartir, loader off SIEMPRE
+  try { setLoading(false); } catch (e) {}
+
+  const didShare = await shareTextNative_(msg);
+
+  if (didShare) {
+    // ✅ Si compartió, igual apagamos por seguridad
+    try { setLoading(false); } catch (e) {}
+    return { didConfirm: true, didShare: true, didCopy: false };
+  }
+
+  // Si no se pudo abrir el share nativo, copiamos
+  const didCopy = await copyTextToClipboard_(msg);
+
+  await alertPro({
+    title: didCopy ? "Copiado ✅" : "Mensaje listo",
+    msg: didCopy
+      ? "No se pudo abrir el menú de compartir. El mensaje quedó copiado para pegarlo donde quieras."
+      : ("Copia y pega este mensaje donde quieras:\n\n" + msg),
+    okText: "Entendido",
+    danger: false
+  });
+
+  try { setLoading(false); } catch (e) {}
+  return { didConfirm: true, didShare: false, didCopy };
+}
+
+
+
 async function copyTextToClipboard_(text) {
   const t = String(text || "");
   try {
@@ -4260,36 +4327,21 @@ async function discDoMarkLevel(level) {
     // ocultar Atrás porque estamos en lista
     if (btnDiscBack) btnDiscBack.hidden = true;
 
-    let openedShare = false;
+ let openedShare = false;
 
-    // ✅ Solo cuando es reporte por primera vez (nivel 4)
-    if (resp && resp.ok && resp.justReported && lvl >= 4) {
-      const msg = String(resp.wa_msg || "").trim();
+// ✅ Solo cuando es reporte por primera vez (nivel 4)
+if (resp && resp.ok && resp.justReported && lvl >= 4) {
+  const msg = String(resp.wa_msg || "").trim();
 
-      if (msg) {
-        const shared = await shareTextNative_(msg);
-        if (shared) {
-          openedShare = true;
-        } else {
-          const copied = await copyTextToClipboard_(msg);
-          await alertPro({
-            title: copied ? "Copiado ✅" : "Mensaje listo",
-            msg: copied
-              ? "No se pudo abrir el menú de compartir. El mensaje quedó copiado para pegarlo donde quieras."
-              : ("Copia y pega este mensaje donde quieras:\n\n" + msg),
-            okText: "Entendido",
-            danger: false
-          });
-        }
-      } else {
-        await alertPro({
-          title: "Sin mensaje",
-          msg: "⚠️ El servidor no devolvió wa_msg para compartir.",
-          okText: "Entendido",
-          danger: true
-        });
-      }
-    }
+  const out = await confirmAndShareReport_({
+    student,
+    msg,
+    title: "Compartir reporte (Celular)"
+  });
+
+  openedShare = !!out.didShare;
+}
+
 
     if (lvl >= 4) {
       discSetHint_(openedShare ? "Nivel 4 registrado. Compartir abierto ✅" : "Nivel 4 registrado ✅");
@@ -4847,31 +4899,15 @@ async function piercDoMarkLevel(level) {
     if (btnPiercBack) btnPiercBack.hidden = true;
 
     // ✅ Solo cuando es reporte por primera vez (nivel 4)
-    if (resp && resp.ok && resp.justReported && lvl >= 4) {
-      const msg = String(resp.wa_msg || "").trim();
+if (resp && resp.ok && resp.justReported && lvl >= 4) {
+  const msg = String(resp.wa_msg || "").trim();
+  await confirmAndShareReport_({
+    student,
+    msg,
+    title: "Compartir reporte (Piercing)"
+  });
+}
 
-      if (msg) {
-        const shared = await shareTextNative_(msg);
-        if (!shared) {
-          const copied = await copyTextToClipboard_(msg);
-          await alertPro({
-            title: copied ? "Copiado ✅" : "Mensaje listo",
-            msg: copied
-              ? "No se pudo abrir el menú de compartir. El mensaje quedó copiado para pegarlo donde quieras."
-              : ("Copia y pega este mensaje donde quieras:\n\n" + msg),
-            okText: "Entendido",
-            danger: false
-          });
-        }
-      } else {
-        await alertPro({
-          title: "Sin mensaje",
-          msg: "⚠️ El servidor no devolvió wa_msg para compartir.",
-          okText: "Entendido",
-          danger: true
-        });
-      }
-    }
 
     piercSetHint_(lvl >= 4 ? "Nivel 4 registrado ✅" : "Registrado ✅");
 
@@ -5528,31 +5564,15 @@ async function uniDoMarkLevel(level) {
     if (btnUniBack) btnUniBack.hidden = true;
 
     // ✅ Solo cuando es reporte por primera vez (nivel 4)
-    if (resp && resp.ok && resp.justReported && lvl >= 4) {
-      const msg = String(resp.wa_msg || "").trim();
+ if (resp && resp.ok && resp.justReported && lvl >= 4) {
+  const msg = String(resp.wa_msg || "").trim();
+  await confirmAndShareReport_({
+    student,
+    msg,
+    title: "Compartir reporte (Uniforme)"
+  });
+}
 
-      if (msg) {
-        const shared = await shareTextNative_(msg);
-        if (!shared) {
-          const copied = await copyTextToClipboard_(msg);
-          await alertPro({
-            title: copied ? "Copiado ✅" : "Mensaje listo",
-            msg: copied
-              ? "No se pudo abrir el menú de compartir. El mensaje quedó copiado para pegarlo donde quieras."
-              : ("Copia y pega este mensaje donde quieras:\n\n" + msg),
-            okText: "Entendido",
-            danger: false
-          });
-        }
-      } else {
-        await alertPro({
-          title: "Sin mensaje",
-          msg: "⚠️ El servidor no devolvió wa_msg para compartir.",
-          okText: "Entendido",
-          danger: true
-        });
-      }
-    }
 
     uniSetHint_(lvl >= 4 ? "Nivel 4 registrado ✅" : "Registrado ✅");
   } catch (e) {
@@ -6612,7 +6632,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
 </body>
 </html>
-
 
 
 
