@@ -1791,12 +1791,32 @@ const btnInstall = $("btnInstall");
 const btnRefreshSW = $("btnRefreshSW");
 const btnLogout = $("btnLogout");
 
-// ======= QR SCAN UI =======
-const qrModal = $("qrModal");
-const qrVideo = $("qrVideo");
-const qrCanvas = $("qrCanvas");
-const qrHintEl = $("qrHint");
-const btnQrClose = $("btnQrClose");
+// ======= QR SCAN UI (NO tocar hasta init) =======
+let qrModal = null;
+let qrVideo = null;
+let qrCanvas = null;
+let qrHintEl = null;
+let btnQrClose = null;
+
+function initQrUi_() {
+  // IMPORTANTE: $() debe existir antes de esto
+  qrModal = $("qrModal");
+  qrVideo = $("qrVideo");
+  qrCanvas = $("qrCanvas");
+  qrHintEl = $("qrHint");
+  btnQrClose = $("btnQrClose");
+
+  // Si algo no existe, lo vemos de una
+  if (!qrModal || !qrVideo || !qrCanvas || !qrHintEl || !btnQrClose) {
+    console.error("Falta algún elemento del QR modal:", {
+      qrModal, qrVideo, qrCanvas, qrHintEl, btnQrClose
+    });
+  }
+}
+
+// ✅ Ejecutar cuando el DOM ya existe
+document.addEventListener("DOMContentLoaded", initQrUi_);
+
 
 
 
@@ -6827,6 +6847,10 @@ async function scanWithJsQR_() {
 
 // Abre cámara, escanea y devuelve el texto del QR
 async function scanQrValidated_() {
+  if (!qrVideo || !qrModal) {
+  throw new Error("QR_UI_NOT_READY");
+}
+
   __qrScanAbort = false;
 
   if (qrHintEl) qrHintEl.textContent = "Apunta la cámara al QR del colegio…";
@@ -6959,6 +6983,12 @@ async function register(type) {
     setStatus("warn", "Escanea el QR", "Se abrirá la cámara para validar el QR del colegio.");
 qrText = await scanQrValidated_();
   } catch (e) {
+
+    if (msg.includes("QR_UI_NOT_READY")) {
+  setStatus("bad", "QR no listo", "El modal/cámara no está inicializado. Revisa que el initQrUi_ corra después del DOM.");
+  return;
+}
+
     const msg = String(e && e.message ? e.message : e);
     if (msg.includes("QR_CANCELLED")) {
       setStatus("warn", "Cancelado", "No se registró nada porque cancelaste el escaneo.");
