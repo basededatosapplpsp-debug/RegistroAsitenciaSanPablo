@@ -1240,6 +1240,24 @@ input[list]::-moz-list-dropdown {
     <span class="muted small">APP • Desarrollada por: Deimer Herrera • v.Beta</span>
   </footer>
 
+<!-- ======= MODAL QR SCAN ======= -->
+<div id="qrModal" class="modal-backdrop" hidden>
+  <div class="modal-card" style="width:min(520px,100%);">
+    <h2 class="modal-title">Escanear QR</h2>
+    <p class="modal-sub" id="qrHint">Apunta la cámara al código QR del colegio.</p>
+
+    <div style="border:1px solid rgba(255,255,255,.12); border-radius:14px; overflow:hidden; background:#000;">
+      <video id="qrVideo" playsinline muted style="width:100%; height:auto; display:block;"></video>
+      <canvas id="qrCanvas" hidden></canvas>
+    </div>
+
+    <div class="modal-actions" style="justify-content:flex-end;">
+      <button id="btnQrClose" type="button" class="btn btn-ghost">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+
 <!-- ======= MODAL LOGIN ======= -->
 <div id="loginModal" class="modal-backdrop" hidden>
   <div class="modal-card">
@@ -1772,6 +1790,15 @@ const btnExport  = $("btnExport");
 const btnInstall = $("btnInstall");
 const btnRefreshSW = $("btnRefreshSW");
 const btnLogout = $("btnLogout");
+
+// ======= QR SCAN UI =======
+const qrModal = $("qrModal");
+const qrVideo = $("qrVideo");
+const qrCanvas = $("qrCanvas");
+const qrHintEl = $("qrHint");
+const btnQrClose = $("btnQrClose");
+
+
 
   // ======= DISCIPLINA (LLAMADO DE ATENCIÓN) =======
 const btnDiscipline = $("btnDiscipline");
@@ -6685,6 +6712,148 @@ async function refreshFromSheet(options = {}) {
 
 
 
+// ======= QR CONFIG (AJUSTA ESTO) =======
+// Opción rápida (estático): el QR debe contener EXACTAMENTE este texto.
+const QR_EXPECTED_VALUE = "ASISTENCIA-COLEGIO-2026";
+
+// Si quieres permitir varios QRs (ej: por sede), usa un array:
+// const QR_ALLOWED = ["ASISTENCIA-COLEGIO-2026", "ASISTENCIA-SEDE-B-2026"];
+
+let __qrStream = null;
+let __qrScanAbort = false;
+
+// Cerrar modal y apagar cámara (si está prendida)
+async function qrClose_(msg = "") {
+  if (msg && qrHintEl) qrHintEl.textContent = msg;
+  if (qrModal) qrModal.hidden = true;
+
+  __qrScanAbort = true;
+
+  try {
+    if (__qrStream) {
+      __qrStream.getTracks().forEach(t => t.stop());
+      __qrStream = null;
+    }
+  } catch {}
+  try {
+    if (qrVideo) {
+      qrVideo.pause();
+      qrVideo.srcObject = null;
+    }
+  } catch {}
+}
+
+// Valida el contenido del QR (FRONTEND). Recomendado: validar también en Apps Script.
+function validateQrText_(qrText) {
+  const t = String(qrText || "").trim();
+  if (!t) return { ok: false, msg: "QR vacío o no detectado." };
+
+  // ✅ Validación simple
+  if (t !== QR_EXPECTED_VALUE) {
+    return { ok: false, msg: "QR inválido. Debes escanear el QR oficial del colegio." };
+  }
+
+  return { ok: true, value: t };
+}
+
+// Carga jsQR solo si hace falta (fallback)
+function loadJsQrLib_() {
+  return new Promise((resolve, reject) => {
+    if (window.jsQR) return resolve(true);
+    const s = document.createElement("script");
+    s.src = "https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js";
+    s.onload = () => resolve(true);
+    s.onerror = () => reject(new Error("No se pudo cargar jsQR (sin internet)."));
+    document.head.appendChild(s);
+  });
+}
+
+// Escaneo por BarcodeDetector (Chrome/Android moderno)
+async function scanWithBarcodeDetector_() {
+  const detector = new BarcodeDetector({ formats: ["qr_code"] });
+
+  const tick = async (resolve, reject) => {
+    if (__qrScanAbort) return reject(new Error("QR_CANCELLED"));
+
+    try {
+      const codes = await detector.detect(qrVideo);
+      if (codes && codes.length) return resolve(codes[0].rawValue || "");
+    } catch {
+      // sigue intentando
+    }
+    requestAnimationFrame(() => tick(resolve, reject));
+  };
+
+  return new Promise((resolve, reject) => tick(resolve, reject));
+}
+
+// Fallback por jsQR (cuando no hay BarcodeDetector)
+async function scanWithJsQR_() {
+  await loadJsQrLib_();
+
+  const ctx = qrCanvas.getContext("2d", { willReadFrequently: true });
+
+  const tick = (resolve, reject) => {
+    if (__qrScanAbort) return reject(new Error("QR_CANCELLED"));
+
+    try {
+      const w = qrVideo.videoWidth || 0;
+      const h = qrVideo.videoHeight || 0;
+      if (w && h) {
+        qrCanvas.width = w;
+        qrCanvas.height = h;
+        ctx.drawImage(qrVideo, 0, 0, w, h);
+        const img = ctx.getImageData(0, 0, w, h);
+        const code = window.jsQR(img.data, w, h, { inversionAttempts: "dontInvert" });
+        if (code && code.data) return resolve(code.data);
+      }
+    } catch {
+      // sigue intentando
+    }
+
+    requestAnimationFrame(() => tick(resolve, reject));
+  };
+
+  return new Promise((resolve, reject) => tick(resolve, reject));
+}
+
+// Abre cámara, escanea y devuelve el texto del QR
+async function scanQrText_() {
+  __qrScanAbort = false;
+
+  if (qrHintEl) qrHintEl.textContent = "Apunta la cámara al QR del colegio…";
+  if (qrModal) qrModal.hidden = false;
+
+  // Evento cancelar
+  if (btnQrClose) btnQrClose.onclick = () => qrClose_("Cancelado.");
+
+  // Abrir cámara (preferimos cámara trasera)
+  try {
+    __qrStream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: { ideal: "environment" } },
+      audio: false
+    });
+  } catch (e) {
+    await qrClose_();
+    throw new Error("CAMERA_PERMISSION_DENIED");
+  }
+
+  qrVideo.srcObject = __qrStream;
+  await qrVideo.play();
+
+  try {
+    // Intentar nativo primero
+    if ("BarcodeDetector" in window) {
+      const text = await scanWithBarcodeDetector_();
+      return text;
+    }
+    // Fallback
+    const text = await scanWithJsQR_();
+    return text;
+  } finally {
+    await qrClose_();
+  }
+}
 
 
 // ======= Registrar =======
@@ -6692,13 +6861,13 @@ async function refreshFromSheet(options = {}) {
 async function register(type) {
 
   if (type === "SALIDA" && !hasEntradaToday) {
-  setStatus(
-    "warn",
-    "Primero registra ENTRADA",
-    "No puedes registrar la salida sin haber registrado la entrada hoy."
-  );
-  return;
-}
+    setStatus(
+      "warn",
+      "Primero registra ENTRADA",
+      "No puedes registrar la salida sin haber registrado la entrada hoy."
+    );
+    return;
+  }
 
   const profile = requireLogin();
   if (!profile) return;
@@ -6710,40 +6879,67 @@ async function register(type) {
     return;
   }
 
+  // ===== 1) Escanear QR =====
+  let qrText = "";
+  try {
+    setStatus("warn", "Escanea el QR", "Se abrirá la cámara para validar el QR del colegio.");
+    qrText = await scanQrText_();
+  } catch (e) {
+    const msg = String(e && e.message ? e.message : e);
+    if (msg.includes("QR_CANCELLED")) {
+      setStatus("warn", "Cancelado", "No se registró nada porque cancelaste el escaneo.");
+      return;
+    }
+    if (msg.includes("CAMERA_PERMISSION_DENIED")) {
+      setStatus("bad", "Cámara denegada", "Activa permisos de cámara para poder escanear el QR.");
+      return;
+    }
+    setStatus("bad", "No se pudo escanear", "Intenta de nuevo (mejor luz / enfoca el QR).");
+    return;
+  }
+
+  const qrOk = validateQrText_(qrText);
+  if (!qrOk.ok) {
+    setStatus("bad", "QR inválido", qrOk.msg);
+    return;
+  }
+
+  // ===== 2) Verificar ubicación (como ya estaba) =====
   let geo;
   try {
     geo = await checkLocation();
- } catch (e) {
-  const code = String(e && e.message || "");
+  } catch (e) {
+    const code = String(e && e.message || "");
 
-  if (code === "PERMISSION_DENIED") {
-    setStatus(
-      "bad",
-      "Permiso denegado",
-      "En iPhone: Ajustes → Safari → Ubicación → Permitir o Preguntar."
-    );
-  } else if (code === "POSITION_UNAVAILABLE" || code === "TIMEOUT") {
-    setStatus(
-      "warn",
-      "Ubicación no disponible",
-      "Intenta salir al exterior o activa Wi-Fi / Datos."
-    );
-  } else {
-    setStatus(
-      "bad",
-      "Ubicación no disponible",
-      "Revisa que la ubicación esté activada en el dispositivo."
-    );
+    if (code === "PERMISSION_DENIED") {
+      setStatus(
+        "bad",
+        "Permiso denegado",
+        "En iPhone: Ajustes → Safari → Ubicación → Permitir o Preguntar."
+      );
+    } else if (code === "POSITION_UNAVAILABLE" || code === "TIMEOUT") {
+      setStatus(
+        "warn",
+        "Ubicación no disponible",
+        "Intenta salir al exterior o activa Wi-Fi / Datos."
+      );
+    } else {
+      setStatus(
+        "bad",
+        "Ubicación no disponible",
+        "Revisa que la ubicación esté activada en el dispositivo."
+      );
+    }
+    return;
   }
-  return;
-}
 
   if (!geo.ok) return;
 
+  // ===== 3) Registrar en Sheets =====
   const t = nowParts();
 
   try {
-    setLoading(true, "Guardando…", "Enviando registro de asistencia.");
+    setLoading(true, "Guardando…", "Enviando registro (QR + ubicación).");
 
     await gsRegister({
       action: "register",
@@ -6756,38 +6952,34 @@ async function register(type) {
       distance_m: Math.round(geo.dist),
       accuracy_m: Math.round(geo.accuracy),
       lat: geo.latitude,
-      lng: geo.longitude
+      lng: geo.longitude,
+
+      // ✅ NUEVO: mandar QR al backend
+      qr: qrOk.value
     });
 
-refreshFromSheet({ silent: true, useCache: false }); // ✅ no toca status, solo refresca datos
+    refreshFromSheet({ silent: true, useCache: false });
 
-if (type === "ENTRADA") {
-  hasEntradaToday = true;
-  btnEntrada.disabled = true;
+    if (type === "ENTRADA") {
+      hasEntradaToday = true;
+      btnEntrada.disabled = true;
 
-  btnSalida.disabled = false;
-  btnSalida.classList.remove("is-inactive");
-}
+      btnSalida.disabled = false;
+      btnSalida.classList.remove("is-inactive");
+    }
 
-if (type === "SALIDA") {
-  hasSalidaToday = true;
-  btnEntrada.disabled = true;
-  btnSalida.disabled = true;
-}
+    if (type === "SALIDA") {
+      hasSalidaToday = true;
+      btnEntrada.disabled = true;
+      btnSalida.disabled = true;
+    }
 
-
-
-    // ✅ abrir panel para que el usuario vea el registro de inmediato
     setRecordsOpen(true);
-
     setStatus("", "Guardado", `${type} registrada para ${teacher}.`);
 
-
   } catch (e) {
-    // ✅ Mensaje real (si viene del servidor)
     const msg = String(e && e.message ? e.message : e).toLowerCase();
 
-    // ✅ Caso típico sin internet / red caída
     const isOffline =
       (typeof navigator !== "undefined" && navigator.onLine === false) ||
       msg.includes("failed to fetch") ||
@@ -6797,15 +6989,10 @@ if (type === "SALIDA") {
       msg.includes("err_network_changed");
 
     if (isOffline) {
-      setStatus(
-        "bad",
-        "Sin conexión",
-        "Revisa tu conexión a internet e intenta de nuevo."
-      );
+      setStatus("bad", "Sin conexión", "Revisa tu conexión a internet e intenta de nuevo.");
       return;
     }
 
-    // Si quieres títulos más bonitos según el caso:
     if (msg.includes("no está autorizado") || msg.includes("device_not_authorized")) {
       setStatus("bad", "Teléfono no autorizado", String(e && e.message ? e.message : e));
     } else if (msg.includes("ya existe") || msg.includes("already_registered")) {
@@ -6817,10 +7004,10 @@ if (type === "SALIDA") {
     }
 
   } finally {
-
     setLoading(false);
   }
 }
+
 
 
 // ===== WhatsApp destino (para disciplina NIVEL 4) =====
@@ -7150,7 +7337,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
 </body>
 </html>
-
 
 
 
