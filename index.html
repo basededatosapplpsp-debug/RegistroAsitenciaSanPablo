@@ -6832,7 +6832,6 @@ async function scanQrValidated_() {
   if (qrHintEl) qrHintEl.textContent = "Apunta la cámara al QR del colegio…";
   if (qrModal) qrModal.hidden = false;
 
-  // Cancelar
   if (btnQrClose) btnQrClose.onclick = () => qrClose_("Cancelado.");
 
   // Abrir cámara
@@ -6849,63 +6848,85 @@ async function scanQrValidated_() {
   qrVideo.srcObject = __qrStream;
   await qrVideo.play();
 
-  // Para evitar “lecturas fantasma” o saltos, pedimos confirmación:
-  // mismo QR leído 2 veces seguidas
-  let last = "";
-  let streak = 0;
-  let lastBadAt = 0;
+  let lastBadShownAt = 0;
+  let lastSeen = "";
+  let lastSeenAt = 0;
+
+  const sleep = (ms) => new Promise(r => setTimeout(r, ms));
 
   try {
     while (true) {
       if (__qrScanAbort) throw new Error("QR_CANCELLED");
 
-      // 1) leer un QR (crudo)
-      let text = "";
+      // Leer un QR (una vez por iteración)
+      let raw = "";
       try {
         if ("BarcodeDetector" in window) {
-          text = await scanWithBarcodeDetector_();
+          // detecta sobre el video actual (una lectura)
+          const detector = new BarcodeDetector({ formats: ["qr_code"] });
+          const codes = await detector.detect(qrVideo);
+          if (codes && codes.length) raw = codes[0].rawValue || "";
         } else {
-          text = await scanWithJsQR_();
+          // jsQR: una lectura por frame
+          await loadJsQrLib_();
+          const ctx = qrCanvas.getContext("2d", { willReadFrequently: true });
+          const w = qrVideo.videoWidth || 0;
+          const h = qrVideo.videoHeight || 0;
+          if (w && h) {
+            qrCanvas.width = w;
+            qrCanvas.height = h;
+            ctx.drawImage(qrVideo, 0, 0, w, h);
+            const img = ctx.getImageData(0, 0, w, h);
+            const code = window.jsQR(img.data, w, h, { inversionAttempts: "dontInvert" });
+            if (code && code.data) raw = code.data;
+          }
         }
       } catch (e) {
-        // si detectores fallan, vuelve a intentar
+        // si algo falla, sigue intentando
+      }
+
+      raw = String(raw || "").trim();
+      console.log("QR RAW:", raw);
+
+
+      // Si no hay lectura, espera un poquito y sigue
+      if (!raw) {
+        await sleep(80);
         continue;
       }
 
-      text = String(text || "").trim();
-      if (!text) continue;
-
-      // 2) Validar (aquí adentro, NO afuera)
-      const res = validateQrText_(text);
-
-      if (!res.ok) {
-        // no cierres el modal, solo muestra mensaje y sigue escaneando
-        const now = Date.now();
-        if (qrHintEl && (now - lastBadAt) > 700) {
-          qrHintEl.textContent = res.msg + " (intenta de nuevo)";
-          lastBadAt = now;
-        }
-        // reset confirmación
-        last = "";
-        streak = 0;
+      // Evita “parpadeo”: si es el mismo raw leído hace <300ms, no reproceses
+      const now = Date.now();
+      if (raw === lastSeen && (now - lastSeenAt) < 300) {
+        await sleep(80);
         continue;
       }
+      lastSeen = raw;
+      lastSeenAt = now;
 
-      // 3) Confirmación por repetición (2 lecturas seguidas del mismo valor)
-      if (text === last) streak++;
-      else { last = text; streak = 1; }
+      // Validar
+      const res = validateQrText_(raw);
 
-      if (qrHintEl) qrHintEl.textContent = "QR detectado ✅ Confirmando…";
-
-      if (streak >= 2) {
-        // listo: QR válido confirmado
-        return res.value;
+      if (res.ok) {
+        if (qrHintEl) qrHintEl.textContent = "QR válido ✅";
+        // pequeña pausa para que el usuario vea “válido”
+        await sleep(250);
+        return res.value; // <- devolvemos el valor estándar (ASISTENCIA-COLEGIO-2026)
       }
+
+      // inválido: mostrar mensaje sin spamear
+      if (qrHintEl && (now - lastBadShownAt) > 600) {
+        qrHintEl.textContent = res.msg + " (intenta de nuevo)";
+        lastBadShownAt = now;
+      }
+
+      await sleep(120);
     }
   } finally {
     await qrClose_();
   }
 }
+
 
 
 
@@ -6994,21 +7015,22 @@ qr: qrText
     setLoading(true, "Guardando…", "Enviando registro (QR + ubicación).");
 
     await gsRegister({
-      action: "register",
-      teacher,
-      type,
-      iso: t.iso,
-      email: profile.email,
-      course: profile.course,
-      device_id: getDeviceId(),
-      distance_m: Math.round(geo.dist),
-      accuracy_m: Math.round(geo.accuracy),
-      lat: geo.latitude,
-      lng: geo.longitude,
+  action: "register",
+  teacher,
+  type,
+  iso: t.iso,
+  email: profile.email,
+  course: profile.course,
+  device_id: getDeviceId(),
+  distance_m: Math.round(geo.dist),
+  accuracy_m: Math.round(geo.accuracy),
+  lat: geo.latitude,
+  lng: geo.longitude,
 
-      // ✅ NUEVO: mandar QR al backend
-      qr: qrOk.value
-    });
+  // ✅ NUEVO: mandar QR al backend
+  qr: qrText
+});
+
 
     refreshFromSheet({ silent: true, useCache: false });
 
