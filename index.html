@@ -6748,13 +6748,21 @@ function validateQrText_(qrText) {
   const t = String(qrText || "").trim();
   if (!t) return { ok: false, msg: "QR vacío o no detectado." };
 
-  // ✅ Validación simple
-  if (t !== QR_EXPECTED_VALUE) {
-    return { ok: false, msg: "QR inválido. Debes escanear el QR oficial del colegio." };
+  // 1) Si es exactamente el texto esperado
+  if (t === QR_EXPECTED_VALUE) return { ok: true, value: QR_EXPECTED_VALUE };
+
+  // 2) Si viene como URL u otro texto que incluye el valor esperado
+  //    (Ej: links de qr1.me u otro generador)
+  const upper = t.toUpperCase();
+  const expected = QR_EXPECTED_VALUE.toUpperCase();
+
+  if (upper.includes(expected)) {
+    return { ok: true, value: QR_EXPECTED_VALUE };
   }
 
-  return { ok: true, value: t };
+  return { ok: false, msg: "QR inválido. Debes escanear el QR oficial del colegio." };
 }
+
 
 // Carga jsQR solo si hace falta (fallback)
 function loadJsQrLib_() {
