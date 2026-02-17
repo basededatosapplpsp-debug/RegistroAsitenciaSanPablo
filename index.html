@@ -6818,16 +6818,16 @@ async function scanWithJsQR_() {
 }
 
 // Abre cámara, escanea y devuelve el texto del QR
-async function scanQrText_() {
+async function scanQrValidated_() {
   __qrScanAbort = false;
 
   if (qrHintEl) qrHintEl.textContent = "Apunta la cámara al QR del colegio…";
   if (qrModal) qrModal.hidden = false;
 
-  // Evento cancelar
+  // Cancelar
   if (btnQrClose) btnQrClose.onclick = () => qrClose_("Cancelado.");
 
-  // Abrir cámara (preferimos cámara trasera)
+  // Abrir cámara
   try {
     __qrStream = await navigator.mediaDevices.getUserMedia({
       video: { facingMode: { ideal: "environment" } },
@@ -6841,19 +6841,64 @@ async function scanQrText_() {
   qrVideo.srcObject = __qrStream;
   await qrVideo.play();
 
+  // Para evitar “lecturas fantasma” o saltos, pedimos confirmación:
+  // mismo QR leído 2 veces seguidas
+  let last = "";
+  let streak = 0;
+  let lastBadAt = 0;
+
   try {
-    // Intentar nativo primero
-    if ("BarcodeDetector" in window) {
-      const text = await scanWithBarcodeDetector_();
-      return text;
+    while (true) {
+      if (__qrScanAbort) throw new Error("QR_CANCELLED");
+
+      // 1) leer un QR (crudo)
+      let text = "";
+      try {
+        if ("BarcodeDetector" in window) {
+          text = await scanWithBarcodeDetector_();
+        } else {
+          text = await scanWithJsQR_();
+        }
+      } catch (e) {
+        // si detectores fallan, vuelve a intentar
+        continue;
+      }
+
+      text = String(text || "").trim();
+      if (!text) continue;
+
+      // 2) Validar (aquí adentro, NO afuera)
+      const res = validateQrText_(text);
+
+      if (!res.ok) {
+        // no cierres el modal, solo muestra mensaje y sigue escaneando
+        const now = Date.now();
+        if (qrHintEl && (now - lastBadAt) > 700) {
+          qrHintEl.textContent = res.msg + " (intenta de nuevo)";
+          lastBadAt = now;
+        }
+        // reset confirmación
+        last = "";
+        streak = 0;
+        continue;
+      }
+
+      // 3) Confirmación por repetición (2 lecturas seguidas del mismo valor)
+      if (text === last) streak++;
+      else { last = text; streak = 1; }
+
+      if (qrHintEl) qrHintEl.textContent = "QR detectado ✅ Confirmando…";
+
+      if (streak >= 2) {
+        // listo: QR válido confirmado
+        return res.value;
+      }
     }
-    // Fallback
-    const text = await scanWithJsQR_();
-    return text;
   } finally {
     await qrClose_();
   }
 }
+
 
 
 // ======= Registrar =======
@@ -6883,7 +6928,7 @@ async function register(type) {
   let qrText = "";
   try {
     setStatus("warn", "Escanea el QR", "Se abrirá la cámara para validar el QR del colegio.");
-    qrText = await scanQrText_();
+qrText = await scanQrValidated_();
   } catch (e) {
     const msg = String(e && e.message ? e.message : e);
     if (msg.includes("QR_CANCELLED")) {
@@ -6898,11 +6943,10 @@ async function register(type) {
     return;
   }
 
-  const qrOk = validateQrText_(qrText);
-  if (!qrOk.ok) {
-    setStatus("bad", "QR inválido", qrOk.msg);
-    return;
-  }
+// qrText ya viene validado
+
+qr: qrText
+
 
   // ===== 2) Verificar ubicación (como ya estaba) =====
   let geo;
