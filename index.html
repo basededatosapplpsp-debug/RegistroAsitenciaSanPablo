@@ -6928,7 +6928,7 @@ async function register(type) {
   let qrText = "";
   try {
     setStatus("warn", "Escanea el QR", "Se abrirá la cámara para validar el QR del colegio.");
-    qrText = await scanQrText_();
+qrText = await scanQrValidated_();
   } catch (e) {
     const msg = String(e && e.message ? e.message : e);
     if (msg.includes("QR_CANCELLED")) {
@@ -6943,11 +6943,10 @@ async function register(type) {
     return;
   }
 
-  const qrOk = validateQrText_(qrText);
-  if (!qrOk.ok) {
-    setStatus("bad", "QR inválido", qrOk.msg);
-    return;
-  }
+// qrText ya viene validado
+
+qr: qrText
+
 
   // ===== 2) Verificar ubicación (como ya estaba) =====
   let geo;
