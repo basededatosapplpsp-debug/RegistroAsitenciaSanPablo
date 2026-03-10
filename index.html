@@ -2844,8 +2844,10 @@ async function gsFaltasDelete(payload){
   const res = await fetch(GS_WEBAPP_URL,{
     method:"POST",
     body: JSON.stringify({
-      action:"faltas_delete",
-      payload,
+      action: "faltas_delete",
+      month: payload.month,
+      tipo: payload.tipo,
+      student: payload.student,
       key: GS_API_KEY
     })
   });
