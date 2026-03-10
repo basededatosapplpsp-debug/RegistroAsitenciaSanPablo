@@ -6612,50 +6612,57 @@ async function faltasLoadList_(tipo) {
     // ✅ ordenar por más reciente
     items.sort((a,b) => new Date(b.updatedAt) - new Date(a.updatedAt));
 
-    items.forEach((x,index) => {
+ items.forEach((x,index) => {
 
-      const div = document.createElement("div");
-      div.className = "disc-reported-item";
+  const div = document.createElement("div");
+  div.className = "disc-reported-item";
 
-      // ⭐ animación suave para el más reciente
-      if(index === 0){
-        div.classList.add("disc-new");
-      }
+  if(index === 0){
+    div.classList.add("disc-new");
+  }
 
-      // 📅 fecha
-      let fecha = "";
-      try {
-        if (x.updatedAt) {
-          fecha = new Date(x.updatedAt).toLocaleDateString();
-        }
-      } catch(e){}
+  let fecha = "";
+  try {
+    if (x.updatedAt) {
+      fecha = new Date(x.updatedAt).toLocaleDateString();
+    }
+  } catch(e){}
 
-      // 👨‍🏫 docente
-      let teacher = "-";
-      try {
-        if (x.who && x.who.length) {
-          teacher = x.who.map(t => t.teacher || t.name || "").join(", ");
-        }
-      } catch(e){}
+  let teacher = "-";
+  try {
+    if (x.who && x.who.length) {
+      teacher = x.who.map(t => t.teacher || t.name || "").join(", ");
+    }
+  } catch(e){}
 
-      div.innerHTML = `
-        <div style="font-weight:600;">
-          ${x.student}
-        </div>
+  div.innerHTML = `
+    <div style="display:flex; align-items:center; gap:8px;">
 
-        <div class="small muted">
-          ${x.course} • ${x.subject}
-        </div>
+      <button class="disc-trash"
+        title="Eliminar falta"
+        data-student="${x.student}">
+        <i class="fa-solid fa-trash"></i>
+      </button>
 
-        <div class="small muted">
-          👨‍🏫 ${teacher}
-          ${fecha ? " • 📅 " + fecha : ""}
-        </div>
-      `;
+      <div style="font-weight:600;">
+        ${x.student}
+      </div>
 
-      list.appendChild(div);
+    </div>
 
-    });
+    <div class="small muted">
+      ${x.course} • ${x.subject}
+    </div>
+
+    <div class="small muted">
+      👨‍🏫 ${teacher}
+      ${fecha ? " • 📅 " + fecha : ""}
+    </div>
+  `;
+
+  list.appendChild(div);
+
+});
 
   } catch (e) {
 
@@ -6664,6 +6671,48 @@ async function faltasLoadList_(tipo) {
   }
 
 }
+
+
+document.addEventListener("click", async (e) => {
+
+  const btn = e.target.closest(".disc-trash");
+  if(!btn) return;
+
+  const student = btn.dataset.student;
+  if(!student) return;
+
+  if(!confirm("¿Eliminar esta falta del estudiante?")) return;
+
+  try{
+
+    setLoading(true,"Eliminando…");
+
+    const month =
+      (typeof discMonthKey_ === "function")
+        ? discMonthKey_()
+        : "";
+
+    await gsFaltasDelete({
+      month,
+      tipo: __faltaTipo,
+      student
+    });
+
+    // limpiar cache
+    __faltasCache = null;
+
+    // recargar lista
+    faltasLoadList_(__faltaTipo);
+
+  }catch(err){
+    alert("No se pudo eliminar");
+    console.error(err);
+  }
+  finally{
+    setLoading(false);
+  }
+
+});
 
 // ======= Render (desde Google Sheets) =======
 // ======= Render (desde Google Sheets) =======
