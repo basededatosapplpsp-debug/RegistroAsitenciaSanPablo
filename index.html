@@ -1062,6 +1062,54 @@ input[list]::-moz-list-dropdown {
   z-index: 10000 !important;
 }
 
+
+.disc-reported{
+  margin-top:12px;
+}
+
+#faltasReportedList{
+  max-height:220px;
+  overflow-y:auto;
+  padding-right:6px;
+}
+
+
+.disc-reported{
+  margin-top:12px;
+}
+
+#faltasReportedList{
+  max-height:220px;
+  overflow-y:auto;
+  padding-right:6px;
+  margin-top:6px;
+}
+
+#faltasReportedList::-webkit-scrollbar{
+  width:6px;
+}
+
+#faltasReportedList::-webkit-scrollbar-thumb{
+  background:#c5c5c5;
+  border-radius:6px;
+}
+
+/* ✨ animación de nuevo registro */
+.disc-new{
+  animation: faltasFade 0.6s ease;
+}
+
+@keyframes faltasFade{
+  from{
+    transform:translateY(-8px);
+    opacity:0;
+  }
+  to{
+    transform:translateY(0);
+    opacity:1;
+  }
+}
+
 </style>
 </head>
 
@@ -6564,10 +6612,15 @@ async function faltasLoadList_(tipo) {
     // ✅ ordenar por más reciente
     items.sort((a,b) => new Date(b.updatedAt) - new Date(a.updatedAt));
 
-    items.forEach(x => {
+    items.forEach((x,index) => {
 
       const div = document.createElement("div");
       div.className = "disc-reported-item";
+
+      // ⭐ animación suave para el más reciente
+      if(index === 0){
+        div.classList.add("disc-new");
+      }
 
       // 📅 fecha
       let fecha = "";
