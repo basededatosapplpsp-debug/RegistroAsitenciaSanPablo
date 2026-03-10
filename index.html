@@ -2090,6 +2090,34 @@ const btnUserMenu = $("btnUserMenu");
 const userMenu = $("userMenu");
 const userInitialsEl = $("userInitials");
 
+// ======= REPORTES =======
+const btnReportesMenu = $("btnReportesMenu");
+const reportesSubMenu = $("reportesSubMenu");
+
+const btnReportePendientes = $("btnReportePendientes");
+const btnReporteEjemplo2 = $("btnReporteEjemplo2");
+const btnReporteEjemplo3 = $("btnReporteEjemplo3");
+
+const reportesModal = $("reportesModal");
+const btnReportesClose = $("btnReportesClose");
+const btnGuardarReportePendiente = $("btnGuardarReportePendiente");
+const btnAgregarActividadPendiente = $("btnAgregarActividadPendiente");
+
+const reportesCourseEl = $("reportesCourse");
+const reportesStudentEl = $("reportesStudent");
+const reportesStudentSelectEl = $("reportesStudentSelect");
+const reportesStudentsListEl = $("reportesStudentsList");
+const reportesTipoEl = $("reportesTipo");
+const reportesHintEl = $("reportesHint");
+const reportesReportedListEl = $("reportesReportedList");
+const actividadesPendientesBox = $("actividadesPendientesBox");
+
+const reporteEjemplo2Modal = $("reporteEjemplo2Modal");
+const btnReporteEjemplo2Close = $("btnReporteEjemplo2Close");
+
+const reporteEjemplo3Modal = $("reporteEjemplo3Modal");
+const btnReporteEjemplo3Close = $("btnReporteEjemplo3Close");
+
 
 
 const btnToggleRecords = $("btnToggleRecords");
@@ -3248,6 +3276,8 @@ if (btnFaltaTipo1) btnFaltaTipo1.addEventListener("click", () => openFaltaTipo_(
 if (btnFaltaTipo2) btnFaltaTipo2.addEventListener("click", () => openFaltaTipo_(2));
 if (btnFaltaTipo3) btnFaltaTipo3.addEventListener("click", () => openFaltaTipo_(3));
 
+
+
 // ✅ cambiar curso => recargar estudiantes
 if (faltasCourseEl) {
   faltasCourseEl.addEventListener("change", async () => {
@@ -3336,6 +3366,549 @@ if (btnFaltaReport) {
 
   });
 }
+
+
+
+
+// ==============================
+// REPORTES
+// ==============================
+let __reportesCourses = [];
+let __reportesStudents = [];
+let __reporteTipoActual = "actividades_pendientes";
+
+function reportesSetHint_(msg = "") {
+  if (reportesHintEl) reportesHintEl.textContent = msg || "";
+}
+
+function reportesRenderCourses_(courses) {
+  if (!reportesCourseEl) return;
+  reportesCourseEl.innerHTML = "";
+
+  (courses || []).forEach(c => {
+    const opt = document.createElement("option");
+    opt.value = c;
+    opt.textContent = c;
+    reportesCourseEl.appendChild(opt);
+  });
+}
+
+function reportesRenderStudents_(students) {
+  const list = Array.isArray(students) ? students : [];
+
+  if (reportesStudentsListEl) {
+    reportesStudentsListEl.innerHTML = "";
+    list.forEach(s => {
+      const opt = document.createElement("option");
+      opt.value = String(s || "");
+      reportesStudentsListEl.appendChild(opt);
+    });
+  }
+
+  if (reportesStudentSelectEl) {
+    reportesStudentSelectEl.innerHTML = "";
+
+    const ph = document.createElement("option");
+    ph.value = "";
+    ph.textContent = "";
+    reportesStudentSelectEl.appendChild(ph);
+
+    list.forEach(s => {
+      const opt = document.createElement("option");
+      opt.value = String(s || "");
+      opt.textContent = String(s || "");
+      reportesStudentSelectEl.appendChild(opt);
+    });
+  }
+}
+
+async function gsReportesGuardar(payload) {
+  const res = await fetch(GS_WEBAPP_URL, {
+    method: "POST",
+    body: JSON.stringify({
+      action: "reportes_pendientes_guardar",
+      ...payload,
+      key: GS_API_KEY
+    })
+  });
+
+  let data = null;
+  try { data = await res.json(); }
+  catch { throw new Error("Respuesta inválida del servidor"); }
+
+  if (!data.ok) throw new Error(data.msg || data.error || "reportes_guardar_failed");
+  return data;
+}
+
+async function gsReportesList(payload) {
+  const res = await fetch(GS_WEBAPP_URL, {
+    method: "POST",
+    body: JSON.stringify({
+      action: "reportes_pendientes_list",
+      ...payload,
+      key: GS_API_KEY
+    })
+  });
+
+  let data = null;
+  try { data = await res.json(); }
+  catch { throw new Error("Respuesta inválida del servidor"); }
+
+  if (!data.ok) throw new Error(data.msg || data.error || "reportes_list_failed");
+  return Array.isArray(data.items) ? data.items : [];
+}
+
+async function gsReportesDelete(payload) {
+  const res = await fetch(GS_WEBAPP_URL, {
+    method: "POST",
+    body: JSON.stringify({
+      action: "reportes_pendientes_delete",
+      ...payload,
+      key: GS_API_KEY
+    })
+  });
+
+  let data = null;
+  try { data = await res.json(); }
+  catch { throw new Error("Respuesta inválida del servidor"); }
+
+  if (!data.ok) throw new Error(data.msg || data.error || "reportes_delete_failed");
+  return data;
+}
+
+async function reportesLoadCourses_() {
+  const resp = await gsPost({ action: "courses_list" });
+  const courses =
+    resp?.courses ||
+    resp?.data?.courses ||
+    resp?.list ||
+    [];
+
+  __reportesCourses = Array.isArray(courses) ? courses : [];
+  reportesRenderCourses_(__reportesCourses);
+}
+
+async function reportesLoadStudentsForCourse_(course) {
+  if (!course) {
+    __reportesStudents = [];
+    reportesRenderStudents_([]);
+    return;
+  }
+
+  const resp = await gsPost({
+    action: "course_students",
+    course
+  });
+
+  const students =
+    resp?.students ||
+    resp?.data?.students ||
+    resp?.list ||
+    [];
+
+  __reportesStudents = Array.isArray(students) ? students : [];
+  reportesRenderStudents_(__reportesStudents);
+}
+
+function reportesAddActividadItem_(actividad = "", nota = "") {
+  if (!actividadesPendientesBox) return;
+
+  const total = actividadesPendientesBox.querySelectorAll(".actividad-pendiente-item").length + 1;
+
+  const wrap = document.createElement("div");
+  wrap.className = "actividad-pendiente-item";
+  wrap.style.cssText = "border:1px solid var(--line); border-radius:14px; padding:12px; background:rgba(255,255,255,.04);";
+
+  wrap.innerHTML = `
+    <div class="row row-between" style="margin-top:0;">
+      <label class="modal-label" style="margin-top:0;">Actividad pendiente ${total}</label>
+      <button type="button" class="btn btn-ghost btnQuitarActividad">Quitar</button>
+    </div>
+
+    <input class="modal-input actividad-texto" type="text" placeholder="Ej: Cuaderno, ensayo, taller..." value="${String(actividad).replace(/"/g, '&quot;')}" />
+
+    <label class="modal-label" style="margin-top:10px;">Nota</label>
+    <input class="modal-input actividad-nota" type="text" placeholder="Ej: 2.5, 3.0, sin nota..." value="${String(nota).replace(/"/g, '&quot;')}" />
+  `;
+
+  actividadesPendientesBox.appendChild(wrap);
+
+  const btnQuitar = wrap.querySelector(".btnQuitarActividad");
+  if (btnQuitar) {
+    btnQuitar.addEventListener("click", () => {
+      wrap.remove();
+      reportesRenumerarActividades_();
+    });
+  }
+}
+
+function reportesRenumerarActividades_() {
+  if (!actividadesPendientesBox) return;
+  const items = actividadesPendientesBox.querySelectorAll(".actividad-pendiente-item");
+  items.forEach((item, idx) => {
+    const lab = item.querySelector(".modal-label");
+    if (lab) lab.textContent = `Actividad pendiente ${idx + 1}`;
+  });
+}
+
+function reportesResetActividades_() {
+  if (!actividadesPendientesBox) return;
+  actividadesPendientesBox.innerHTML = "";
+
+  const wrap = document.createElement("div");
+  wrap.className = "actividad-pendiente-item";
+  wrap.style.cssText = "border:1px solid var(--line); border-radius:14px; padding:12px; background:rgba(255,255,255,.04);";
+
+  wrap.innerHTML = `
+    <label class="modal-label">Actividad pendiente 1</label>
+    <input class="modal-input actividad-texto" type="text" placeholder="Ej: Cuaderno, ensayo, taller, exposición..." />
+
+    <label class="modal-label" style="margin-top:10px;">Nota</label>
+    <input class="modal-input actividad-nota" type="text" placeholder="Ej: 2.5, 3.0, sin nota..." />
+  `;
+
+  actividadesPendientesBox.appendChild(wrap);
+}
+
+function reportesGetActividades_() {
+  if (!actividadesPendientesBox) return [];
+
+  return Array.from(
+    actividadesPendientesBox.querySelectorAll(".actividad-pendiente-item")
+  ).map(item => {
+    const actividad = item.querySelector(".actividad-texto")?.value?.trim() || "";
+    const nota = item.querySelector(".actividad-nota")?.value?.trim() || "";
+    return { actividad, nota };
+  }).filter(x => x.actividad);
+}
+
+function reportesCurrentMonth_() {
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  return `${y}-${m}`;
+}
+
+function reportesRenderList_(items) {
+  if (!reportesReportedListEl) return;
+
+  const list = Array.isArray(items) ? items : [];
+
+  if (!list.length) {
+    reportesReportedListEl.innerHTML = `<div class="muted small">No hay reportes este mes.</div>`;
+    return;
+  }
+
+  reportesReportedListEl.innerHTML = "";
+
+  list.forEach(item => {
+    const total = Number(item.totalPendientes || 0);
+    const detalles = Array.isArray(item.actividades) ? item.actividades : [];
+
+    const row = document.createElement("div");
+    row.className = "disc-item";
+    row.style.marginBottom = "8px";
+
+    const detalleHtml = detalles.map((a, i) => {
+      const act = String(a.actividad || "").trim();
+      const nota = String(a.nota || "").trim();
+      return `
+        <div class="muted small" style="margin-top:4px;">
+          ${i + 1}. ${act}${nota ? ` — Nota: ${nota}` : ""}
+        </div>
+      `;
+    }).join("");
+
+    row.innerHTML = `
+      <div class="left">
+        <span class="lvl-dot lvl-2"></span>
+        <div style="min-width:0;">
+          <div class="name">${item.student || "Sin nombre"}</div>
+          <div class="muted small">${item.course || ""} • Debe ${total}</div>
+          <div class="reportes-detalle" hidden style="margin-top:8px;">
+            ${detalleHtml}
+          </div>
+        </div>
+      </div>
+
+      <div class="right" style="display:flex; gap:8px; align-items:center;">
+        <span>${total}</span>
+        <button type="button" class="disc-trash" title="Eliminar reporte">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M9 3h6l1 2h4v2H4V5h4l1-2zm1 6h2v8h-2V9zm4 0h2v8h-2V9zM7 9h2v8H7V9zm-1 12a2 2 0 0 1-2-2V7h16v12a2 2 0 0 1-2 2H6z"/>
+          </svg>
+        </button>
+      </div>
+    `;
+
+    const detalle = row.querySelector(".reportes-detalle");
+    const btnDelete = row.querySelector(".disc-trash");
+
+    row.addEventListener("click", (e) => {
+      if (e.target.closest(".disc-trash")) return;
+      if (detalle) detalle.hidden = !detalle.hidden;
+    });
+
+    if (btnDelete) {
+      btnDelete.addEventListener("click", async (e) => {
+        e.stopPropagation();
+
+        const ok = await confirmPro({
+          title: "Eliminar reporte",
+          msg: `Se eliminarán todas las actividades pendientes de ${item.student}.`,
+          okText: "Eliminar",
+          cancelText: "Cancelar",
+          danger: true
+        });
+
+        if (!ok) return;
+
+        try {
+          setLoading(true, "Eliminando…", "Quitando reporte del estudiante.");
+          await gsReportesDelete({
+            month: reportesCurrentMonth_(),
+            tipo: __reporteTipoActual,
+            student: item.student
+          });
+          await reportesLoadList_();
+        } catch (err) {
+          reportesSetHint_(String(err && err.message ? err.message : err));
+        } finally {
+          setLoading(false);
+        }
+      });
+    }
+
+    reportesReportedListEl.appendChild(row);
+  });
+}
+
+async function reportesLoadList_() {
+  const items = await gsReportesList({
+    month: reportesCurrentMonth_(),
+    tipo: __reporteTipoActual
+  });
+
+  reportesRenderList_(items);
+}
+
+async function openReportePendientes_() {
+  __reporteTipoActual = "actividades_pendientes";
+
+  if (reportesTipoEl) {
+    reportesTipoEl.value = "Actividades pendientes";
+  }
+
+  if (reportesModal) reportesModal.hidden = false;
+
+  try {
+    setMenuOpen(false);
+  } catch (e) {
+    if (userMenu) userMenu.hidden = true;
+  }
+
+  try {
+    setLoading(true, "Cargando…", "Cargando cursos y estudiantes.");
+
+    if (!__reportesCourses.length) {
+      await reportesLoadCourses_();
+    }
+
+    const course = String(
+      (reportesCourseEl && reportesCourseEl.value) ||
+      __reportesCourses[0] ||
+      ""
+    ).trim();
+
+    if (reportesCourseEl && course) {
+      reportesCourseEl.value = course;
+      await reportesLoadStudentsForCourse_(course);
+    }
+
+    if (reportesStudentEl) reportesStudentEl.value = "";
+    if (reportesStudentSelectEl) reportesStudentSelectEl.value = "";
+    reportesResetActividades_();
+    reportesSetHint_("Reporte listo ✅");
+
+    await reportesLoadList_();
+
+  } catch (e) {
+    reportesSetHint_(String(e && e.message ? e.message : e));
+  } finally {
+    setLoading(false);
+  }
+}
+
+
+// ======= click menú Reportes =======
+if (btnReportesMenu) {
+  btnReportesMenu.addEventListener("click", (e) => {
+    e.stopPropagation();
+
+    if (faltasSubMenu) faltasSubMenu.hidden = true;
+    if (faltasTiposSubMenu) faltasTiposSubMenu.hidden = true;
+
+    if (reportesSubMenu) {
+      reportesSubMenu.hidden = !reportesSubMenu.hidden;
+    }
+  });
+}
+
+// ======= opción: Actividades pendientes =======
+if (btnReportePendientes) {
+  btnReportePendientes.addEventListener("click", async () => {
+    await openReportePendientes_();
+    if (reportesSubMenu) reportesSubMenu.hidden = true;
+  });
+}
+
+// ======= opción: Ejemplo 2 =======
+if (btnReporteEjemplo2 && reporteEjemplo2Modal) {
+  btnReporteEjemplo2.addEventListener("click", () => {
+    reporteEjemplo2Modal.hidden = false;
+    if (reportesSubMenu) reportesSubMenu.hidden = true;
+    if (userMenu) userMenu.hidden = true;
+  });
+}
+
+// ======= opción: Ejemplo 3 =======
+if (btnReporteEjemplo3 && reporteEjemplo3Modal) {
+  btnReporteEjemplo3.addEventListener("click", () => {
+    reporteEjemplo3Modal.hidden = false;
+    if (reportesSubMenu) reportesSubMenu.hidden = true;
+    if (userMenu) userMenu.hidden = true;
+  });
+}
+
+// ======= cerrar modal principal =======
+if (btnReportesClose && reportesModal) {
+  btnReportesClose.addEventListener("click", () => {
+    reportesModal.hidden = true;
+  });
+}
+
+if (reportesModal) {
+  reportesModal.addEventListener("click", (e) => {
+    if (e.target === reportesModal) {
+      reportesModal.hidden = true;
+    }
+  });
+}
+
+// ======= cerrar ejemplo2 =======
+if (btnReporteEjemplo2Close && reporteEjemplo2Modal) {
+  btnReporteEjemplo2Close.addEventListener("click", () => {
+    reporteEjemplo2Modal.hidden = true;
+  });
+}
+
+if (reporteEjemplo2Modal) {
+  reporteEjemplo2Modal.addEventListener("click", (e) => {
+    if (e.target === reporteEjemplo2Modal) {
+      reporteEjemplo2Modal.hidden = true;
+    }
+  });
+}
+
+// ======= cerrar ejemplo3 =======
+if (btnReporteEjemplo3Close && reporteEjemplo3Modal) {
+  btnReporteEjemplo3Close.addEventListener("click", () => {
+    reporteEjemplo3Modal.hidden = true;
+  });
+}
+
+if (reporteEjemplo3Modal) {
+  reporteEjemplo3Modal.addEventListener("click", (e) => {
+    if (e.target === reporteEjemplo3Modal) {
+      reporteEjemplo3Modal.hidden = true;
+    }
+  });
+}
+
+// cambiar curso => recargar estudiantes
+if (reportesCourseEl) {
+  reportesCourseEl.addEventListener("change", async () => {
+    try {
+      setLoading(true, "Cargando…", "Cargando estudiantes del curso.");
+      await reportesLoadStudentsForCourse_(reportesCourseEl.value);
+      if (reportesStudentEl) reportesStudentEl.value = "";
+      if (reportesStudentSelectEl) reportesStudentSelectEl.value = "";
+      reportesSetHint_("Lista actualizada ✅");
+    } catch (e) {
+      reportesSetHint_(String(e && e.message ? e.message : e));
+    } finally {
+      setLoading(false);
+    }
+  });
+}
+
+// select -> input
+if (reportesStudentSelectEl && reportesStudentEl) {
+  reportesStudentSelectEl.addEventListener("change", () => {
+    reportesStudentEl.value = reportesStudentSelectEl.value || "";
+  });
+}
+
+
+if (btnAgregarActividadPendiente) {
+  btnAgregarActividadPendiente.addEventListener("click", () => {
+    reportesAddActividadItem_();
+  });
+}
+
+
+
+if (btnGuardarReportePendiente) {
+  btnGuardarReportePendiente.addEventListener("click", async () => {
+    try {
+      const course = String(reportesCourseEl?.value || "").trim();
+      const student = String(reportesStudentEl?.value || "").trim();
+      const actividades = reportesGetActividades_();
+
+      if (!course) {
+        reportesSetHint_("Selecciona un curso.");
+        return;
+      }
+
+      if (!student) {
+        reportesSetHint_("Selecciona o escribe un estudiante.");
+        return;
+      }
+
+      if (!actividades.length) {
+        reportesSetHint_("Agrega al menos una actividad pendiente.");
+        return;
+      }
+
+      setLoading(true, "Guardando…", "Registrando actividades pendientes.");
+
+      await gsReportesGuardar({
+        month: reportesCurrentMonth_(),
+        tipo: __reporteTipoActual,
+        course,
+        student,
+        teacher: STATE?.teacher || "",
+        email: STATE?.email || "",
+        device_id: getDeviceId ? getDeviceId() : "",
+        actividades
+      });
+
+      reportesSetHint_("Reporte guardado ✅");
+      reportesResetActividades_();
+      if (reportesStudentEl) reportesStudentEl.value = "";
+      if (reportesStudentSelectEl) reportesStudentSelectEl.value = "";
+
+      await reportesLoadList_();
+
+    } catch (e) {
+      reportesSetHint_(String(e && e.message ? e.message : e));
+    } finally {
+      setLoading(false);
+    }
+  });
+}
+
+
 
 // ✅ Cerrar modal (botón)
 if (btnFaltasClose) {
