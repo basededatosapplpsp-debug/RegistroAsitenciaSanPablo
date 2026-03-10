@@ -2839,6 +2839,26 @@ async function gsFaltasReport(payload) {
 }
 
 
+async function gsFaltasDelete(payload){
+
+  const res = await fetch(GS_WEBAPP_URL,{
+    method:"POST",
+    body: JSON.stringify({
+      action:"faltas_delete",
+      payload,
+      key: GS_API_KEY
+    })
+  });
+
+  const data = await res.json();
+
+  if(!data.ok){
+    throw new Error(data.msg || "Error eliminando");
+  }
+
+  return data;
+
+}
 
 // ---- Render
 function faltasRenderCourses_(courses) {
@@ -6569,7 +6589,6 @@ async function gsFaltasList(payload = {}) {
 }
 
 
-
 async function faltasLoadList_(tipo) {
 
   try {
@@ -6593,7 +6612,7 @@ async function faltasLoadList_(tipo) {
 
     }
 
-    // ✅ filtrar por tipo en memoria (instantáneo)
+    // ✅ filtrar por tipo en memoria
     const items = (__faltasCache || []).filter(
       x => Number(x.tipo) === Number(tipo)
     );
@@ -6610,59 +6629,68 @@ async function faltasLoadList_(tipo) {
     }
 
     // ✅ ordenar por más reciente
-    items.sort((a,b) => new Date(b.updatedAt) - new Date(a.updatedAt));
+    items.sort((a,b) => {
+      const da = a.updatedAt ? new Date(a.updatedAt) : 0;
+      const db = b.updatedAt ? new Date(b.updatedAt) : 0;
+      return db - da;
+    });
 
- items.forEach((x,index) => {
+    items.forEach((x,index) => {
 
-  const div = document.createElement("div");
-  div.className = "disc-reported-item";
+      const div = document.createElement("div");
+      div.className = "disc-reported-item";
 
-  if(index === 0){
-    div.classList.add("disc-new");
-  }
+      if(index === 0){
+        div.classList.add("disc-new");
+      }
 
-  let fecha = "";
-  try {
-    if (x.updatedAt) {
-      fecha = new Date(x.updatedAt).toLocaleDateString();
-    }
-  } catch(e){}
+      // 📅 fecha
+      let fecha = "";
+      try {
+        if (x.updatedAt) {
+          fecha = new Date(x.updatedAt).toLocaleDateString();
+        }
+      } catch(e){}
 
-  let teacher = "-";
-  try {
-    if (x.who && x.who.length) {
-      teacher = x.who.map(t => t.teacher || t.name || "").join(", ");
-    }
-  } catch(e){}
+      // 👨‍🏫 docente
+      let teacher = "-";
+      try {
+        if (x.who && x.who.length) {
+          teacher = x.who.map(t => t.teacher || t.name || "").join(", ");
+        }
+      } catch(e){}
 
-  div.innerHTML = `
-    <div style="display:flex; align-items:center; gap:8px;">
+      // evitar problemas de comillas en dataset
+      const studentSafe = (x.student || "").replace(/"/g,'');
 
-      <button class="disc-trash"
-        title="Eliminar falta"
-        data-student="${x.student}">
-        <i class="fa-solid fa-trash"></i>
-      </button>
+      div.innerHTML = `
+        <div style="display:flex; align-items:center; gap:8px;">
 
-      <div style="font-weight:600;">
-        ${x.student}
-      </div>
+          <button class="disc-trash"
+            title="Eliminar falta"
+            data-student="${studentSafe}">
+            <i class="fa-solid fa-trash"></i>
+          </button>
 
-    </div>
+          <div style="font-weight:600;">
+            ${x.student || ""}
+          </div>
 
-    <div class="small muted">
-      ${x.course} • ${x.subject}
-    </div>
+        </div>
 
-    <div class="small muted">
-      👨‍🏫 ${teacher}
-      ${fecha ? " • 📅 " + fecha : ""}
-    </div>
-  `;
+        <div class="small muted">
+          ${x.course || ""} • ${x.subject || ""}
+        </div>
 
-  list.appendChild(div);
+        <div class="small muted">
+          👨‍🏫 ${teacher}
+          ${fecha ? " • 📅 " + fecha : ""}
+        </div>
+      `;
 
-});
+      list.appendChild(div);
+
+    });
 
   } catch (e) {
 
@@ -6673,6 +6701,7 @@ async function faltasLoadList_(tipo) {
 }
 
 
+// 🗑 eliminar falta
 document.addEventListener("click", async (e) => {
 
   const btn = e.target.closest(".disc-trash");
@@ -6713,7 +6742,6 @@ document.addEventListener("click", async (e) => {
   }
 
 });
-
 // ======= Render (desde Google Sheets) =======
 // ======= Render (desde Google Sheets) =======
 let cachedRecords = [];
