@@ -3083,6 +3083,7 @@ if (btnFaltaInfo) {
 // NOTA: requiere endpoint GAS: action:"faltas_report"
 if (btnFaltaReport) {
   btnFaltaReport.addEventListener("click", async () => {
+
     const profile = requireLogin();
     if (!profile) return;
 
@@ -3095,20 +3096,20 @@ if (btnFaltaReport) {
     if (!subject) return faltasSetHint_("Escribe el asunto (breve).");
 
     try {
+
       setLoading(true, "Guardando…", "Registrando falta.");
 
-    const resp = await gsFaltasReport({
-  tipo: __faltaTipo,
-  month: (typeof discMonthKey_ === "function" ? discMonthKey_() : ""),
-  course,
-  student,
-  subject,
-  teacher: profile.name,
-  email: profile.email,
-  device_id: getDeviceId(),
-  date: new Date().toISOString()
-});
-
+      const resp = await gsFaltasReport({
+        tipo: __faltaTipo,
+        month: (typeof discMonthKey_ === "function" ? discMonthKey_() : ""),
+        course,
+        student,
+        subject,
+        teacher: profile.name,
+        email: profile.email,
+        device_id: getDeviceId(),
+        date: new Date().toISOString()
+      });
 
       if (!resp || !resp.ok) {
         faltasSetHint_(String((resp && resp.msg) ? resp.msg : "No se pudo registrar la falta."));
@@ -3116,11 +3117,26 @@ if (btnFaltaReport) {
       }
 
       faltasSetHint_("Falta registrada ✅");
+
+      // ✅ LIMPIAR CAMPOS
+      if (faltasStudentEl) faltasStudentEl.value = "";
+      if (faltasSubjectEl) faltasSubjectEl.value = "";
+
+      // ✅ ACTUALIZAR LISTA INMEDIATAMENTE
+      try {
+        await faltasLoadList_(__faltaTipo);
+      } catch(e){}
+
     } catch (e) {
+
       faltasSetHint_(String(e && e.message ? e.message : e));
+
     } finally {
+
       setLoading(false);
+
     }
+
   });
 }
 
