@@ -6533,16 +6533,13 @@ async function faltasLoadList_(tipo) {
 
     console.log("FALTAS:", items);
 
-    // aquí puedes renderizar en pantalla
-    // ejemplo simple:
-
     const list = document.getElementById("faltasReportedList");
 
     if (!list) return;
 
     list.innerHTML = "";
 
-    if (!items.length) {
+    if (!items || !items.length) {
       list.innerHTML = "<div class='muted'>Sin reportes.</div>";
       return;
     }
@@ -6552,10 +6549,26 @@ async function faltasLoadList_(tipo) {
       const div = document.createElement("div");
       div.className = "disc-reported-item";
 
+      // formatear fecha si existe
+      let fecha = "";
+      try {
+        if (x.date) {
+          fecha = new Date(x.date).toLocaleDateString();
+        }
+      } catch(e){}
+
       div.innerHTML = `
-        <b>${x.student}</b>
+        <div style="font-weight:600;">
+          ${x.student}
+        </div>
+
         <div class="small muted">
           ${x.course} • ${x.subject}
+        </div>
+
+        <div class="small muted">
+          👨‍🏫 ${x.teacher || "-"}
+          ${fecha ? " • 📅 " + fecha : ""}
         </div>
       `;
 
