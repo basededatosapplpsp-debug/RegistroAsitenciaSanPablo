@@ -1748,6 +1748,11 @@ let SCHOOL_RADIUS_METERS = 60;
 let REQUIRED_ACCURACY_METERS = 30;
 
 
+let __faltasCache = null;
+let __faltasCacheTime = 0;
+let __faltasLastUpdate = null;
+
+
 // ======= GOOGLE SHEETS (CAMBIA ESTO) =======
 const GS_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbzqLGNfjp0CJi51woGWje8EmKT8rk7uBFhtCHCS-H_R9x4H5NICgYA-S9yu1K6mR7kc/exec"; // ej: https://script.google.com/macros/s/XXXX/exec
 const GS_API_KEY = "deimerDh2191docentesRegistros2026appandoidios";        // igual que en Code.gs
@@ -6526,12 +6531,24 @@ async function faltasLoadList_(tipo) {
         ? discMonthKey_()
         : "";
 
-    const items = await gsFaltasList({
-      month,
-      tipo
-    });
+    const CACHE_TIME = 20000; // 20 segundos
 
-    console.log("FALTAS:", items);
+    // ✅ usar cache si aún es válido
+    if (!__faltasCache || (Date.now() - __faltasCacheTime) > CACHE_TIME) {
+
+      const items = await gsFaltasList({ month });
+
+      console.log("FALTAS:", items);
+
+      __faltasCache = items || [];
+      __faltasCacheTime = Date.now();
+
+    }
+
+    // ✅ filtrar por tipo en memoria (instantáneo)
+    const items = (__faltasCache || []).filter(
+      x => Number(x.tipo) === Number(tipo)
+    );
 
     const list = document.getElementById("faltasReportedList");
 
@@ -6539,10 +6556,13 @@ async function faltasLoadList_(tipo) {
 
     list.innerHTML = "";
 
-    if (!items || !items.length) {
+    if (!items.length) {
       list.innerHTML = "<div class='muted'>Sin reportes.</div>";
       return;
     }
+
+    // ✅ ordenar por más reciente
+    items.sort((a,b) => new Date(b.updatedAt) - new Date(a.updatedAt));
 
     items.forEach(x => {
 
@@ -7592,6 +7612,41 @@ document.addEventListener("DOMContentLoaded", () => {
   } catch {}
 });
 
+
+
+// 🔄 actualización automática cada 25 segundos
+setInterval(async () => {
+
+  try {
+
+    const month =
+      (typeof discMonthKey_ === "function")
+        ? discMonthKey_()
+        : "";
+
+    const items = await gsFaltasList({ month });
+
+    if (!items) return;
+
+    // detectar si hay nuevos registros
+    const newest = items[0]?.updatedAt;
+
+    if (__faltasLastUpdate && newest !== __faltasLastUpdate) {
+
+      __faltasCache = items;
+      __faltasCacheTime = Date.now();
+
+      if (typeof __faltaTipo !== "undefined") {
+        faltasLoadList_(__faltaTipo);
+      }
+
+    }
+
+    __faltasLastUpdate = newest;
+
+  } catch(e){}
+
+}, 25000);
 
 </script>
 
