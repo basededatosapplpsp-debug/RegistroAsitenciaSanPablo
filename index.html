@@ -6666,19 +6666,18 @@ async function faltasLoadList_(tipo) {
       const studentSafe = (x.student || "").replace(/"/g,'');
 
       div.innerHTML = `
-        <div style="display:flex; align-items:center; gap:8px;">
+    <div style="display:flex; align-items:center; justify-content:space-between; gap:10px;">
 
-          <button class="disc-trash"
-            title="Eliminar falta"
-            data-student="${studentSafe}">
-            <i class="fa-solid fa-trash"></i>
-          </button>
+  <div style="font-weight:600; flex:1;">
+    ${x.student || ""}
+  </div>
 
-          <div style="font-weight:600;">
-            ${x.student || ""}
-          </div>
+  <i class="fa-solid fa-trash disc-trash"
+     title="Eliminar falta"
+     data-student="${studentSafe}"
+     style="cursor:pointer; opacity:0.7;"></i>
 
-        </div>
+</div>
 
         <div class="small muted">
           ${x.course || ""} • ${x.subject || ""}
