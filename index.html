@@ -1681,27 +1681,27 @@ input[list]::-moz-list-dropdown {
     </p>
 
     <div style="display:flex; gap:10px; align-items:flex-start; flex-wrap:wrap;">
+      
       <!-- IZQUIERDA: Curso -->
       <div style="flex:1; min-width:220px;">
         <label class="modal-label" for="faltasCourse">Curso</label>
         <select id="faltasCourse" class="modal-input"></select>
       </div>
 
- <!-- DERECHA: Estudiante -->
-<div style="flex:1; min-width:220px;">
-  <datalist id="faltasStudentsList"></datalist>
+      <!-- DERECHA: Estudiante -->
+      <div style="flex:1; min-width:220px;">
+        <datalist id="faltasStudentsList"></datalist>
 
-  <!-- (se oculta por CSS porque el select se mete dentro del input) -->
-  <label class="modal-label" for="faltasStudentSelect">Estudiante (lista)</label>
-  <select id="faltasStudentSelect" class="modal-input"></select>
+        <!-- (se oculta por CSS porque el select se mete dentro del input) -->
+        <label class="modal-label" for="faltasStudentSelect">Estudiante (lista)</label>
+        <select id="faltasStudentSelect" class="modal-input"></select>
 
-  <label class="modal-label" for="faltasStudent">Estudiante</label>
-  <input id="faltasStudent" class="modal-input"
-         placeholder="Escribe o selecciona."
-         list="faltasStudentsList"
-         autocomplete="off" />
-</div>
-
+        <label class="modal-label" for="faltasStudent">Estudiante</label>
+        <input id="faltasStudent" class="modal-input"
+               placeholder="Escribe o selecciona."
+               list="faltasStudentsList"
+               autocomplete="off" />
+      </div>
 
       <!-- Botón info -->
       <div style="display:flex; align-items:flex-end;">
@@ -1709,6 +1709,7 @@ input[list]::-moz-list-dropdown {
           <i class="fa-solid fa-circle-info"></i>
         </button>
       </div>
+
     </div>
 
     <label class="modal-label" for="faltasSubject" style="margin-top:10px;">Asunto</label>
@@ -1720,6 +1721,20 @@ input[list]::-moz-list-dropdown {
       <button id="btnFaltasClose" type="button" class="btn btn-ghost">Cerrar</button>
       <button id="btnFaltaReport" type="button" class="btn btn-primary">Reportar falta</button>
     </div>
+
+
+    <!-- ✅ NUEVO: LISTADO DE FALTAS REPORTADAS -->
+    <div class="disc-reported" style="margin-top:20px;">
+      <div class="muted small" style="margin-bottom:6px;">
+        Faltas reportadas este mes
+      </div>
+
+      <div id="faltasReportedList" class="disc-reported-list">
+        <div class="muted small">Cargando...</div>
+      </div>
+    </div>
+
+
   </div>
 </div>
 
@@ -2950,13 +2965,13 @@ function faltasApplyTipoHeader_(tipo) {
 
 // ✅ Abrir MODAL por tipo (carga cursos + estudiantes)
 async function openFaltaTipo_(tipo) {
+
   __faltaTipo = Number(tipo || 1);
 
-  // ✅ abre modal (ya NO se incrusta)
-    // ✅ abre modal (ya NO se incrusta)
+  // ✅ abre modal
   if (faltasModal) faltasModal.hidden = false;
 
-  // ✅ NUEVO: flecha (select) dentro del input, igual a Disc/Pierc/Uni
+  // ✅ flecha (select) dentro del input, igual a Disc/Pierc/Uni
   try {
     if (typeof mountStudentSelectIntoInput_ === "function") {
       mountStudentSelectIntoInput_(faltasStudentEl, faltasStudentSelectEl);
@@ -2966,43 +2981,65 @@ async function openFaltaTipo_(tipo) {
     }
   } catch (e) {}
 
-  
-
   // header del modal
   faltasApplyTipoHeader_(__faltaTipo);
 
-  // cierra el menú si tienes esa función
-  try { setMenuOpen(false); } catch (e) {}
+  // cerrar menú si existe
+  try { 
+    setMenuOpen(false); 
+  } catch (e) {}
 
   try {
+
     setLoading(true, "Cargando…", "Cargando cursos y estudiantes.");
 
     if (!__faltasCourses.length) {
       await faltasLoadCourses_();
     }
 
-    const course = String((faltasCourseEl && faltasCourseEl.value) || __faltasCourses[0] || "").trim();
-if (faltasCourseEl && course) {
-  const prev = String(faltasCourseEl.value || "");
-  faltasCourseEl.value = course;
+    const course = String(
+      (faltasCourseEl && faltasCourseEl.value) ||
+      __faltasCourses[0] ||
+      ""
+    ).trim();
 
-  // si el valor no cambió, igual forzamos carga (evita “no cargó” al abrir)
-  if (prev === course) {
-    await faltasLoadStudentsForCourse_(course);
-  }
-}
+    if (faltasCourseEl && course) {
 
-    if (course) await faltasLoadStudentsForCourse_(course);
+      const prev = String(faltasCourseEl.value || "");
+
+      faltasCourseEl.value = course;
+
+      // si no cambió el valor, igual forzamos carga
+      if (prev === course) {
+        await faltasLoadStudentsForCourse_(course);
+      }
+
+    }
+
+    if (course) {
+      await faltasLoadStudentsForCourse_(course);
+    }
 
     if (faltasStudentEl) faltasStudentEl.value = "";
     if (faltasSubjectEl) faltasSubjectEl.value = "";
 
     faltasSetHint_(`Faltas Tipo ${__faltaTipo} listo ✅`);
+
   } catch (e) {
+
     faltasSetHint_(String(e && e.message ? e.message : e));
+
   } finally {
+
     setLoading(false);
+
   }
+
+  // ✅ cargar listado de faltas reportadas
+  try {
+    faltasLoadList_(__faltaTipo);
+  } catch (e) {}
+
 }
 
 // ✅ click Tipo 1/2/3 del submenú
@@ -6435,6 +6472,89 @@ async function gsClearCurrentMonth() {
 }
 
 
+// ===== FALTAS: LISTAR =====
+async function gsFaltasList(payload = {}) {
+
+  const res = await fetch(GS_WEBAPP_URL, {
+    method: "POST",
+    body: JSON.stringify({
+      action: "faltas_list",
+      ...payload,
+      key: GS_API_KEY
+    })
+  });
+
+  let data = null;
+
+  try {
+    data = await res.json();
+  } catch {
+    throw new Error("Respuesta inválida del servidor");
+  }
+
+  if (!data.ok) {
+    throw new Error(data.msg || data.error || "faltas_list_failed");
+  }
+
+  return data.items || [];
+}
+
+
+
+async function faltasLoadList_(tipo) {
+
+  try {
+
+    const month =
+      (typeof discMonthKey_ === "function")
+        ? discMonthKey_()
+        : "";
+
+    const items = await gsFaltasList({
+      month,
+      tipo
+    });
+
+    console.log("FALTAS:", items);
+
+    // aquí puedes renderizar en pantalla
+    // ejemplo simple:
+
+    const list = document.getElementById("faltasReportedList");
+
+    if (!list) return;
+
+    list.innerHTML = "";
+
+    if (!items.length) {
+      list.innerHTML = "<div class='muted'>Sin reportes.</div>";
+      return;
+    }
+
+    items.forEach(x => {
+
+      const div = document.createElement("div");
+      div.className = "disc-reported-item";
+
+      div.innerHTML = `
+        <b>${x.student}</b>
+        <div class="small muted">
+          ${x.course} • ${x.subject}
+        </div>
+      `;
+
+      list.appendChild(div);
+
+    });
+
+  } catch (e) {
+
+    console.error("Error cargando faltas:", e);
+
+  }
+
+}
+
 // ======= Render (desde Google Sheets) =======
 // ======= Render (desde Google Sheets) =======
 let cachedRecords = [];
@@ -7440,7 +7560,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
 </body>
 </html>
-
 
 
 
