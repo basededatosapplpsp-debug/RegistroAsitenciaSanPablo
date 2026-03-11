@@ -3477,36 +3477,44 @@ async function gsReportesDelete(payload) {
 }
 
 async function reportesLoadCourses_() {
-  const resp = await gsPost({ action: "courses_list" });
-  const courses =
-    resp?.courses ||
-    resp?.data?.courses ||
-    resp?.list ||
-    [];
+  const resp = await gsCoursesList_();
 
-  __reportesCourses = Array.isArray(courses) ? courses : [];
+  const courses =
+    faltasPickArray_(resp, ["courses", "items", "list"]) ||
+    (Array.isArray(resp) ? resp : null);
+
+  if (!resp || resp.ok === false || !Array.isArray(courses)) {
+    throw new Error(String((resp && (resp.msg || resp.error)) || "No pude cargar cursos."));
+  }
+
+  __reportesCourses = courses.map(x => String(x || "").trim()).filter(Boolean);
   reportesRenderCourses_(__reportesCourses);
+
+  if (reportesCourseEl && __reportesCourses.length && !String(reportesCourseEl.value || "").trim()) {
+    reportesCourseEl.value = __reportesCourses[0];
+  }
 }
 
 async function reportesLoadStudentsForCourse_(course) {
-  if (!course) {
+  const c = String(course || "").trim();
+
+  if (!c) {
     __reportesStudents = [];
     reportesRenderStudents_([]);
     return;
   }
 
-  const resp = await gsPost({
-    action: "course_students",
-    course
-  });
+  const resp = await gsCourseStudents_(c);
 
   const students =
-    resp?.students ||
-    resp?.data?.students ||
-    resp?.list ||
-    [];
+    faltasPickArray_(resp, ["students", "items", "list"]) ||
+    (Array.isArray(resp) ? resp : null);
 
-  __reportesStudents = Array.isArray(students) ? students : [];
+  if (!resp || resp.ok === false || !Array.isArray(students)) {
+    throw new Error(String((resp && (resp.msg || resp.error)) || "No pude cargar estudiantes del curso."));
+  }
+
+  __reportesStudents = students.map(x => String(x || "").trim()).filter(Boolean);
   reportesRenderStudents_(__reportesStudents);
 }
 
