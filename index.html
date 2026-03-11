@@ -885,7 +885,57 @@ body:not(.is-admin) #adminMonthSummary{
   #uniformModal .disc-level{ padding: 10px 8px; }
 }
 
+/* ================================
+   MODAL REPORTES responsive
+   scroll SOLO en "Reportes del mes actual"
+================================ */
 
+#reportesModal{
+  padding: max(12px, env(safe-area-inset-top)) 12px max(12px, env(safe-area-inset-bottom));
+}
+
+#reportesModal .modal-card{
+  width: min(760px, 100%);
+  max-height: calc(100dvh - 24px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+#reportesModal .disc-reported{
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  flex: 1 1 auto;
+}
+
+#reportesModal .disc-reported-list{
+  margin-top: 10px;
+  flex: 1 1 auto;
+  min-height: 120px;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 10px;
+  background: rgba(0,0,0,.10);
+}
+
+#reportesReportedList::-webkit-scrollbar{
+  width: 6px;
+}
+
+#reportesReportedList::-webkit-scrollbar-thumb{
+  background: #c5c5c5;
+  border-radius: 6px;
+}
+
+@media (max-height: 640px){
+  #reportesModal .modal-sub{
+    display: none;
+  }
+}
 
 
 /* ===== Botón trash pro en lista de disciplina ===== */
@@ -1117,33 +1167,6 @@ input[list]::-moz-list-dropdown {
 }
 
 
-/* ===== Reportes: scroll solo en lista del mes actual ===== */
-#reportesModal .disc-reported{
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-}
-
-#reportesModal .disc-reported-list{
-  margin-top: 10px;
-  max-height: 260px;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-
-  border: 1px solid var(--line);
-  border-radius: 14px;
-  padding: 10px;
-  background: rgba(0,0,0,.10);
-}
-
-#reportesReportedList::-webkit-scrollbar{
-  width: 6px;
-}
-
-#reportesReportedList::-webkit-scrollbar-thumb{
-  background: #c5c5c5;
-  border-radius: 6px;
-}
 
 
 </style>
@@ -1837,7 +1860,7 @@ input[list]::-moz-list-dropdown {
 
 <!-- ======= MODAL REPORTES: ACTIVIDADES PENDIENTES ======= -->
 <div id="reportesModal" class="modal-backdrop" hidden>
-  <div class="modal-card" style="width:min(760px,100%);">
+ <div class="modal-card">
     <h2 class="modal-title" id="reportesTitle">Reportes</h2>
     <p class="modal-sub" id="reportesSub">
       Selecciona el curso y el estudiante. Luego agrega una o varias actividades pendientes con su nota.
