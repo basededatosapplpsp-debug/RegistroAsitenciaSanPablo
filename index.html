@@ -3617,7 +3617,28 @@ function reportesRenderList_(items) {
     row.className = "disc-item";
     row.style.marginBottom = "8px";
 
-    const detalleHtml = detalles.map((a, i) => {
+const docentes = Array.isArray(item.who) ? item.who : [];
+
+const docentesHtml = docentes.length
+  ? docentes.map((d, i) => {
+      const teacher = String(d.teacher || "").trim();
+      return `
+        <div class="muted small" style="margin-top:4px;">
+          ${docentes.length > 1 ? `${i + 1}. ` : ""}${teacher}
+        </div>
+      `;
+    }).join("")
+  : `<div class="muted small" style="margin-top:4px;">Sin docente registrado</div>`;
+
+const detalleHtml = `
+  <div style="margin-top:8px;">
+    <div class="muted small" style="font-weight:700;">Docente que reporta</div>
+    ${docentesHtml}
+  </div>
+
+  <div style="margin-top:10px;">
+    <div class="muted small" style="font-weight:700;">Actividades pendientes</div>
+    ${detalles.map((a, i) => {
       const act = String(a.actividad || "").trim();
       const nota = String(a.nota || "").trim();
       return `
@@ -3625,7 +3646,9 @@ function reportesRenderList_(items) {
           ${i + 1}. ${act}${nota ? ` — Nota: ${nota}` : ""}
         </div>
       `;
-    }).join("");
+    }).join("")}
+  </div>
+`;
 
     row.innerHTML = `
       <div class="left">
