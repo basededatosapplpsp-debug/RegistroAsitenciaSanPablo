@@ -3868,6 +3868,9 @@ if (btnAgregarActividadPendiente) {
 
 if (btnGuardarReportePendiente) {
   btnGuardarReportePendiente.addEventListener("click", async () => {
+    const profile = requireLogin();
+    if (!profile) return;
+
     try {
       const course = String(reportesCourseEl?.value || "").trim();
       const student = String(reportesStudentEl?.value || "").trim();
@@ -3895,14 +3898,15 @@ if (btnGuardarReportePendiente) {
         tipo: __reporteTipoActual,
         course,
         student,
-        teacher: STATE?.teacher || "",
-        email: STATE?.email || "",
-        device_id: getDeviceId ? getDeviceId() : "",
+        teacher: profile.name,
+        email: profile.email,
+        device_id: getDeviceId(),
         actividades
       });
 
       reportesSetHint_("Reporte guardado ✅");
       reportesResetActividades_();
+
       if (reportesStudentEl) reportesStudentEl.value = "";
       if (reportesStudentSelectEl) reportesStudentSelectEl.value = "";
 
