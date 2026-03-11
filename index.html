@@ -1167,7 +1167,20 @@ input[list]::-moz-list-dropdown {
 }
 
 
+/* input + combo estudiante en una sola fila */
+.student-input-row{
+  display:flex;
+  gap:8px;
+  align-items:center;
+}
 
+.student-input-row input{
+  flex:1;
+}
+
+.student-select{
+  flex:0 0 140px;
+}
 
 </style>
 </head>
@@ -1875,16 +1888,16 @@ input[list]::-moz-list-dropdown {
       </div>
 
       <div style="flex:1; min-width:220px;">
-        <datalist id="reportesStudentsList"></datalist>
+      <datalist id="reportesStudentsList"></datalist>
 
-        <label class="modal-label" for="reportesStudentSelect">Estudiante (lista)</label>
-        <select id="reportesStudentSelect" class="modal-input"></select>
 
-        <label class="modal-label" for="reportesStudent">Estudiante</label>
-        <input id="reportesStudent" class="modal-input"
-               placeholder="Escribe o selecciona."
-               list="reportesStudentsList"
-               autocomplete="off" />
+
+<div class="student-input-row">
+
+
+  <select id="reportesStudentSelect"
+          class="modal-input student-select"></select>
+</div>
       </div>
     </div>
 
@@ -8560,7 +8573,7 @@ setInterval(async () => {
 
   } catch(e){}
 
-}, 25000);
+}, 15000);
 
 </script>
 
