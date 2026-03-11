@@ -1890,10 +1890,14 @@ input[list]::-moz-list-dropdown {
       <div style="flex:1; min-width:220px;">
       <datalist id="reportesStudentsList"></datalist>
 
-
+<label class="modal-label" for="reportesStudent">Estudiante</label>
 
 <div class="student-input-row">
-
+  <input id="reportesStudent"
+         class="modal-input"
+         placeholder="Escribe o selecciona."
+         list="reportesStudentsList"
+         autocomplete="off" />
 
   <select id="reportesStudentSelect"
           class="modal-input student-select"></select>
