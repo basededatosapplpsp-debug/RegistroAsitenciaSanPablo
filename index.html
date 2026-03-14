@@ -2272,9 +2272,124 @@ const adminRecordsFilters = $("adminRecordsFilters");
 const recordsMonthSelect = $("recordsMonthSelect");
 const recordsTeacherSelect = $("recordsTeacherSelect");
 
-function syncReportesViewerList(){
-  if (!reportesReportedListEl || !reportesViewerListEl) return;
-  reportesViewerListEl.innerHTML = reportesReportedListEl.innerHTML;
+function reportesBuildRows_(targetEl, items) {
+  if (!targetEl) return;
+
+  const list = Array.isArray(items) ? items : [];
+
+  if (!list.length) {
+    targetEl.innerHTML = `<div class="muted small">No hay reportes este mes.</div>`;
+    return;
+  }
+
+  targetEl.innerHTML = "";
+
+  list.forEach(item => {
+    const total = Number(item.totalPendientes || 0);
+    const detalles = Array.isArray(item.actividades) ? item.actividades : [];
+    const docentes = Array.isArray(item.who) ? item.who : [];
+
+    const row = document.createElement("div");
+    row.className = "disc-item";
+    row.style.marginBottom = "8px";
+
+    const docentesHtml = docentes.length
+      ? docentes.map((d, i) => {
+          const teacher = String(d.teacher || "").trim();
+          return `
+            <div class="muted small" style="margin-top:4px;">
+              ${docentes.length > 1 ? `${i + 1}. ` : ""}${teacher}
+            </div>
+          `;
+        }).join("")
+      : `<div class="muted small" style="margin-top:4px;">Sin docente registrado</div>`;
+
+    const detalleHtml = `
+      <div style="margin-top:8px;">
+        <div class="muted small" style="font-weight:700;">Docente que reporta</div>
+        ${docentesHtml}
+      </div>
+
+      <div style="margin-top:10px;">
+        <div class="muted small" style="font-weight:700;">Actividades pendientes</div>
+        ${detalles.map((a, i) => {
+          const act = String(a.actividad || "").trim();
+          const nota = String(a.nota || "").trim();
+          return `
+            <div class="muted small" style="margin-top:4px;">
+              ${i + 1}. ${act}${nota ? ` — Nota: ${nota}` : ""}
+            </div>
+          `;
+        }).join("")}
+      </div>
+    `;
+
+    row.innerHTML = `
+      <div class="left">
+        <span class="lvl-dot lvl-2"></span>
+        <div style="min-width:0;">
+          <div class="name">${item.student || "Sin nombre"}</div>
+          <div class="muted small">${item.course || ""} • Debe ${total}</div>
+          <div class="reportes-detalle" hidden style="margin-top:8px;">
+            ${detalleHtml}
+          </div>
+        </div>
+      </div>
+
+      <div class="right" style="display:flex; gap:8px; align-items:center;">
+        <span>${total}</span>
+        <button type="button" class="disc-trash" title="Eliminar reporte">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M9 3h6l1 2h4v2H4V5h4l1-2zm1 6h2v8h-2V9zm4 0h2v8h-2V9zM7 9h2v8H7V9zm-1 12a2 2 0 0 1-2-2V7h16v12a2 2 0 0 1-2 2H6z"/>
+          </svg>
+        </button>
+      </div>
+    `;
+
+    const detalle = row.querySelector(".reportes-detalle");
+    const btnDelete = row.querySelector(".disc-trash");
+
+    row.addEventListener("click", (e) => {
+      if (e.target.closest(".disc-trash")) return;
+      if (detalle) detalle.hidden = !detalle.hidden;
+    });
+
+    if (btnDelete) {
+      btnDelete.addEventListener("click", async (e) => {
+        e.stopPropagation();
+
+        const ok = await confirmPro({
+          title: "Eliminar reporte",
+          msg: `Se eliminarán todas las actividades pendientes de ${item.student}.`,
+          okText: "Eliminar",
+          cancelText: "Cancelar",
+          danger: true
+        });
+
+        if (!ok) return;
+
+        try {
+          setLoading(true, "Eliminando…", "Quitando reporte del estudiante.");
+          await gsReportesDelete({
+            month: reportesCurrentMonth_(),
+            tipo: __reporteTipoActual,
+            student: item.student
+          });
+          await reportesLoadList_();
+        } catch (err) {
+          reportesSetHint_(String(err && err.message ? err.message : err));
+        } finally {
+          setLoading(false);
+        }
+      });
+    }
+
+    targetEl.appendChild(row);
+  });
+}
+
+function syncReportesViewerList(items){
+  reportesBuildRows_(reportesViewerListEl, items);
 }
 
 
@@ -3738,120 +3853,8 @@ function reportesCurrentMonth_() {
 }
 
 function reportesRenderList_(items) {
-  if (!reportesReportedListEl) return;
-
-  const list = Array.isArray(items) ? items : [];
-
-  if (!list.length) {
-    reportesReportedListEl.innerHTML = `<div class="muted small">No hay reportes este mes.</div>`;
-    return;
-  }
-
-  reportesReportedListEl.innerHTML = "";
-
-  list.forEach(item => {
-    const total = Number(item.totalPendientes || 0);
-    const detalles = Array.isArray(item.actividades) ? item.actividades : [];
-
-    const row = document.createElement("div");
-    row.className = "disc-item";
-    row.style.marginBottom = "8px";
-
-const docentes = Array.isArray(item.who) ? item.who : [];
-
-const docentesHtml = docentes.length
-  ? docentes.map((d, i) => {
-      const teacher = String(d.teacher || "").trim();
-      return `
-        <div class="muted small" style="margin-top:4px;">
-          ${docentes.length > 1 ? `${i + 1}. ` : ""}${teacher}
-        </div>
-      `;
-    }).join("")
-  : `<div class="muted small" style="margin-top:4px;">Sin docente registrado</div>`;
-
-const detalleHtml = `
-  <div style="margin-top:8px;">
-    <div class="muted small" style="font-weight:700;">Docente que reporta</div>
-    ${docentesHtml}
-  </div>
-
-  <div style="margin-top:10px;">
-    <div class="muted small" style="font-weight:700;">Actividades pendientes</div>
-    ${detalles.map((a, i) => {
-      const act = String(a.actividad || "").trim();
-      const nota = String(a.nota || "").trim();
-      return `
-        <div class="muted small" style="margin-top:4px;">
-          ${i + 1}. ${act}${nota ? ` — Nota: ${nota}` : ""}
-        </div>
-      `;
-    }).join("")}
-  </div>
-`;
-
-    row.innerHTML = `
-      <div class="left">
-        <span class="lvl-dot lvl-2"></span>
-        <div style="min-width:0;">
-          <div class="name">${item.student || "Sin nombre"}</div>
-          <div class="muted small">${item.course || ""} • Debe ${total}</div>
-          <div class="reportes-detalle" hidden style="margin-top:8px;">
-            ${detalleHtml}
-          </div>
-        </div>
-      </div>
-
-      <div class="right" style="display:flex; gap:8px; align-items:center;">
-        <span>${total}</span>
-        <button type="button" class="disc-trash" title="Eliminar reporte">
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M9 3h6l1 2h4v2H4V5h4l1-2zm1 6h2v8h-2V9zm4 0h2v8h-2V9zM7 9h2v8H7V9zm-1 12a2 2 0 0 1-2-2V7h16v12a2 2 0 0 1-2 2H6z"/>
-          </svg>
-        </button>
-      </div>
-    `;
-
-    const detalle = row.querySelector(".reportes-detalle");
-    const btnDelete = row.querySelector(".disc-trash");
-
-    row.addEventListener("click", (e) => {
-      if (e.target.closest(".disc-trash")) return;
-      if (detalle) detalle.hidden = !detalle.hidden;
-    });
-
-    if (btnDelete) {
-      btnDelete.addEventListener("click", async (e) => {
-        e.stopPropagation();
-
-        const ok = await confirmPro({
-          title: "Eliminar reporte",
-          msg: `Se eliminarán todas las actividades pendientes de ${item.student}.`,
-          okText: "Eliminar",
-          cancelText: "Cancelar",
-          danger: true
-        });
-
-        if (!ok) return;
-
-        try {
-          setLoading(true, "Eliminando…", "Quitando reporte del estudiante.");
-          await gsReportesDelete({
-            month: reportesCurrentMonth_(),
-            tipo: __reporteTipoActual,
-            student: item.student
-          });
-          await reportesLoadList_();
-        } catch (err) {
-          reportesSetHint_(String(err && err.message ? err.message : err));
-        } finally {
-          setLoading(false);
-        }
-      });
-    }
-
-    reportesReportedListEl.appendChild(row);
-  });
+  reportesBuildRows_(reportesReportedListEl, items);
+  reportesBuildRows_(reportesViewerListEl, items);
 }
 
 async function reportesLoadList_() {
@@ -3912,7 +3915,6 @@ async function openReportePendientes_() {
 
 
 btnVerReportados?.addEventListener('click', () => {
-  syncReportesViewerList();
   reportesViewerModal?.removeAttribute('hidden');
 });
 
