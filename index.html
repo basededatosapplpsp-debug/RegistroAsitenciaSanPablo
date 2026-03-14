@@ -1991,17 +1991,22 @@ input[list]::-moz-list-dropdown {
   <div class="modal-card">
     <h2 class="modal-title">Reportados del mes actual</h2>
     <p class="modal-sub">
-      <!--Aquí puedes ver todos los estudiantes reportados con más espacio.-->
+      Filtra por curso para ver solo los estudiantes reportados de ese grupo.
     </p>
+
+    <label class="modal-label" for="reportesViewerCourseFilter">Curso / grado</label>
+    <select id="reportesViewerCourseFilter" class="modal-input">
+      <option value="">Todos los cursos</option>
+    </select>
 
     <div class="disc-reported" style="margin-top:20px;">
       <div id="reportesViewerList" class="disc-reported-list">
-        <div class="muted small">Cargando...</div>
+        <div class="muted small">Cargando.</div>
       </div>
     </div>
 
     <div class="modal-actions" style="justify-content:flex-end;">
-      <button id="btnCerrarViewerReportes" type="button" class="btn btn-primary">Cerrar</button>
+      <button id="btnCerrarViewerReportes" type="button" class="btn btn-ghost">Cerrar</button>
     </div>
   </div>
 </div>
@@ -2253,6 +2258,9 @@ const reportesViewerModal = document.getElementById('reportesViewerModal');
 const reportesViewerListEl = document.getElementById('reportesViewerList');
 const btnCerrarViewerReportes = document.getElementById('btnCerrarViewerReportes');
 
+
+const reportesViewerCourseFilterEl = document.getElementById("reportesViewerCourseFilter");
+let __reportesLastItems = [];
 
 
 const btnToggleRecords = $("btnToggleRecords");
@@ -3852,9 +3860,89 @@ function reportesCurrentMonth_() {
   return `${y}-${m}`;
 }
 
+function reportesGetProfileCourse_() {
+  try {
+    const p = loadProfile && loadProfile();
+    return String((p && p.course) || "").trim();
+  } catch {
+    return "";
+  }
+}
+
+function reportesNormalizeCourse_(value) {
+  return String(value || "")
+    .trim()
+    .replace(/\s+/g, " ")
+    .toUpperCase();
+}
+
+function reportesGetItemCourse_(item) {
+  return String(
+    item?.course ||
+    item?.curso ||
+    item?.grade ||
+    item?.grado ||
+    ""
+  ).trim();
+}
+
+function reportesBuildCourseFilter_(items) {
+  if (!reportesViewerCourseFilterEl) return;
+
+  const profileCourse = reportesNormalizeCourse_(reportesGetProfileCourse_());
+
+  const courses = [...new Set(
+    (Array.isArray(items) ? items : [])
+      .map(reportesGetItemCourse_)
+      .filter(Boolean)
+      .map(reportesNormalizeCourse_)
+  )].sort((a, b) => a.localeCompare(b, "es"));
+
+  const isAdmin = typeof isAdminMode === "function" ? isAdminMode() : false;
+
+  let html = "";
+
+  if (isAdmin) {
+    html += `<option value="">Todos los cursos</option>`;
+  }
+
+  html += courses.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join("");
+
+  reportesViewerCourseFilterEl.innerHTML = html || `<option value="">Sin cursos</option>`;
+
+  if (profileCourse && courses.includes(profileCourse)) {
+    reportesViewerCourseFilterEl.value = profileCourse;
+  } else if (!isAdmin && courses.length) {
+    reportesViewerCourseFilterEl.value = courses[0];
+  } else if (isAdmin) {
+    reportesViewerCourseFilterEl.value = "";
+  }
+}
+
+function reportesGetFilteredViewerItems_() {
+  const items = Array.isArray(__reportesLastItems) ? __reportesLastItems : [];
+  const selectedCourse = reportesNormalizeCourse_(reportesViewerCourseFilterEl?.value || "");
+  const isAdmin = typeof isAdminMode === "function" ? isAdminMode() : false;
+
+  if (isAdmin && !selectedCourse) {
+    return items;
+  }
+
+  const courseToUse = selectedCourse || reportesNormalizeCourse_(reportesGetProfileCourse_());
+
+  return items.filter(item => reportesNormalizeCourse_(reportesGetItemCourse_(item)) === courseToUse);
+}
+
+function reportesRenderViewerList_() {
+  reportesBuildRows_(reportesViewerListEl, reportesGetFilteredViewerItems_());
+}
+
 function reportesRenderList_(items) {
-  reportesBuildRows_(reportesReportedListEl, items);
-  reportesBuildRows_(reportesViewerListEl, items);
+  __reportesLastItems = Array.isArray(items) ? items : [];
+
+  reportesBuildRows_(reportesReportedListEl, __reportesLastItems);
+  reportesBuildCourseFilter_(__reportesLastItems);
+  reportesRenderViewerList_();
 }
 
 async function reportesLoadList_() {
@@ -3888,11 +3976,14 @@ async function openReportePendientes_() {
       await reportesLoadCourses_();
     }
 
-    const course = String(
-      (reportesCourseEl && reportesCourseEl.value) ||
-      __reportesCourses[0] ||
-      ""
-    ).trim();
+  const profileCourse = reportesGetProfileCourse_();
+
+const course = String(
+  (reportesCourseEl && reportesCourseEl.value) ||
+  profileCourse ||
+  __reportesCourses[0] ||
+  ""
+).trim();
 
     if (reportesCourseEl && course) {
       reportesCourseEl.value = course;
@@ -3915,6 +4006,8 @@ async function openReportePendientes_() {
 
 
 btnVerReportados?.addEventListener('click', () => {
+  reportesBuildCourseFilter_(__reportesLastItems);
+  reportesRenderViewerList_();
   reportesViewerModal?.removeAttribute('hidden');
 });
 
@@ -3928,6 +4021,10 @@ reportesViewerModal?.addEventListener('click', (e) => {
   }
 });
 
+
+reportesViewerCourseFilterEl?.addEventListener("change", () => {
+  reportesRenderViewerList_();
+});
 
 
 // ======= click menú Reportes =======
