@@ -1183,6 +1183,33 @@ input[list]::-moz-list-dropdown {
   flex:0 0 140px;
 }
 
+
+#reportesViewerModal .modal-card{
+  width: min(820px, 100%);
+  max-height: calc(100dvh - 24px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+#reportesViewerModal .disc-reported{
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  flex: 1 1 auto;
+}
+
+#reportesViewerModal .disc-reported-list{
+  flex: 1 1 auto;
+  min-height: 180px;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 10px;
+  background: rgba(0,0,0,.10);
+}
+
 </style>
 </head>
 
@@ -1936,22 +1963,49 @@ input[list]::-moz-list-dropdown {
   
 
     <!-- Listado -->
-    <div class="disc-reported" style="margin-top:20px;">
-      <div class="muted small" style="margin-bottom:6px;">
-        Reportes del mes actual
-      </div>
+  <div class="disc-reported" style="margin-top:20px;">
+  <div class="muted small" style="margin-bottom:6px;">
+    Reportes del mes actual
+  </div>
 
-      <div id="reportesReportedList" class="disc-reported-list">
-        <div class="muted small">Cargando...</div>
-      </div>
+  <div class="muted small">
+    Presiona <strong>Ver</strong> para abrir el listado completo.
+  </div>
 
-        <div class="modal-actions" style="justify-content:flex-end;">
-      <button id="btnReportesClose" type="button" class="btn btn-ghost">Cerrar</button>
-      <button id="btnGuardarReportePendiente" type="button" class="btn btn-primary">Guardar reporte</button>
-    </div>
+  <div id="reportesReportedList" class="disc-reported-list" hidden>
+    <div class="muted small">Cargando...</div>
+  </div>
+</div>
+
+     <div class="modal-actions" style="justify-content:flex-end; gap:10px; flex-wrap:wrap;">
+  <button id="btnReportesClose" type="button" class="btn btn-ghost">Cerrar</button>
+  <button id="btnVerReportados" type="button" class="btn btn-ghost">Ver</button>
+  <button id="btnGuardarReportePendiente" type="button" class="btn btn-primary">Guardar reporte</button>
+</div>
     </div>
 
   </div>
+
+
+<div id="reportesViewerModal" class="modal-backdrop" hidden>
+  <div class="modal-card">
+    <h2 class="modal-title">Reportados del mes actual</h2>
+    <p class="modal-sub">
+      Aquí puedes ver todos los estudiantes reportados con más espacio.
+    </p>
+
+    <div class="disc-reported" style="margin-top:20px;">
+      <div id="reportesViewerList" class="disc-reported-list">
+        <div class="muted small">Cargando...</div>
+      </div>
+    </div>
+
+    <div class="modal-actions" style="justify-content:flex-end;">
+      <button id="btnCerrarViewerReportes" type="button" class="btn btn-primary">Cerrar</button>
+    </div>
+  </div>
+</div>
+
 </div>
 
 <!-- ======= MODAL REPORTE: EJEMPLO 2 ======= -->
@@ -2194,6 +2248,11 @@ const btnReporteEjemplo2Close = $("btnReporteEjemplo2Close");
 const reporteEjemplo3Modal = $("reporteEjemplo3Modal");
 const btnReporteEjemplo3Close = $("btnReporteEjemplo3Close");
 
+const btnVerReportados = document.getElementById('btnVerReportados');
+const reportesViewerModal = document.getElementById('reportesViewerModal');
+const reportesViewerListEl = document.getElementById('reportesViewerList');
+const btnCerrarViewerReportes = document.getElementById('btnCerrarViewerReportes');
+
 
 
 const btnToggleRecords = $("btnToggleRecords");
@@ -2212,6 +2271,11 @@ const monthRecordsCountEl = $("monthRecordsCount");
 const adminRecordsFilters = $("adminRecordsFilters");
 const recordsMonthSelect = $("recordsMonthSelect");
 const recordsTeacherSelect = $("recordsTeacherSelect");
+
+function syncReportesViewerList(){
+  if (!reportesReportedListEl || !reportesViewerListEl) return;
+  reportesViewerListEl.innerHTML = reportesReportedListEl.innerHTML;
+}
 
 
 /**
@@ -3845,6 +3909,23 @@ async function openReportePendientes_() {
     setLoading(false);
   }
 }
+
+
+btnVerReportados?.addEventListener('click', () => {
+  syncReportesViewerList();
+  reportesViewerModal?.removeAttribute('hidden');
+});
+
+btnCerrarViewerReportes?.addEventListener('click', () => {
+  reportesViewerModal?.setAttribute('hidden', '');
+});
+
+reportesViewerModal?.addEventListener('click', (e) => {
+  if (e.target === reportesViewerModal) {
+    reportesViewerModal.setAttribute('hidden', '');
+  }
+});
+
 
 
 // ======= click menú Reportes =======
