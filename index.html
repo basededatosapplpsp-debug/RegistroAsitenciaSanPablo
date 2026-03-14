@@ -1889,27 +1889,26 @@ input[list]::-moz-list-dropdown {
       </div>
 
       <div style="flex:1; min-width:220px;">
- <datalist id="reportesStudentsList"></datalist>
 
-<label class="modal-label" for="reportesStudent">Estudiante</label>
+        <datalist id="reportesStudentsList"></datalist>
 
-<div class="input-with-select">
+        <label class="modal-label" for="reportesStudent">Estudiante</label>
 
-  <input id="reportesStudent"
-         class="modal-input input-real"
-         placeholder="Escribe o selecciona."
-         list="reportesStudentsList"
-         autocomplete="off" />
+        <!-- input con combo integrado -->
+        <div class="input-with-select">
 
-  <select id="reportesStudentSelect"
-          class="modal-input student-overlay">
-  </select>
+          <input id="reportesStudent"
+                 class="modal-input input-real"
+                 placeholder="Escribe o selecciona."
+                 list="reportesStudentsList"
+                 autocomplete="off" />
 
-</div>
+          <select id="reportesStudentSelect"
+                  class="modal-input student-overlay">
+          </select>
 
-  <select id="reportesStudentSelect"
-          class="modal-input student-select"></select>
-</div>
+        </div>
+
       </div>
     </div>
 
@@ -1952,9 +1951,9 @@ input[list]::-moz-list-dropdown {
         <div class="muted small">Cargando...</div>
       </div>
     </div>
+
   </div>
 </div>
-
 
 <!-- ======= MODAL REPORTE: EJEMPLO 2 ======= -->
 <div id="reporteEjemplo2Modal" class="modal-backdrop" hidden>
