@@ -1081,7 +1081,8 @@ body:not(.is-admin) #adminMonthSummary{
 label[for="discStudentSelect"],
 label[for="piercStudentSelect"],
 label[for="uniStudentSelect"],
-label[for="faltasStudentSelect"] {
+label[for="faltasStudentSelect"],
+label[for="reportesStudentSelect"] {
   display: none !important;
 }
 
@@ -1888,16 +1889,23 @@ input[list]::-moz-list-dropdown {
       </div>
 
       <div style="flex:1; min-width:220px;">
-      <datalist id="reportesStudentsList"></datalist>
+ <datalist id="reportesStudentsList"></datalist>
 
 <label class="modal-label" for="reportesStudent">Estudiante</label>
 
-<div class="student-input-row">
+<div class="input-with-select">
+
   <input id="reportesStudent"
-         class="modal-input"
+         class="modal-input input-real"
          placeholder="Escribe o selecciona."
          list="reportesStudentsList"
          autocomplete="off" />
+
+  <select id="reportesStudentSelect"
+          class="modal-input student-overlay">
+  </select>
+
+</div>
 
   <select id="reportesStudentSelect"
           class="modal-input student-select"></select>
@@ -8583,7 +8591,6 @@ setInterval(async () => {
 
 </body>
 </html>
-
 
 
 
