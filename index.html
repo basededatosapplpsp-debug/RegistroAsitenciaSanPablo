@@ -1991,7 +1991,7 @@ input[list]::-moz-list-dropdown {
   <div class="modal-card">
     <h2 class="modal-title">Reportados del mes actual</h2>
     <p class="modal-sub">
-      Filtra por curso para ver solo los estudiantes reportados de ese grupo.
+      Filtra por curso y comparte solo los estudiantes visibles.
     </p>
 
     <label class="modal-label" for="reportesViewerCourseFilter">Curso / grado</label>
@@ -2005,8 +2005,9 @@ input[list]::-moz-list-dropdown {
       </div>
     </div>
 
-    <div class="modal-actions" style="justify-content:flex-end;">
-      <button id="btnCerrarViewerReportes" type="button" class="btn btn-ghost">Cerrar</button>
+    <div class="modal-actions" style="justify-content:flex-end; gap:10px; flex-wrap:wrap;">
+      <button id="btnCompartirViewerReportes" type="button" class="btn btn-ghost">Compartir</button>
+      <button id="btnCerrarViewerReportes" type="button" class="btn btn-primary">Cerrar</button>
     </div>
   </div>
 </div>
@@ -2258,9 +2259,12 @@ const reportesViewerModal = document.getElementById('reportesViewerModal');
 const reportesViewerListEl = document.getElementById('reportesViewerList');
 const btnCerrarViewerReportes = document.getElementById('btnCerrarViewerReportes');
 
-
 const reportesViewerCourseFilterEl = document.getElementById("reportesViewerCourseFilter");
+const btnCompartirViewerReportes = document.getElementById("btnCompartirViewerReportes");
 let __reportesLastItems = [];
+
+
+
 
 
 const btnToggleRecords = $("btnToggleRecords");
@@ -3937,12 +3941,213 @@ function reportesRenderViewerList_() {
   reportesBuildRows_(reportesViewerListEl, reportesGetFilteredViewerItems_());
 }
 
+function reportesGetProfileCourse_() {
+  try {
+    const p = loadProfile && loadProfile();
+    return String((p && p.course) || "").trim();
+  } catch {
+    return "";
+  }
+}
+
+function reportesNormalizeCourse_(value) {
+  return String(value || "")
+    .trim()
+    .replace(/\s+/g, " ")
+    .toUpperCase();
+}
+
+function reportesGetItemCourse_(item) {
+  return String(
+    item?.course ||
+    item?.curso ||
+    item?.grade ||
+    item?.grado ||
+    ""
+  ).trim();
+}
+
+function reportesGetItemStudentName_(item) {
+  return String(
+    item?.student ||
+    item?.student_name ||
+    item?.estudiante ||
+    item?.nombre ||
+    item?.name ||
+    ""
+  ).trim();
+}
+
+function reportesGetItemSubject_(item) {
+  return String(
+    item?.subject ||
+    item?.materia ||
+    item?.asignatura ||
+    ""
+  ).trim();
+}
+
+function reportesGetItemTeacher_(item) {
+  return String(
+    item?.teacher ||
+    item?.docente ||
+    item?.teacher_name ||
+    item?.reporter ||
+    ""
+  ).trim();
+}
+
+function reportesGetItemActivities_(item) {
+  if (Array.isArray(item?.actividades)) return item.actividades;
+  if (Array.isArray(item?.activities)) return item.activities;
+  return [];
+}
+
+function reportesBuildCourseFilter_(items) {
+  if (!reportesViewerCourseFilterEl) return;
+
+  const profileCourse = reportesNormalizeCourse_(reportesGetProfileCourse_());
+
+  const courses = [...new Set(
+    (Array.isArray(items) ? items : [])
+      .map(reportesGetItemCourse_)
+      .filter(Boolean)
+      .map(reportesNormalizeCourse_)
+  )].sort((a, b) => a.localeCompare(b, "es"));
+
+  const isAdmin = typeof isAdminMode === "function" ? isAdminMode() : false;
+
+  let html = "";
+
+  if (isAdmin) {
+    html += `<option value="">Todos los cursos</option>`;
+  }
+
+  html += courses
+    .map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`)
+    .join("");
+
+  reportesViewerCourseFilterEl.innerHTML = html || `<option value="">Sin cursos</option>`;
+
+  if (profileCourse && courses.includes(profileCourse)) {
+    reportesViewerCourseFilterEl.value = profileCourse;
+  } else if (!isAdmin && courses.length) {
+    reportesViewerCourseFilterEl.value = courses[0];
+  } else if (isAdmin) {
+    reportesViewerCourseFilterEl.value = "";
+  }
+}
+
+function reportesGetFilteredViewerItems_() {
+  const items = Array.isArray(__reportesLastItems) ? __reportesLastItems : [];
+  const selectedCourse = reportesNormalizeCourse_(reportesViewerCourseFilterEl?.value || "");
+  const isAdmin = typeof isAdminMode === "function" ? isAdminMode() : false;
+
+  if (isAdmin && !selectedCourse) return items;
+
+  const courseToUse = selectedCourse || reportesNormalizeCourse_(reportesGetProfileCourse_());
+
+  return items.filter(item =>
+    reportesNormalizeCourse_(reportesGetItemCourse_(item)) === courseToUse
+  );
+}
+
+function reportesRenderViewerList_() {
+  reportesBuildRows_(reportesViewerListEl, reportesGetFilteredViewerItems_());
+}
+
 function reportesRenderList_(items) {
   __reportesLastItems = Array.isArray(items) ? items : [];
-
   reportesBuildRows_(reportesReportedListEl, __reportesLastItems);
   reportesBuildCourseFilter_(__reportesLastItems);
   reportesRenderViewerList_();
+}
+
+function reportesBuildShareText_() {
+  const visibleItems = reportesGetFilteredViewerItems_();
+  const selectedCourse = String(reportesViewerCourseFilterEl?.value || "").trim();
+  const profile = (typeof loadProfile === "function" ? loadProfile() : null) || {};
+
+  const teacherName = String(profile?.name || profile?.teacher || profile?.docente || "").trim();
+  const subjectName = String(profile?.subject || profile?.materia || profile?.asignatura || "").trim();
+
+  const courseLabel = selectedCourse || reportesGetProfileCourse_() || "este curso";
+
+  if (!visibleItems.length) {
+    return `Hola profe, te envío los estudiantes que deben notas en mi materia para ${courseLabel}.\n\nNo hay estudiantes reportados en este filtro.`;
+  }
+
+  let text = `Hola profe, te envío los estudiantes que deben notas en mi materia`;
+
+  if (subjectName) {
+    text += ` (${subjectName})`;
+  }
+
+  text += ` del curso ${courseLabel}.`;
+
+  if (teacherName) {
+    text += `\nDocente que reporta: ${teacherName}.`;
+  }
+
+  text += `\n\nListado de estudiantes reportados:\n`;
+
+  visibleItems.forEach((item, index) => {
+    const name = reportesGetItemStudentName_(item) || "Sin nombre";
+    const course = reportesGetItemCourse_(item) || courseLabel;
+    const teacher = reportesGetItemTeacher_(item) || teacherName;
+    const activities = reportesGetItemActivities_(item);
+
+    text += `\n${index + 1}. ${name} - ${course}`;
+
+    if (teacher) {
+      text += `\n   Docente: ${teacher}`;
+    }
+
+    if (activities.length) {
+      activities.forEach((a, i) => {
+        const actividad = String(a?.actividad || a?.activity || "").trim();
+        const nota = String(a?.nota || a?.note || "").trim();
+
+        if (actividad && nota) {
+          text += `\n   • ${i + 1}) ${actividad} - Nota: ${nota}`;
+        } else if (actividad) {
+          text += `\n   • ${i + 1}) ${actividad}`;
+        }
+      });
+    }
+  });
+
+  return text.trim();
+}
+
+async function reportesShareVisibleItems_() {
+  const text = reportesBuildShareText_();
+
+  try {
+    if (navigator.share) {
+      await navigator.share({
+        title: "Reportados por actividades",
+        text
+      });
+      return;
+    }
+  } catch (err) {
+    if (err && err.name === "AbortError") return;
+    console.warn("Share API error:", err);
+  }
+
+  try {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      await navigator.clipboard.writeText(text);
+      alert("El mensaje se copió al portapapeles. Ahora pégalo en la app que quieras.");
+      return;
+    }
+  } catch (err) {
+    console.warn("Clipboard error:", err);
+  }
+
+  const waUrl = `https://wa.me/?text=${encodeURIComponent(text)}`;
+  window.open(waUrl, "_blank");
 }
 
 async function reportesLoadList_() {
@@ -3976,7 +4181,9 @@ async function openReportePendientes_() {
       await reportesLoadCourses_();
     }
 
-  const profileCourse = reportesGetProfileCourse_();
+  
+
+const profileCourse = reportesGetProfileCourse_();
 
 const course = String(
   (reportesCourseEl && reportesCourseEl.value) ||
@@ -4013,6 +4220,10 @@ btnVerReportados?.addEventListener('click', () => {
 
 btnCerrarViewerReportes?.addEventListener('click', () => {
   reportesViewerModal?.setAttribute('hidden', '');
+});
+
+btnCompartirViewerReportes?.addEventListener("click", async () => {
+  await reportesShareVisibleItems_();
 });
 
 reportesViewerModal?.addEventListener('click', (e) => {
