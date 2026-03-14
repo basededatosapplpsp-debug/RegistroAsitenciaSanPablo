@@ -1210,6 +1210,61 @@ input[list]::-moz-list-dropdown {
   background: rgba(0,0,0,.10);
 }
 
+
+/* ================================
+   MODAL UBICATE
+================================ */
+#ubicateModal{
+  padding: max(12px, env(safe-area-inset-top)) 12px max(12px, env(safe-area-inset-bottom));
+}
+
+#ubicateModal .modal-card{
+  width: min(720px, 100%);
+  max-height: calc(100dvh - 24px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+#ubicateResultBox{
+  display:flex;
+  flex-direction:column;
+  min-height:0;
+}
+
+#ubicateResult{
+  min-height:140px;
+  max-height:320px;
+  overflow:auto;
+  -webkit-overflow-scrolling: touch;
+  border:1px solid var(--line);
+  border-radius:14px;
+  padding:12px;
+  background: rgba(0,0,0,.10);
+}
+
+.ubicate-card{
+  border:1px solid rgba(255,255,255,.12);
+  border-radius:14px;
+  padding:14px;
+  background: rgba(255,255,255,.05);
+}
+
+.ubicate-title{
+  font-weight:900;
+  font-size:18px;
+  margin-bottom:8px;
+}
+
+.ubicate-line{
+  margin-top:6px;
+  color: var(--text);
+}
+
+.ubicate-empty{
+  color: var(--muted);
+  font-size:13px;
+}
 </style>
 </head>
 
@@ -1278,6 +1333,9 @@ input[list]::-moz-list-dropdown {
   <button id="btnReporteEjemplo2" class="menu-item" type="button" role="menuitem">Ejemplo 2</button>
   <button id="btnReporteEjemplo3" class="menu-item" type="button" role="menuitem">Ejemplo 3</button>
 </div>
+<button id="btnUbicateMenu" class="menu-item" type="button" role="menuitem">
+  Ubícate
+</button>
 
   <button id="btnLogout" class="menu-item danger" type="button" role="menuitem">Cerrar sesión</button>
 </div>
@@ -2046,6 +2104,34 @@ input[list]::-moz-list-dropdown {
   </div>
 </div>
 
+
+<!-- ======= MODAL UBICATE ======= -->
+<div id="ubicateModal" class="modal-backdrop" hidden>
+  <div class="modal-card">
+    <h2 class="modal-title">Ubícate</h2>
+    <p class="modal-sub">
+      Selecciona un docente para ver en qué salón o clase se encuentra en este momento.
+    </p>
+
+    <label class="modal-label" for="ubicateTeacherSelect">Docente</label>
+    <select id="ubicateTeacherSelect" class="modal-input">
+      <option value="">Selecciona un docente</option>
+    </select>
+
+    <div id="ubicateResultBox" class="disc-reported" style="margin-top:16px;">
+      <div id="ubicateResult" class="disc-reported-list">
+        <div class="muted small">Selecciona un docente para consultar.</div>
+      </div>
+    </div>
+
+    <div id="ubicateHint" class="modal-hint muted small"></div>
+
+    <div class="modal-actions" style="justify-content:flex-end;">
+      <button id="btnUbicateClose" type="button" class="btn btn-ghost">Cerrar</button>
+    </div>
+  </div>
+</div>
+
 <script>
 // ======= CONFIG DEL COLEGIO (CAMBIA ESTO) =======
 const SCHOOL_LAT = 4.55445;;
@@ -2264,7 +2350,15 @@ const btnCompartirViewerReportes = document.getElementById("btnCompartirViewerRe
 let __reportesLastItems = [];
 
 
+// ======= UBICATE =======
+const btnUbicateMenu = $("btnUbicateMenu");
+const ubicateModal = $("ubicateModal");
+const ubicateTeacherSelect = $("ubicateTeacherSelect");
+const ubicateResult = $("ubicateResult");
+const ubicateHint = $("ubicateHint");
+const btnUbicateClose = $("btnUbicateClose");
 
+let __ubicateTeachers = [];
 
 
 const btnToggleRecords = $("btnToggleRecords");
@@ -3335,6 +3429,137 @@ function faltasRenderStudents_(students) {
 }
 
 
+async function gsUbicateTeachersList() {
+  const res = await fetch(GS_WEBAPP_URL, {
+    method: "POST",
+    body: JSON.stringify({
+      action: "ubicacion_docentes_list",
+      key: GS_API_KEY
+    })
+  });
+
+  let data = null;
+  try { data = await res.json(); }
+  catch { throw new Error("Respuesta inválida del servidor"); }
+
+  if (!data.ok) throw new Error(data.msg || data.error || "ubicacion_docentes_list_failed");
+  return Array.isArray(data.teachers) ? data.teachers : [];
+}
+
+async function gsUbicateNow(teacher) {
+  const res = await fetch(GS_WEBAPP_URL, {
+    method: "POST",
+    body: JSON.stringify({
+      action: "ubicacion_docente_now",
+      teacher,
+      key: GS_API_KEY
+    })
+  });
+
+  let data = null;
+  try { data = await res.json(); }
+  catch { throw new Error("Respuesta inválida del servidor"); }
+
+  if (!data.ok) throw new Error(data.msg || data.error || "ubicacion_docente_now_failed");
+  return data;
+}
+
+function ubicateSetHint_(msg = "") {
+  if (ubicateHint) ubicateHint.textContent = msg || "";
+}
+
+function ubicateRenderTeachers_(teachers) {
+  if (!ubicateTeacherSelect) return;
+
+  const prev = String(ubicateTeacherSelect.value || "").trim();
+
+  ubicateTeacherSelect.innerHTML = "";
+  const opt0 = document.createElement("option");
+  opt0.value = "";
+  opt0.textContent = "Selecciona un docente";
+  ubicateTeacherSelect.appendChild(opt0);
+
+  (teachers || []).forEach(name => {
+    const opt = document.createElement("option");
+    opt.value = String(name || "");
+    opt.textContent = String(name || "");
+    ubicateTeacherSelect.appendChild(opt);
+  });
+
+  if (prev && (teachers || []).includes(prev)) {
+    ubicateTeacherSelect.value = prev;
+  }
+}
+
+function ubicateRenderResult_(data) {
+  if (!ubicateResult) return;
+
+  if (!data || !data.teacher) {
+    ubicateResult.innerHTML = `<div class="ubicate-empty">No encontré información del docente.</div>`;
+    return;
+  }
+
+  if (!data.found_now) {
+    ubicateResult.innerHTML = `
+      <div class="ubicate-card">
+        <div class="ubicate-title">${escapeHtml(data.teacher)}</div>
+        <div class="ubicate-line">No tiene clase registrada en este momento.</div>
+        <div class="ubicate-line muted small">Día: ${escapeHtml(data.day_label || "-")}</div>
+        <div class="ubicate-line muted small">Hora actual: ${escapeHtml(data.time_now || "-")}</div>
+      </div>
+    `;
+    return;
+  }
+
+  ubicateResult.innerHTML = `
+    <div class="ubicate-card">
+      <div class="ubicate-title">${escapeHtml(data.teacher)}</div>
+      <div class="ubicate-line"><strong>Salón:</strong> ${escapeHtml(data.salon || "Sin salón")}</div>
+      <div class="ubicate-line"><strong>Materia:</strong> ${escapeHtml(data.subject || "-")}</div>
+      <div class="ubicate-line"><strong>Curso:</strong> ${escapeHtml(data.course || "-")}</div>
+      <div class="ubicate-line"><strong>Bloque:</strong> ${escapeHtml(data.start_time || "-")} - ${escapeHtml(data.end_time || "-")}</div>
+      <div class="ubicate-line muted small"><strong>Día:</strong> ${escapeHtml(data.day_label || "-")}</div>
+    </div>
+  `;
+}
+
+async function ubicateLoadTeachers_() {
+  __ubicateTeachers = await gsUbicateTeachersList();
+  ubicateRenderTeachers_(__ubicateTeachers);
+}
+
+async function ubicateOpen_() {
+  try {
+    setMenuOpen(false);
+  } catch (e) {
+    if (userMenu) userMenu.hidden = true;
+  }
+
+  ubicateSetHint_("");
+  if (ubicateResult) {
+    ubicateResult.innerHTML = `<div class="muted small">Cargando docentes...</div>`;
+  }
+
+  if (ubicateModal) ubicateModal.hidden = false;
+
+  try {
+    setLoading(true, "Cargando…", "Consultando docentes.");
+    await ubicateLoadTeachers_();
+
+    if (ubicateResult) {
+      ubicateResult.innerHTML = `<div class="muted small">Selecciona un docente para consultar.</div>`;
+    }
+  } catch (e) {
+    ubicateSetHint_(String(e && e.message ? e.message : e));
+    if (ubicateResult) {
+      ubicateResult.innerHTML = `<div class="ubicate-empty">No pude cargar los docentes.</div>`;
+    }
+  } finally {
+    setLoading(false);
+  }
+}
+
+
 function faltasPickArray_(resp, keys) {
   // resp puede venir como {ok, courses:[...]} o {ok, data:{courses:[...]}} o {ok, list:[...]} etc.
   for (const k of keys) {
@@ -4351,6 +4576,51 @@ if (btnAgregarActividadPendiente) {
   });
 }
 
+
+btnUbicateMenu?.addEventListener("click", async () => {
+  await ubicateOpen_();
+});
+
+btnUbicateClose?.addEventListener("click", () => {
+  ubicateModal?.setAttribute("hidden", "");
+});
+
+ubicateModal?.addEventListener("click", (e) => {
+  if (e.target === ubicateModal) {
+    ubicateModal.setAttribute("hidden", "");
+  }
+});
+
+ubicateTeacherSelect?.addEventListener("change", async () => {
+  const teacher = String(ubicateTeacherSelect.value || "").trim();
+
+  if (!teacher) {
+    if (ubicateResult) {
+      ubicateResult.innerHTML = `<div class="muted small">Selecciona un docente para consultar.</div>`;
+    }
+    ubicateSetHint_("");
+    return;
+  }
+
+  try {
+    setLoading(true, "Consultando…", "Buscando ubicación actual del docente.");
+    ubicateSetHint_("");
+
+    if (ubicateResult) {
+      ubicateResult.innerHTML = `<div class="muted small">Consultando ubicación actual...</div>`;
+    }
+
+    const data = await gsUbicateNow(teacher);
+    ubicateRenderResult_(data);
+  } catch (e) {
+    ubicateSetHint_(String(e && e.message ? e.message : e));
+    if (ubicateResult) {
+      ubicateResult.innerHTML = `<div class="ubicate-empty">No pude consultar la ubicación del docente.</div>`;
+    }
+  } finally {
+    setLoading(false);
+  }
+});
 
 
 if (btnGuardarReportePendiente) {
