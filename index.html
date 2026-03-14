@@ -4091,31 +4091,28 @@ function reportesBuildShareText_() {
 
   text += `\n\nListado de estudiantes reportados:\n`;
 
-  visibleItems.forEach((item, index) => {
-    const name = reportesGetItemStudentName_(item) || "Sin nombre";
-    const course = reportesGetItemCourse_(item) || courseLabel;
-    const teacher = reportesGetItemTeacher_(item) || teacherName;
-    const activities = reportesGetItemActivities_(item);
+visibleItems.forEach((item, index) => {
+  const name = reportesGetItemStudentName_(item) || "Sin nombre";
+  const activities = reportesGetItemActivities_(item);
 
-    text += `\n${index + 1}. ${name} - ${course}`;
+text += `\n${index + 1}. *${name}*`;
+  if (activities.length) {
+    activities.forEach((a, i) => {
+      const actividad = String(a?.actividad || a?.activity || "").trim();
+      const nota = String(a?.nota || a?.note || "").trim();
 
-    if (teacher) {
-      text += `\n   Docente: ${teacher}`;
-    }
-
-    if (activities.length) {
-      activities.forEach((a, i) => {
-        const actividad = String(a?.actividad || a?.activity || "").trim();
-        const nota = String(a?.nota || a?.note || "").trim();
-
-        if (actividad && nota) {
-          text += `\n   • ${i + 1}) ${actividad} - Nota: ${nota}`;
-        } else if (actividad) {
-          text += `\n   • ${i + 1}) ${actividad}`;
-        }
-      });
-    }
-  });
+      if (actividad && nota) {
+        text += `\n   • ${i + 1}) ${actividad} - Nota: ${nota}`;
+      } else if (actividad) {
+        text += `\n   • ${i + 1}) ${actividad}`;
+      } else if (nota) {
+        text += `\n   • ${i + 1}) Nota: ${nota}`;
+      }
+    });
+  } else {
+    text += `\n   • Sin actividades registradas`;
+  }
+});
 
   return text.trim();
 }
