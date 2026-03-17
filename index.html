@@ -2560,7 +2560,7 @@ const btnUbicateNext = $("btnUbicateNext");
 const btnUbicateAll = $("btnUbicateAll");
 const btnUbicateRefresh = $("btnUbicateRefresh");
 
-  // ======= PISOS =======
+// ======= PISOS =======
 const btnPisosMenu = $("btnPisosMenu");
 const pisosModal = $("pisosModal");
 const pisosDaySelect = $("pisosDaySelect");
@@ -2572,16 +2572,6 @@ const btnPisosRefresh = $("btnPisosRefresh");
 let __pisosDays = [];
 let __pisosDaysLoaded = false;
 let __pisosCacheByDay = {};
-
-  // ======= PISOS =======
-const btnPisosMenu = $("btnPisosMenu");
-const pisosModal = $("pisosModal");
-const pisosHint = $("pisosHint");
-const pisosTableBody = $("pisosTableBody");
-const btnPisosClose = $("btnPisosClose");
-const btnPisosRefresh = $("btnPisosRefresh");
-
-let __pisosCache = null;
 
 let __ubicateTeachers = [];
 let __ubicateTeachersLoaded = false;
@@ -6068,42 +6058,7 @@ btnUbicateRefresh?.addEventListener("click", async () => {
   await ubicateRefreshCurrentData_();
 });
 
-  btnPisosMenu?.addEventListener("click", async () => {
-  await pisosOpen_();
-});
 
-btnPisosClose?.addEventListener("click", () => {
-  pisosModal?.setAttribute("hidden", "");
-});
-
-btnPisosRefresh?.addEventListener("click", async () => {
-  try {
-    pisosSetHint_("");
-    setLoading(true, "Actualizando…", "Recargando horario de pisos.");
-    __pisosCacheByDay = {};
-    __pisosDays = [];
-    __pisosDaysLoaded = false;
-
-    await pisosLoadDays_(true);
-
-    const selectedDay = String(pisosDaySelect?.value || "").trim();
-    if (selectedDay) {
-      await pisosLoadSchedule_(selectedDay, true);
-    } else if (pisosResult) {
-      pisosResult.innerHTML = `<div class="muted small">Selecciona un día para consultar.</div>`;
-    }
-  } catch (e) {
-    pisosSetHint_(String(e && e.message ? e.message : e));
-  } finally {
-    setLoading(false);
-  }
-});
-
-pisosModal?.addEventListener("click", (e) => {
-  if (e.target === pisosModal) {
-    pisosModal.setAttribute("hidden", "");
-  }
-});
 
 pisosDaySelect?.addEventListener("change", async () => {
   const day = String(pisosDaySelect?.value || "").trim();
