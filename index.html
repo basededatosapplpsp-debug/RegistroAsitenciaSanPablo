@@ -2363,16 +2363,17 @@ const btnUbicateNext = $("btnUbicateNext");
 const btnUbicateAll = $("btnUbicateAll");
 
 let __ubicateTeachers = [];
+let __ubicateTeachersLoaded = false;
+let __ubicateTeachersPromise = null;
+let __ubicatePrefetchPromise = null;
+
 let __ubicateLastMode = "now";
 
-// cache por docente
 let __ubicateScheduleCacheByTeacher = {};
 
-// estado visual actual
 let __ubicateScheduleCache = [];
 let __ubicateNextIndex = -1;
 let __ubicateSelectedDayKey = "";
-
 
 
 
@@ -3530,6 +3531,65 @@ async function gsUbicateAll(teacher) {
   __ubicateScheduleCacheByTeacher[key] = items;
   return items;
 }
+
+  function ubicateBuildNowFromItems_(teacher, items) {
+  const list = Array.isArray(items) ? items : [];
+  const { todayName, todayIndexCandidates, nowMinutes } = ubicateGetTodayInfo_();
+
+  const todayItems = list
+    .filter(it => {
+      const di = Number(it?.day_index ?? -1);
+      const dl = ubicateNormalizeDay_(it?.day_label || "");
+      return todayIndexCandidates.includes(di) || dl === todayName;
+    })
+    .sort((a, b) => ubicateToMinutes_(a.start_time) - ubicateToMinutes_(b.start_time));
+
+  const current = todayItems.find(it => {
+    const ini = ubicateToMinutes_(it.start_time);
+    const fin = ubicateToMinutes_(it.end_time);
+    return nowMinutes >= ini && nowMinutes < fin;
+  });
+
+  const hh = String(Math.floor(nowMinutes / 60)).padStart(2, "0");
+  const mm = String(nowMinutes % 60).padStart(2, "0");
+
+  if (!current) {
+    return {
+      teacher,
+      found_current: false,
+      day_label: todayItems[0]?.day_label || todayName || "-",
+      time_now: `${hh}:${mm}`
+    };
+  }
+
+  return {
+    teacher,
+    found_current: true,
+    salon: current?.salon || "",
+    subject: current?.subject || "",
+    course: current?.course || "",
+    start_time: current?.start_time || "",
+    end_time: current?.end_time || "",
+    day_label: current?.day_label || todayName || "-",
+    time_now: `${hh}:${mm}`
+  };
+}
+
+
+  async function ubicateWarmSchedules_(teachers = []) {
+  const list = Array.isArray(teachers) ? teachers : [];
+  const pending = list.filter(name => {
+    const key = String(name || "").trim().toLowerCase();
+    return key && !Array.isArray(__ubicateScheduleCacheByTeacher[key]);
+  });
+
+  if (!pending.length) return;
+
+  await Promise.allSettled(
+    pending.map(name => ubicateGetScheduleCached_(name))
+  );
+}
+  
 function ubicateRenderNext_(data) {
   if (!ubicateResult) return;
 
@@ -3911,13 +3971,19 @@ async function ubicateConsultarAhora_() {
   try {
     __ubicateLastMode = "now";
     ubicateSetHint_("");
-    setLoading(true, "Consultando…", "Buscando clase actual del docente.");
-    const data = await gsUbicateNow(teacher);
+
+    const items = await ubicateGetScheduleCached_(teacher);
+    __ubicateScheduleCache = items;
+    __ubicateNextIndex = -1;
+    __ubicateSelectedDayKey = "";
+
+    const data = ubicateBuildNowFromItems_(teacher, items);
     ubicateRenderResult_(data);
   } catch (e) {
     ubicateSetHint_(String(e && e.message ? e.message : e));
-  } finally {
-    setLoading(false);
+    if (ubicateResult) {
+      ubicateResult.innerHTML = `<div class="ubicate-empty">No pude consultar la ubicación del docente.</div>`;
+    }
   }
 }
 
@@ -4141,9 +4207,32 @@ function ubicateRenderResult_(data) {
   `;
 }
 
-async function ubicateLoadTeachers_() {
-  __ubicateTeachers = await gsUbicateTeachersList();
-  ubicateRenderTeachers_(__ubicateTeachers);
+async function ubicateLoadTeachers_(forceRefresh = false) {
+  if (!forceRefresh && __ubicateTeachersLoaded && __ubicateTeachers.length) {
+    ubicateRenderTeachers_(__ubicateTeachers);
+    return __ubicateTeachers;
+  }
+
+  if (!forceRefresh && __ubicateTeachersPromise) {
+    const teachers = await __ubicateTeachersPromise;
+    ubicateRenderTeachers_(teachers);
+    return teachers;
+  }
+
+  __ubicateTeachersPromise = (async () => {
+    const teachers = await gsUbicateTeachersList();
+    __ubicateTeachers = Array.isArray(teachers) ? teachers : [];
+    __ubicateTeachersLoaded = true;
+    return __ubicateTeachers;
+  })();
+
+  try {
+    const teachers = await __ubicateTeachersPromise;
+    ubicateRenderTeachers_(teachers);
+    return teachers;
+  } finally {
+    __ubicateTeachersPromise = null;
+  }
 }
 
 async function ubicateOpen_() {
@@ -4160,24 +4249,35 @@ async function ubicateOpen_() {
   __ubicateLastMode = "now";
 
   ubicateSetHint_("");
-  if (ubicateResult) {
-    ubicateResult.innerHTML = `<div class="muted small">Cargando docentes.</div>`;
-  }
-
   if (ubicateModal) ubicateModal.hidden = false;
 
   try {
-    setLoading(true, "Cargando…", "Consultando docentes.");
-    await ubicateLoadTeachers_();
+    const firstLoad = !__ubicateTeachersLoaded || !__ubicateTeachers.length;
+
+    if (firstLoad) {
+      if (ubicateResult) {
+        ubicateResult.innerHTML = `<div class="muted small">Cargando docentes y horarios...</div>`;
+      }
+      setLoading(true, "Cargando…", "Cargando docentes y horarios. Solo tarda la primera vez.");
+    } else {
+      if (ubicateResult) {
+        ubicateResult.innerHTML = `<div class="muted small">Selecciona un docente para consultar.</div>`;
+      }
+      setLoading(true, "Cargando…", "Abriendo Ubícate.");
+    }
+
+    const teachers = await ubicateLoadTeachers_();
+
+    if (firstLoad) {
+      if (!__ubicatePrefetchPromise) {
+        __ubicatePrefetchPromise = ubicateWarmSchedules_(teachers)
+          .finally(() => { __ubicatePrefetchPromise = null; });
+      }
+      await __ubicatePrefetchPromise;
+    }
 
     if (ubicateResult) {
       ubicateResult.innerHTML = `<div class="muted small">Selecciona un docente para consultar.</div>`;
-    }
-
-    // precarga silenciosa del docente ya seleccionado, usando cache
-    const teacher = String(ubicateTeacherSelect?.value || "").trim();
-    if (teacher) {
-      ubicateGetScheduleCached_(teacher).catch(() => {});
     }
   } catch (e) {
     ubicateSetHint_(String(e && e.message ? e.message : e));
@@ -5244,7 +5344,6 @@ ubicateTeacherSelect?.addEventListener("change", async () => {
     return;
   }
 
-  // reset solo del estado visual, NO del cache global por docente
   __ubicateScheduleCache = [];
   __ubicateNextIndex = -1;
   __ubicateSelectedDayKey = "";
@@ -5252,32 +5351,42 @@ ubicateTeacherSelect?.addEventListener("change", async () => {
   try {
     ubicateSetHint_("");
 
-    if (__ubicateLastMode === "next") {
-      setLoading(true, "Consultando…", "Cargando clases del docente...");
-      if (ubicateResult) {
-        ubicateResult.innerHTML = `<div class="muted small">Cargando próxima clase...</div>`;
-      }
+    const cacheKey = teacher.toLowerCase();
+    const alreadyCached = Array.isArray(__ubicateScheduleCacheByTeacher[cacheKey]);
 
+    if (__ubicateLastMode === "next") {
+      if (!alreadyCached) {
+        setLoading(true, "Consultando…", "Cargando clases del docente...");
+        if (ubicateResult) {
+          ubicateResult.innerHTML = `<div class="muted small">Cargando próxima clase...</div>`;
+        }
+      }
       await ubicateConsultarSiguiente_();
       return;
     }
 
     if (__ubicateLastMode === "all") {
-      setLoading(true, "Consultando…", "Cargando horario completo del docente...");
-      if (ubicateResult) {
-        ubicateResult.innerHTML = `<div class="muted small">Cargando horario del docente...</div>`;
+      if (!alreadyCached) {
+        setLoading(true, "Consultando…", "Cargando horario completo del docente...");
+        if (ubicateResult) {
+          ubicateResult.innerHTML = `<div class="muted small">Cargando horario del docente...</div>`;
+        }
       }
-
       await ubicateConsultarTodo_();
       return;
     }
 
-    setLoading(true, "Consultando…", "Buscando ubicación actual del docente.");
-    if (ubicateResult) {
-      ubicateResult.innerHTML = `<div class="muted small">Consultando ubicación actual...</div>`;
+    if (!alreadyCached) {
+      setLoading(true, "Consultando…", "Cargando horario del docente...");
+      if (ubicateResult) {
+        ubicateResult.innerHTML = `<div class="muted small">Consultando horario actual...</div>`;
+      }
     }
 
-    const data = await gsUbicateNow(teacher);
+    const items = await ubicateGetScheduleCached_(teacher);
+    __ubicateScheduleCache = items;
+
+    const data = ubicateBuildNowFromItems_(teacher, items);
     ubicateRenderResult_(data);
   } catch (e) {
     ubicateSetHint_(String(e && e.message ? e.message : e));
