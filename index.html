@@ -1431,6 +1431,28 @@ input[list]::-moz-list-dropdown {
   min-width: 0 !important;
 }
 
+#parqueResult .parque-badges{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+  align-items:center;
+}
+
+#parqueResult .parque-badge{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  padding:6px 10px;
+  border-radius:999px;
+  border:1px solid rgba(255,255,255,.12);
+  background: rgba(59,130,246,.14);
+  color:#eaf2ff;
+  font-weight:700;
+  font-size:.92rem;
+  line-height:1;
+  white-space:nowrap;
+}
+
 
 
 </style>
@@ -5100,14 +5122,22 @@ function parqueRenderSchedule_(day, items) {
               <th>Cursos que salen</th>
             </tr>
           </thead>
-          <tbody>
-            ${breakLabels.map(label => `
-              <tr>
-                <td><strong>${escapeHtml(label)}</strong></td>
-                <td>${grouped[label].map(x => escapeHtml(x)).join("<br>") || "-"}</td>
-              </tr>
-            `).join("")}
-          </tbody>
+     <tbody>
+  ${breakLabels.map(label => `
+    <tr>
+      <td><strong>${escapeHtml(label)}</strong></td>
+      <td>
+        <div class="parque-badges">
+          ${
+            grouped[label] && grouped[label].length
+              ? grouped[label].map(x => `<span class="parque-badge">${escapeHtml(x)}</span>`).join("")
+              : `<span class="muted small">-</span>`
+          }
+        </div>
+      </td>
+    </tr>
+  `).join("")}
+</tbody>
         </table>
       </div>
     </div>
