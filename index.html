@@ -1265,6 +1265,15 @@ input[list]::-moz-list-dropdown {
   color: var(--muted);
   font-size:13px;
 }
+
+   .icon-only{
+  min-width: 42px;
+  width: 42px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
 </style>
 </head>
 
@@ -2126,9 +2135,20 @@ input[list]::-moz-list-dropdown {
 
     <div id="ubicateHint" class="modal-hint muted small"></div>
 
-    <div class="modal-actions" style="justify-content:flex-end; flex-wrap:wrap;">
+ <div class="modal-actions" style="justify-content:flex-end; flex-wrap:wrap;">
   <button id="btnUbicateNext" type="button" class="btn btn-secondary">Siguiente</button>
   <button id="btnUbicateAll" type="button" class="btn btn-primary">Todo</button>
+
+  <button
+    id="btnUbicateRefresh"
+    type="button"
+    class="btn btn-ghost icon-only"
+    title="Actualizar"
+    aria-label="Actualizar"
+  >
+    <i class="fa-solid fa-rotate-right" aria-hidden="true"></i>
+  </button>
+
   <button id="btnUbicateClose" type="button" class="btn btn-ghost">Cerrar</button>
 </div>
   </div>
@@ -2361,6 +2381,7 @@ const ubicateHint = $("ubicateHint");
 const btnUbicateClose = $("btnUbicateClose");
 const btnUbicateNext = $("btnUbicateNext");
 const btnUbicateAll = $("btnUbicateAll");
+const btnUbicateRefresh = $("btnUbicateRefresh");
 
 let __ubicateTeachers = [];
 let __ubicateTeachersLoaded = false;
@@ -2368,18 +2389,25 @@ let __ubicateTeachersPromise = null;
 
 let __ubicateLastMode = "now";
 
+// cache por docente
 let __ubicateScheduleCacheByTeacher = {};
 let __ubicateScheduleRequestByTeacher = {};
 
+// control de refresh (evita doble clic o múltiples cargas)
+let __ubicateRefreshing = false;
+
+// estado visual actual
 let __ubicateScheduleCache = [];
 let __ubicateNextIndex = -1;
 let __ubicateSelectedDayKey = "";
 
+// configuración de cache persistente
 const UBICATE_CACHE_VERSION = "1";
 const UBICATE_TEACHERS_STORAGE_KEY = `ubicate_teachers_cache_v${UBICATE_CACHE_VERSION}`;
 const UBICATE_SCHEDULES_STORAGE_KEY = `ubicate_schedules_cache_v${UBICATE_CACHE_VERSION}`;
-const UBICATE_CACHE_MAX_AGE_MS = 1000 * 60 * 60 * 12; // 12 horas
 
+// duración del cache (puedes subirlo si quieres)
+const UBICATE_CACHE_MAX_AGE_MS = 1000 * 60 * 60 * 12; // 12 horas
 
 
 const btnToggleRecords = $("btnToggleRecords");
@@ -4304,6 +4332,64 @@ async function ubicateConsultarTodo_() {
   }
 }
 
+
+  async function ubicateRefreshCurrentData_() {
+  const teacher = String(ubicateTeacherSelect?.value || "").trim();
+
+  try {
+    ubicateSetHint_("");
+    setLoading(true, "Actualizando…", "Recargando datos desde la hoja.");
+
+    try {
+      if (typeof ubicateClearPersistentCache_ === "function") {
+        ubicateClearPersistentCache_();
+      } else {
+        localStorage.removeItem(UBICATE_TEACHERS_STORAGE_KEY);
+        localStorage.removeItem(UBICATE_SCHEDULES_STORAGE_KEY);
+      }
+    } catch (e) {}
+
+    __ubicateScheduleCache = [];
+    __ubicateNextIndex = -1;
+    __ubicateSelectedDayKey = "";
+
+    await ubicateLoadTeachers_(true);
+
+    if (!teacher) {
+      if (ubicateResult) {
+        ubicateResult.innerHTML = `<div class="muted small">Selecciona un docente para consultar.</div>`;
+      }
+      return;
+    }
+
+    ubicateTeacherSelect.value = teacher;
+
+    const items = await ubicateGetScheduleCached_(teacher, true);
+    __ubicateScheduleCache = items;
+    __ubicateNextIndex = -1;
+    __ubicateSelectedDayKey = "";
+
+    if (__ubicateLastMode === "next") {
+      await ubicateConsultarSiguiente_();
+      return;
+    }
+
+    if (__ubicateLastMode === "all") {
+      await ubicateConsultarTodo_();
+      return;
+    }
+
+    await ubicateConsultarAhora_();
+  } catch (e) {
+    ubicateSetHint_(String(e && e.message ? e.message : e));
+    if (ubicateResult) {
+      ubicateResult.innerHTML = `<div class="ubicate-empty">No pude actualizar la información.</div>`;
+    }
+  } finally {
+    setLoading(false);
+  }
+}
+
 function ubicateSetHint_(msg = "") {
   if (ubicateHint) ubicateHint.textContent = msg || "";
 }
@@ -5474,7 +5560,6 @@ if (btnAgregarActividadPendiente) {
 
 
 btnUbicateMenu?.addEventListener("click", async () => {
-  __ubicateLastMode = "now";
   await ubicateOpen_();
 });
 
@@ -5490,6 +5575,12 @@ btnUbicateAll?.addEventListener("click", async () => {
   await ubicateConsultarTodo_();
 });
 
+btnUbicateRefresh?.addEventListener("click", async () => {
+  await ubicateRefreshCurrentData_();
+});
+
+
+  
 ubicateModal?.addEventListener("click", (e) => {
   if (e.target === ubicateModal) {
     ubicateModal.setAttribute("hidden", "");
