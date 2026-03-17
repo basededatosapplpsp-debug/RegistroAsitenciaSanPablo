@@ -1360,6 +1360,27 @@ input[list]::-moz-list-dropdown {
   padding:12px;
   background: rgba(0,0,0,.10);
 }
+
+#pisosResult .pisos-table{
+  width:100%;
+  min-width:520px;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+#pisosResult .pisos-table th:first-child,
+#pisosResult .pisos-table td:first-child{
+  position: sticky;
+  left: 0;
+  z-index: 2;
+  background: #0f172a;
+}
+
+#pisosResult .pisos-table thead th:first-child{
+  z-index: 3;
+}
+
+
 </style>
 </head>
 
@@ -4703,8 +4724,8 @@ function pisosRenderSchedule_(day, items) {
   pisosResult.innerHTML = `
     <div class="ubicate-card">
       <div class="ubicate-title">${escapeHtml(day)}</div>
-      <div style="overflow:auto; margin-top:10px;">
-        <table class="table" style="width:100%; min-width:520px;">
+     <div style="overflow:auto; margin-top:10px;">
+  <table class="table pisos-table">
           <thead>
             <tr>
               <th>Piso</th>
@@ -10759,7 +10780,6 @@ setInterval(async () => {
 
 </body>
 </html>
-
 
 
 
