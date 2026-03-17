@@ -1403,6 +1403,36 @@ input[list]::-moz-list-dropdown {
   min-width: 0 !important;
   width: max-content !important;
 }
+
+
+#parqueResult .parque-table{
+  width: max-content;          /* 👈 evita que se estire */
+  min-width: 0;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+#parqueResult .parque-table th,
+#parqueResult .parque-table td{
+  padding: 8px 10px;
+  white-space: nowrap;
+}
+
+#parqueResult .parque-table th:first-child,
+#parqueResult .parque-table td:first-child{
+  width: 1%;
+  min-width: fit-content;
+  padding-right: 8px;          /* 👈 controla separación */
+}
+
+/* anula estilos globales de .table */
+#parqueResult .table.parque-table{
+  width: max-content !important;
+  min-width: 0 !important;
+}
+
+
+
 </style>
 </head>
 
@@ -5063,8 +5093,8 @@ function parqueRenderSchedule_(day, items) {
     <div class="ubicate-card">
       <div class="ubicate-title">${escapeHtml(day)}</div>
       <div style="overflow:auto; margin-top:10px;">
-        <table class="table" style="width:100%; min-width:420px;">
-          <thead>
+      <table class="table parque-table">
+            <thead>
             <tr>
               <th>Descanso</th>
               <th>Cursos que salen</th>
