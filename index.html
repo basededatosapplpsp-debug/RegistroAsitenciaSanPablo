@@ -2366,7 +2366,7 @@ let __ubicateTeachers = [];
 let __ubicateLastMode = "now"; // now | next | all
 
 let __ubicateScheduleCache = [];   // todas las clases del docente
-let __ubicateNextIndex = 0;        // índice actual
+let __ubicateNextIndex = -1;        // índice actual
 
 
 
@@ -3615,11 +3615,11 @@ async function ubicateConsultarSiguiente_() {
     __ubicateLastMode = "next";
     ubicateSetHint_("");
 
-    // cargar horario si aún no está en cache
+    // cargar horario completo del docente solo una vez
     if (!__ubicateScheduleCache.length) {
       const data = await gsUbicateAll(teacher);
       __ubicateScheduleCache = Array.isArray(data.items) ? data.items : [];
-      __ubicateNextIndex = 0;
+      __ubicateNextIndex = -1; // importante: aún no inicializado para el día actual
     }
 
     if (!__ubicateScheduleCache.length) {
@@ -3629,17 +3629,29 @@ async function ubicateConsultarSiguiente_() {
       return;
     }
 
-    // día actual real del navegador
-    const jsDay = new Date().getDay(); // 0 domingo, 1 lunes, 2 martes...
+    // Día actual del navegador: 0 domingo, 1 lunes, ..., 6 sábado
+    const now = new Date();
+    const jsDay = now.getDay();
+
+    // Ajusta este mapa a tu backend:
+    // lunes=1, martes=2, miercoles=3, jueves=4, viernes=5, sabado=6, domingo=7
     const todayMap = { 1: 1, 2: 2, 3: 3, 4: 4, 5: 5, 6: 6, 0: 7 };
     const todayIndex = todayMap[jsDay];
 
-    // filtrar solo clases del día actual
+    // Hora actual en minutos
+    const nowMinutes = (now.getHours() * 60) + now.getMinutes();
+
+    const toMinutes_ = (hhmm) => {
+      const s = String(hhmm || "").trim();
+      const m = s.match(/^(\d{1,2}):(\d{2})$/);
+      if (!m) return 0;
+      return (Number(m[1]) * 60) + Number(m[2]);
+    };
+
+    // solo clases del día actual, ordenadas por hora
     const todayItems = __ubicateScheduleCache
       .filter(it => Number(it.day_index || 0) === Number(todayIndex))
-      .sort((a, b) => {
-        return String(a.start_time || "").localeCompare(String(b.start_time || ""));
-      });
+      .sort((a, b) => toMinutes_(a.start_time) - toMinutes_(b.start_time));
 
     if (!todayItems.length) {
       if (ubicateResult) {
@@ -3653,9 +3665,30 @@ async function ubicateConsultarSiguiente_() {
       return;
     }
 
-    // si el índice se sale, volver al inicio
-    if (__ubicateNextIndex >= todayItems.length) {
-      __ubicateNextIndex = 0;
+    // Inicializar el índice SOLO la primera vez para el día/docente actual
+    // Regla:
+    // 1. si hay una clase actual, empieza en esa
+    // 2. si no, empieza en la más cercana que sigue hoy
+    // 3. si ya pasaron todas, vuelve a la primera del día
+    if (__ubicateNextIndex < 0 || __ubicateNextIndex >= todayItems.length) {
+      let startIdx = todayItems.findIndex(it => {
+        const ini = toMinutes_(it.start_time);
+        const fin = toMinutes_(it.end_time);
+        return nowMinutes >= ini && nowMinutes < fin;
+      });
+
+      if (startIdx === -1) {
+        startIdx = todayItems.findIndex(it => {
+          const ini = toMinutes_(it.start_time);
+          return ini > nowMinutes;
+        });
+      }
+
+      if (startIdx === -1) {
+        startIdx = 0;
+      }
+
+      __ubicateNextIndex = startIdx;
     }
 
     const item = todayItems[__ubicateNextIndex];
@@ -3671,7 +3704,7 @@ async function ubicateConsultarSiguiente_() {
       course: item.course
     });
 
-    // avanzar en forma circular, pero solo dentro del día actual
+    // avanzar circularmente dentro del día actual
     __ubicateNextIndex++;
     if (__ubicateNextIndex >= todayItems.length) {
       __ubicateNextIndex = 0;
@@ -4848,7 +4881,7 @@ ubicateTeacherSelect?.addEventListener("change", async () => {
 
   if (!teacher) {
     __ubicateScheduleCache = [];
-    __ubicateNextIndex = 0;
+    __ubicateNextIndex = -1;
 
     if (ubicateResult) {
       ubicateResult.innerHTML = `<div class="muted small">Selecciona un docente para consultar.</div>`;
@@ -4859,7 +4892,7 @@ ubicateTeacherSelect?.addEventListener("change", async () => {
 
   // reset al cambiar de docente
   __ubicateScheduleCache = [];
-  __ubicateNextIndex = 0;
+  __ubicateNextIndex = -1;
 
   try {
     ubicateSetHint_("");
@@ -4901,7 +4934,6 @@ ubicateTeacherSelect?.addEventListener("change", async () => {
     setLoading(false);
   }
 });
-
 
 if (btnGuardarReportePendiente) {
   btnGuardarReportePendiente.addEventListener("click", async () => {
