@@ -4212,7 +4212,7 @@ function ubicateRenderNext_(data) {
       <div class="ubicate-line"><strong>Bloque:</strong> ${escapeHtml(data.start_time || "-")} - ${escapeHtml(data.end_time || "-")}</div>
       <div class="ubicate-line"><strong>Salón:</strong> ${escapeHtml(data.salon || "Sin salón")}</div>
       <div class="ubicate-line"><strong>Materia:</strong> ${escapeHtml(data.subject || "-")}</div>
-      <div class="ubicate-line"><strong>Curso:</strong> ${escapeHtml(data.course || "-")}</div>
+      <div class="ubicate-line"><strong>Grado:</strong> ${escapeHtml(data.course || "-")}</div>
     </div>
   `;
 }
@@ -4567,7 +4567,7 @@ function ubicateRenderDaySchedule_(teacher, allItems, selectedDayKey) {
             </div>
             <div class="ubicate-line"><strong>Salón:</strong> ${escapeHtml(it.salon || "Sin salón")}</div>
             <div class="ubicate-line"><strong>Materia:</strong> ${escapeHtml(it.subject || "-")}</div>
-            <div class="ubicate-line"><strong>Curso:</strong> ${escapeHtml(it.course || "-")}</div>
+            <div class="ubicate-line"><strong>Grado:</strong> ${escapeHtml(it.course || "-")}</div>
           </div>
         `;
       }).join("")}
@@ -5368,7 +5368,7 @@ function ubicateRenderResult_(data) {
       <div class="ubicate-title">${escapeHtml(data.teacher)}</div>
       <div class="ubicate-line"><strong>Salón:</strong> ${escapeHtml(data.salon || "Sin salón")}</div>
       <div class="ubicate-line"><strong>Materia:</strong> ${escapeHtml(data.subject || "-")}</div>
-      <div class="ubicate-line"><strong>Grado:</strong> ${escapeHtml(data.course || "-")}</div>
+      <div class="ubicate-line"><strong>Curso:</strong> ${escapeHtml(data.course || "-")}</div>
       <div class="ubicate-line"><strong>Bloque:</strong> ${escapeHtml(data.start_time || "-")} - ${escapeHtml(data.end_time || "-")}</div>
       <div class="ubicate-line muted small"><strong>Día:</strong> ${escapeHtml(data.day_label || "-")}</div>
     </div>
