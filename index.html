@@ -1328,6 +1328,38 @@ input[list]::-moz-list-dropdown {
   align-items: center;
   justify-content: center;
 }
+
+   /* ================================
+   MODAL PISOS
+================================ */
+#pisosModal{
+  padding: max(12px, env(safe-area-inset-top)) 12px max(12px, env(safe-area-inset-bottom));
+}
+
+#pisosModal .modal-card{
+  width: min(720px, 100%);
+  max-height: calc(100dvh - 24px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+#pisosResultBox{
+  display:flex;
+  flex-direction:column;
+  min-height:0;
+}
+
+#pisosResult{
+  min-height:140px;
+  max-height:320px;
+  overflow:auto;
+  -webkit-overflow-scrolling: touch;
+  border:1px solid var(--line);
+  border-radius:14px;
+  padding:12px;
+  background: rgba(0,0,0,.10);
+}
 </style>
 </head>
 
@@ -1941,6 +1973,39 @@ input[list]::-moz-list-dropdown {
 
 
 
+  <!-- ======= MODAL PISOS ======= -->
+<div id="pisosModal" class="modal-backdrop" hidden>
+  <div class="modal-card">
+    <h2 class="modal-title">Horario de pisos</h2>
+    <p class="modal-sub">Selecciona un día para ver la rotación de pisos.</p>
+
+    <label class="modal-label" for="pisosDaySelect">Día</label>
+    <select id="pisosDaySelect" class="modal-input">
+      <option value="">Selecciona un día</option>
+    </select>
+
+    <div id="pisosResultBox" class="disc-reported" style="margin-top:16px;">
+      <div id="pisosResult" class="disc-reported-list">
+        <div class="muted small">Selecciona un día para consultar.</div>
+      </div>
+    </div>
+
+    <div id="pisosHint" class="modal-hint muted small"></div>
+
+    <div class="modal-actions" style="justify-content:flex-end; flex-wrap:wrap;">
+      <button
+        id="btnPisosRefresh"
+        type="button"
+        class="btn btn-ghost icon-only"
+        title="Actualizar"
+        aria-label="Actualizar"
+      >
+        <i class="fa-solid fa-rotate-right" aria-hidden="true"></i>
+      </button>
+      <button id="btnPisosClose" type="button" class="btn btn-ghost">Cerrar</button>
+    </div>
+  </div>
+</div>
 <!-- ===== CONFIRM MODAL PRO ===== -->
 <div id="appConfirm" class="modal-backdrop" hidden>
   <div class="modal-card">
@@ -2494,6 +2559,19 @@ const btnUbicateClose = $("btnUbicateClose");
 const btnUbicateNext = $("btnUbicateNext");
 const btnUbicateAll = $("btnUbicateAll");
 const btnUbicateRefresh = $("btnUbicateRefresh");
+
+  // ======= PISOS =======
+const btnPisosMenu = $("btnPisosMenu");
+const pisosModal = $("pisosModal");
+const pisosDaySelect = $("pisosDaySelect");
+const pisosResult = $("pisosResult");
+const pisosHint = $("pisosHint");
+const btnPisosClose = $("btnPisosClose");
+const btnPisosRefresh = $("btnPisosRefresh");
+
+let __pisosDays = [];
+let __pisosDaysLoaded = false;
+let __pisosCacheByDay = {};
 
   // ======= PISOS =======
 const btnPisosMenu = $("btnPisosMenu");
@@ -3671,6 +3749,41 @@ async function gsUbicateAll(teacher) {
   return data;
 }
 
+async function gsPisosDaysList() {
+  const res = await fetch(GS_WEBAPP_URL, {
+    method: "POST",
+    body: JSON.stringify({
+      action: "pisos_days_list",
+      key: GS_API_KEY
+    })
+  });
+
+  let data = null;
+  try { data = await res.json(); }
+  catch { throw new Error("Respuesta inválida del servidor"); }
+
+  if (!data.ok) throw new Error(data.msg || data.error || "pisos_days_list_failed");
+  return Array.isArray(data.days) ? data.days : [];
+}
+
+async function gsPisosSchedule(day) {
+  const res = await fetch(GS_WEBAPP_URL, {
+    method: "POST",
+    body: JSON.stringify({
+      action: "pisos_schedule",
+      key: GS_API_KEY,
+      day
+    })
+  });
+
+  let data = null;
+  try { data = await res.json(); }
+  catch { throw new Error("Respuesta inválida del servidor"); }
+
+  if (!data.ok) throw new Error(data.msg || data.error || "pisos_schedule_failed");
+  return Array.isArray(data.items) ? data.items : [];
+}
+  
 async function gsPisosHorario() {
   const res = await fetch(GS_WEBAPP_URL, {
     method: "POST",
@@ -4589,6 +4702,181 @@ async function pisosOpen_() {
 
   if (pisosModal) pisosModal.hidden = false;
   await pisosLoad_(false);
+}
+
+
+function pisosSetHint_(msg = "") {
+  if (pisosHint) pisosHint.textContent = msg || "";
+}
+
+function pisosRenderDays_(days) {
+  if (!pisosDaySelect) return;
+
+  const prev = String(pisosDaySelect.value || "").trim();
+
+  pisosDaySelect.innerHTML = "";
+  const opt0 = document.createElement("option");
+  opt0.value = "";
+  opt0.textContent = "Selecciona un día";
+  pisosDaySelect.appendChild(opt0);
+
+  (days || []).forEach(day => {
+    const opt = document.createElement("option");
+    opt.value = String(day || "");
+    opt.textContent = String(day || "");
+    pisosDaySelect.appendChild(opt);
+  });
+
+  if (prev && (days || []).includes(prev)) {
+    pisosDaySelect.value = prev;
+  }
+}
+
+function pisosNormalizeText_(s) {
+  return String(s || "")
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+}
+
+function pisosFloorOrder_(floor) {
+  const f = pisosNormalizeText_(floor);
+  if (f.includes("1")) return 1;
+  if (f.includes("2")) return 2;
+  if (f.includes("3")) return 3;
+  if (f.includes("4")) return 4;
+  if (f.includes("5")) return 5;
+  return 99;
+}
+
+function pisosBreakOrder_(label) {
+  const s = pisosNormalizeText_(label);
+  if (s.includes("1")) return 1;
+  if (s.includes("2")) return 2;
+  if (s.includes("3")) return 3;
+  return 99;
+}
+
+function pisosRenderSchedule_(day, items) {
+  if (!pisosResult) return;
+
+  const rows = Array.isArray(items) ? [...items] : [];
+
+  if (!day) {
+    pisosResult.innerHTML = `<div class="muted small">Selecciona un día para consultar.</div>`;
+    return;
+  }
+
+  if (!rows.length) {
+    pisosResult.innerHTML = `
+      <div class="ubicate-card">
+        <div class="ubicate-title">${escapeHtml(day)}</div>
+        <div class="ubicate-line">No hay horario de pisos registrado para este día.</div>
+      </div>
+    `;
+    return;
+  }
+
+  rows.sort((a, b) => {
+    const floorDiff = pisosFloorOrder_(a.floor) - pisosFloorOrder_(b.floor);
+    if (floorDiff !== 0) return floorDiff;
+    return pisosBreakOrder_(a.break_label) - pisosBreakOrder_(b.break_label);
+  });
+
+  const grouped = {};
+  rows.forEach(r => {
+    const floor = String(r.floor || "").trim() || "-";
+    if (!grouped[floor]) grouped[floor] = {};
+    grouped[floor][String(r.break_label || "").trim()] = String(r.teacher || "").trim();
+  });
+
+  const floors = Object.keys(grouped).sort((a, b) => pisosFloorOrder_(a) - pisosFloorOrder_(b));
+
+  pisosResult.innerHTML = `
+    <div class="ubicate-card">
+      <div class="ubicate-title">${escapeHtml(day)}</div>
+      <div style="overflow:auto; margin-top:10px;">
+        <table class="table" style="width:100%; min-width:520px;">
+          <thead>
+            <tr>
+              <th>Piso</th>
+              <th>1er descanso</th>
+              <th>2do descanso</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${floors.map(floor => `
+              <tr>
+                <td><strong>${escapeHtml(floor)}</strong></td>
+                <td>${escapeHtml(grouped[floor]["1ER DESCANSO"] || grouped[floor]["1er descanso"] || "-")}</td>
+                <td>${escapeHtml(grouped[floor]["2DO DESCANSO"] || grouped[floor]["2do descanso"] || "-")}</td>
+              </tr>
+            `).join("")}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  `;
+}
+
+async function pisosLoadDays_(forceRefresh = false) {
+  if (!forceRefresh && __pisosDaysLoaded && __pisosDays.length) {
+    pisosRenderDays_(__pisosDays);
+    return __pisosDays;
+  }
+
+  const days = await gsPisosDaysList();
+  __pisosDays = Array.isArray(days) ? days : [];
+  __pisosDaysLoaded = true;
+  pisosRenderDays_(__pisosDays);
+  return __pisosDays;
+}
+
+async function pisosLoadSchedule_(day, forceRefresh = false) {
+  const dayKey = String(day || "").trim();
+
+  if (!dayKey) {
+    pisosRenderSchedule_("", []);
+    return [];
+  }
+
+  if (!forceRefresh && Array.isArray(__pisosCacheByDay[dayKey])) {
+    pisosRenderSchedule_(dayKey, __pisosCacheByDay[dayKey]);
+    return __pisosCacheByDay[dayKey];
+  }
+
+  const items = await gsPisosSchedule(dayKey);
+  __pisosCacheByDay[dayKey] = Array.isArray(items) ? items : [];
+  pisosRenderSchedule_(dayKey, __pisosCacheByDay[dayKey]);
+  return __pisosCacheByDay[dayKey];
+}
+
+async function pisosOpen_() {
+  try {
+    setMenuOpen(false);
+  } catch (e) {
+    if (userMenu) userMenu.hidden = true;
+  }
+
+  pisosSetHint_("");
+  if (pisosModal) pisosModal.hidden = false;
+
+  try {
+    setLoading(true, "Cargando…", "Consultando horario de pisos.");
+    await pisosLoadDays_(false);
+
+    if (pisosResult) {
+      pisosResult.innerHTML = `<div class="muted small">Selecciona un día para consultar.</div>`;
+    }
+  } catch (e) {
+    pisosSetHint_(String(e && e.message ? e.message : e));
+    if (pisosResult) {
+      pisosResult.innerHTML = `<div class="ubicate-empty">No pude cargar el horario de pisos.</div>`;
+    }
+  } finally {
+    setLoading(false);
+  }
 }
   
 function ubicateSetHint_(msg = "") {
@@ -5778,6 +6066,65 @@ btnUbicateAll?.addEventListener("click", async () => {
 
 btnUbicateRefresh?.addEventListener("click", async () => {
   await ubicateRefreshCurrentData_();
+});
+
+  btnPisosMenu?.addEventListener("click", async () => {
+  await pisosOpen_();
+});
+
+btnPisosClose?.addEventListener("click", () => {
+  pisosModal?.setAttribute("hidden", "");
+});
+
+btnPisosRefresh?.addEventListener("click", async () => {
+  try {
+    pisosSetHint_("");
+    setLoading(true, "Actualizando…", "Recargando horario de pisos.");
+    __pisosCacheByDay = {};
+    __pisosDays = [];
+    __pisosDaysLoaded = false;
+
+    await pisosLoadDays_(true);
+
+    const selectedDay = String(pisosDaySelect?.value || "").trim();
+    if (selectedDay) {
+      await pisosLoadSchedule_(selectedDay, true);
+    } else if (pisosResult) {
+      pisosResult.innerHTML = `<div class="muted small">Selecciona un día para consultar.</div>`;
+    }
+  } catch (e) {
+    pisosSetHint_(String(e && e.message ? e.message : e));
+  } finally {
+    setLoading(false);
+  }
+});
+
+pisosModal?.addEventListener("click", (e) => {
+  if (e.target === pisosModal) {
+    pisosModal.setAttribute("hidden", "");
+  }
+});
+
+pisosDaySelect?.addEventListener("change", async () => {
+  const day = String(pisosDaySelect?.value || "").trim();
+
+  if (!day) {
+    pisosRenderSchedule_("", []);
+    return;
+  }
+
+  try {
+    pisosSetHint_("");
+    setLoading(true, "Consultando…", "Cargando horario del día.");
+    await pisosLoadSchedule_(day, false);
+  } catch (e) {
+    pisosSetHint_(String(e && e.message ? e.message : e));
+    if (pisosResult) {
+      pisosResult.innerHTML = `<div class="ubicate-empty">No pude cargar el horario de pisos.</div>`;
+    }
+  } finally {
+    setLoading(false);
+  }
 });
 
 btnPisosMenu?.addEventListener("click", async () => {
