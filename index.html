@@ -2364,6 +2364,11 @@ const btnUbicateAll = $("btnUbicateAll");
 
 let __ubicateTeachers = [];
 let __ubicateLastMode = "now";
+
+// cache por docente
+let __ubicateScheduleCacheByTeacher = {};
+
+// estado visual actual
 let __ubicateScheduleCache = [];
 let __ubicateNextIndex = -1;
 let __ubicateSelectedDayKey = "";
@@ -3510,6 +3515,21 @@ async function gsUbicateAll(teacher) {
   return data;
 }
 
+
+  async function ubicateGetScheduleCached_(teacher, forceRefresh = false) {
+  const key = String(teacher || "").trim().toLowerCase();
+  if (!key) return [];
+
+  if (!forceRefresh && Array.isArray(__ubicateScheduleCacheByTeacher[key])) {
+    return __ubicateScheduleCacheByTeacher[key];
+  }
+
+  const data = await gsUbicateAll(teacher);
+  const items = Array.isArray(data?.items) ? data.items : [];
+
+  __ubicateScheduleCacheByTeacher[key] = items;
+  return items;
+}
 function ubicateRenderNext_(data) {
   if (!ubicateResult) return;
 
@@ -3913,12 +3933,8 @@ async function ubicateConsultarSiguiente_() {
     __ubicateLastMode = "next";
     ubicateSetHint_("");
 
-    // Cargar horario una sola vez
-    if (!__ubicateScheduleCache.length) {
-      const data = await gsUbicateAll(teacher);
-      __ubicateScheduleCache = Array.isArray(data.items) ? data.items : [];
-      __ubicateNextIndex = -1;
-    }
+    const items = await ubicateGetScheduleCached_(teacher);
+    __ubicateScheduleCache = items;
 
     if (!__ubicateScheduleCache.length) {
       if (ubicateResult) {
@@ -3928,7 +3944,7 @@ async function ubicateConsultarSiguiente_() {
     }
 
     const now = new Date();
-    const jsDay = now.getDay(); // 0 domingo, 1 lunes, 2 martes...
+    const jsDay = now.getDay();
     const nowMinutes = (now.getHours() * 60) + now.getMinutes();
 
     const dayNames = {
@@ -3958,18 +3974,16 @@ async function ubicateConsultarSiguiente_() {
       return (Number(m[1]) * 60) + Number(m[2]);
     };
 
-    // Mapeo alterno por índice
     const todayIndexCandidates = {
-      0: [0, 7], // domingo
-      1: [1],    // lunes
-      2: [2],    // martes
-      3: [3],    // miércoles
-      4: [4],    // jueves
-      5: [5],    // viernes
-      6: [6]     // sábado
+      0: [0, 7],
+      1: [1],
+      2: [2],
+      3: [3],
+      4: [4],
+      5: [5],
+      6: [6]
     }[jsDay] || [];
 
-    // Filtrar por day_index o por day_label
     const todayItems = __ubicateScheduleCache
       .filter(it => {
         const di = Number(it.day_index);
@@ -3990,10 +4004,6 @@ async function ubicateConsultarSiguiente_() {
       return;
     }
 
-    // Primera vez:
-    // 1. Si está en una clase actual, empieza ahí
-    // 2. Si no, en la siguiente más cercana
-    // 3. Si ya pasaron todas, vuelve a la primera de hoy
     if (__ubicateNextIndex < 0 || __ubicateNextIndex >= todayItems.length) {
       let startIdx = todayItems.findIndex(it => {
         const ini = toMinutes_(it.start_time);
@@ -4028,7 +4038,6 @@ async function ubicateConsultarSiguiente_() {
       course: item.course
     });
 
-    // Avanzar circularmente solo dentro del día actual
     __ubicateNextIndex++;
     if (__ubicateNextIndex >= todayItems.length) {
       __ubicateNextIndex = 0;
@@ -4053,11 +4062,21 @@ async function ubicateConsultarTodo_() {
   try {
     __ubicateLastMode = "all";
     ubicateSetHint_("");
+
     setLoading(true, "Consultando…", "Cargando horario completo del docente.");
-    const data = await gsUbicateAll(teacher);
-    ubicateRenderAll_(data);
+
+    const items = await ubicateGetScheduleCached_(teacher);
+    __ubicateScheduleCache = items;
+
+    ubicateRenderAll_({
+      teacher,
+      items
+    });
   } catch (e) {
     ubicateSetHint_(String(e && e.message ? e.message : e));
+    if (ubicateResult) {
+      ubicateResult.innerHTML = `<div class="ubicate-empty">No pude cargar el horario del docente.</div>`;
+    }
   } finally {
     setLoading(false);
   }
@@ -4129,6 +4148,9 @@ async function ubicateLoadTeachers_() {
 
 async function ubicateOpen_() {
   __ubicateSelectedDayKey = "";
+  __ubicateScheduleCache = [];
+  __ubicateNextIndex = -1;
+
   try {
     setMenuOpen(false);
   } catch (e) {
@@ -4150,6 +4172,12 @@ async function ubicateOpen_() {
 
     if (ubicateResult) {
       ubicateResult.innerHTML = `<div class="muted small">Selecciona un docente para consultar.</div>`;
+    }
+
+    // precarga silenciosa del docente ya seleccionado, usando cache
+    const teacher = String(ubicateTeacherSelect?.value || "").trim();
+    if (teacher) {
+      ubicateGetScheduleCached_(teacher).catch(() => {});
     }
   } catch (e) {
     ubicateSetHint_(String(e && e.message ? e.message : e));
@@ -5205,9 +5233,9 @@ ubicateTeacherSelect?.addEventListener("change", async () => {
   const teacher = String(ubicateTeacherSelect.value || "").trim();
 
   if (!teacher) {
-   __ubicateScheduleCache = [];
-__ubicateNextIndex = -1;
-__ubicateSelectedDayKey = "";
+    __ubicateScheduleCache = [];
+    __ubicateNextIndex = -1;
+    __ubicateSelectedDayKey = "";
 
     if (ubicateResult) {
       ubicateResult.innerHTML = `<div class="muted small">Selecciona un docente para consultar.</div>`;
@@ -5216,10 +5244,10 @@ __ubicateSelectedDayKey = "";
     return;
   }
 
-  // reset al cambiar de docente
- __ubicateScheduleCache = [];
-__ubicateNextIndex = -1;
-__ubicateSelectedDayKey = "";
+  // reset solo del estado visual, NO del cache global por docente
+  __ubicateScheduleCache = [];
+  __ubicateNextIndex = -1;
+  __ubicateSelectedDayKey = "";
 
   try {
     ubicateSetHint_("");
@@ -5235,13 +5263,12 @@ __ubicateSelectedDayKey = "";
     }
 
     if (__ubicateLastMode === "all") {
-      setLoading(true, "Consultando…", "Cargando horario completo del docente.");
+      setLoading(true, "Consultando…", "Cargando horario completo del docente...");
       if (ubicateResult) {
-        ubicateResult.innerHTML = `<div class="muted small">Cargando horario completo...</div>`;
+        ubicateResult.innerHTML = `<div class="muted small">Cargando horario del docente...</div>`;
       }
 
-      const data = await gsUbicateAll(teacher);
-      ubicateRenderAll_(data);
+      await ubicateConsultarTodo_();
       return;
     }
 
