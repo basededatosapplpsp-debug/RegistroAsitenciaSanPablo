@@ -2056,6 +2056,42 @@ input[list]::-moz-list-dropdown {
     </div>
   </div>
 </div>
+
+<!-- ======= MODAL PARQUE ======= -->
+<div id="parqueModal" class="modal-backdrop" hidden>
+  <div class="modal-card">
+    <h2 class="modal-title">Horario de parque</h2>
+    <p class="modal-sub">Selecciona un día para ver la salida al parque.</p>
+
+    <label class="modal-label" for="parqueDaySelect">Día</label>
+    <select id="parqueDaySelect" class="modal-input">
+      <option value="">Selecciona un día</option>
+    </select>
+
+    <div id="parqueResultBox" class="disc-reported" style="margin-top:16px;">
+      <div id="parqueResult" class="disc-reported-list">
+        <div class="muted small">Selecciona un día para consultar.</div>
+      </div>
+    </div>
+
+    <div id="parqueHint" class="modal-hint muted small"></div>
+
+    <div class="modal-actions" style="justify-content:flex-end; flex-wrap:wrap;">
+      <button
+        id="btnParqueRefresh"
+        type="button"
+        class="btn btn-ghost icon-only"
+        title="Actualizar"
+        aria-label="Actualizar"
+      >
+        <i class="fa-solid fa-rotate-right" aria-hidden="true"></i>
+      </button>
+      <button id="btnParqueClose" type="button" class="btn btn-ghost">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+
 <!-- ===== CONFIRM MODAL PRO ===== -->
 <div id="appConfirm" class="modal-backdrop" hidden>
   <div class="modal-card">
@@ -2626,6 +2662,23 @@ const btnPisosRefresh = $("btnPisosRefresh");
 let __pisosDays = [];
 let __pisosDaysLoaded = false;
 let __pisosCacheByDay = {};
+
+// ======= PARQUE =======
+
+const parqueModal = $("parqueModal");
+const parqueDaySelect = $("parqueDaySelect");
+const parqueResult = $("parqueResult");
+const parqueHint = $("parqueHint");
+const btnParqueClose = $("btnParqueClose");
+const btnParqueRefresh = $("btnParqueRefresh");
+
+let __parqueDays = [];
+let __parqueDaysLoaded = false;
+let __parqueCacheByDay = {};
+
+const PARQUE_CACHE_VERSION = "1";
+const PARQUE_DAYS_STORAGE_KEY = `parque_days_cache_v${PARQUE_CACHE_VERSION}`;
+const PARQUE_SCHEDULES_STORAGE_KEY = `parque_schedules_cache_v${PARQUE_CACHE_VERSION}`;
 
 const PISOS_CACHE_VERSION = "1";
 const PISOS_DAYS_STORAGE_KEY = `pisos_days_cache_v${PISOS_CACHE_VERSION}`;
@@ -3876,6 +3929,41 @@ async function gsPisosSchedule(day) {
   if (!data.ok) throw new Error(data.msg || data.error || "pisos_schedule_failed");
   return Array.isArray(data.items) ? data.items : [];
 }
+
+async function gsParqueDaysList() {
+  const res = await fetch(GS_WEBAPP_URL, {
+    method: "POST",
+    body: JSON.stringify({
+      action: "parque_days_list",
+      key: GS_API_KEY
+    })
+  });
+
+  let data = null;
+  try { data = await res.json(); }
+  catch { throw new Error("Respuesta inválida del servidor"); }
+
+  if (!data.ok) throw new Error(data.msg || data.error || "parque_days_list_failed");
+  return Array.isArray(data.days) ? data.days : [];
+}
+
+async function gsParqueSchedule(day) {
+  const res = await fetch(GS_WEBAPP_URL, {
+    method: "POST",
+    body: JSON.stringify({
+      action: "parque_schedule",
+      key: GS_API_KEY,
+      day
+    })
+  });
+
+  let data = null;
+  try { data = await res.json(); }
+  catch { throw new Error("Respuesta inválida del servidor"); }
+
+  if (!data.ok) throw new Error(data.msg || data.error || "parque_schedule_failed");
+  return Array.isArray(data.items) ? data.items : [];
+}
   
 
 
@@ -4864,6 +4952,222 @@ function pisosRenderSchedule_(day, items) {
       </div>
     </div>
   `;
+}
+
+
+
+function parqueSetHint_(msg) {
+  if (!parqueHint) return;
+  parqueHint.textContent = msg || "";
+}
+
+function parqueRenderDays_(days) {
+  if (!parqueDaySelect) return;
+
+  const current = String(parqueDaySelect.value || "").trim();
+  parqueDaySelect.innerHTML = `<option value="">Selecciona un día</option>`;
+
+  (Array.isArray(days) ? days : []).forEach(day => {
+    const opt = document.createElement("option");
+    opt.value = day;
+    opt.textContent = day;
+    parqueDaySelect.appendChild(opt);
+  });
+
+  if (current && (Array.isArray(days) ? days : []).includes(current)) {
+    parqueDaySelect.value = current;
+  }
+}
+
+function parqueNormalizeText_(s) {
+  return String(s || "")
+    .trim()
+    .toUpperCase()
+    .normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+}
+
+function parqueBreakOrder_(label) {
+  const s = parqueNormalizeText_(label);
+  if (s.includes("1")) return 1;
+  if (s.includes("2")) return 2;
+  return 99;
+}
+
+function parqueLoadPersistentCache_() {
+  try {
+    const savedDays = ubicateReadStorage_(PARQUE_DAYS_STORAGE_KEY, []);
+    const savedSchedules = ubicateReadStorage_(PARQUE_SCHEDULES_STORAGE_KEY, {});
+
+    if (Array.isArray(savedDays) && savedDays.length) {
+      __parqueDays = savedDays;
+      __parqueDaysLoaded = true;
+    }
+
+    if (savedSchedules && typeof savedSchedules === "object") {
+      __parqueCacheByDay = savedSchedules;
+    }
+  } catch (e) {}
+}
+
+function parqueSaveDaysCache_() {
+  try {
+    ubicateWriteStorage_(PARQUE_DAYS_STORAGE_KEY, __parqueDays);
+  } catch (e) {}
+}
+
+function parqueSaveSchedulesCache_() {
+  try {
+    ubicateWriteStorage_(PARQUE_SCHEDULES_STORAGE_KEY, __parqueCacheByDay);
+  } catch (e) {}
+}
+
+function parqueClearPersistentCache_() {
+  try {
+    localStorage.removeItem(PARQUE_DAYS_STORAGE_KEY);
+    localStorage.removeItem(PARQUE_SCHEDULES_STORAGE_KEY);
+  } catch (e) {}
+}
+
+function parqueRenderSchedule_(day, items) {
+  if (!parqueResult) return;
+
+  const rows = Array.isArray(items) ? [...items] : [];
+
+  if (!day) {
+    parqueResult.innerHTML = `<div class="muted small">Selecciona un día para consultar.</div>`;
+    return;
+  }
+
+  if (!rows.length) {
+    parqueResult.innerHTML = `
+      <div class="ubicate-card">
+        <div class="ubicate-title">${escapeHtml(day)}</div>
+        <div class="ubicate-line">No hay horario de parque registrado para este día.</div>
+      </div>
+    `;
+    return;
+  }
+
+  rows.sort((a, b) => parqueBreakOrder_(a.break_label) - parqueBreakOrder_(b.break_label));
+
+  const grouped = {};
+  rows.forEach(r => {
+    const breakLabel = String(r.break_label || "").trim() || "-";
+    if (!grouped[breakLabel]) grouped[breakLabel] = [];
+    if (r.course) grouped[breakLabel].push(String(r.course || "").trim());
+  });
+
+  const breakLabels = Object.keys(grouped).sort((a, b) => parqueBreakOrder_(a) - parqueBreakOrder_(b));
+
+  parqueResult.innerHTML = `
+    <div class="ubicate-card">
+      <div class="ubicate-title">${escapeHtml(day)}</div>
+      <div style="overflow:auto; margin-top:10px;">
+        <table class="table" style="width:100%; min-width:420px;">
+          <thead>
+            <tr>
+              <th>Descanso</th>
+              <th>Cursos que salen</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${breakLabels.map(label => `
+              <tr>
+                <td><strong>${escapeHtml(label)}</strong></td>
+                <td>${grouped[label].map(x => escapeHtml(x)).join("<br>") || "-"}</td>
+              </tr>
+            `).join("")}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  `;
+}
+
+async function parqueLoadDays_(forceRefresh = false) {
+  if (!forceRefresh) {
+    if (!__parqueDaysLoaded || !__parqueDays.length) {
+      parqueLoadPersistentCache_();
+    }
+
+    if (__parqueDaysLoaded && __parqueDays.length) {
+      parqueRenderDays_(__parqueDays);
+      return __parqueDays;
+    }
+  }
+
+  const days = await gsParqueDaysList();
+  __parqueDays = Array.isArray(days) ? days : [];
+  __parqueDaysLoaded = true;
+  parqueSaveDaysCache_();
+  parqueRenderDays_(__parqueDays);
+  return __parqueDays;
+}
+
+async function parqueLoadSchedule_(day, forceRefresh = false) {
+  const dayKey = String(day || "").trim();
+
+  if (!dayKey) {
+    parqueRenderSchedule_("", []);
+    return [];
+  }
+
+  if (!forceRefresh) {
+    if (!__parqueDaysLoaded && !Object.keys(__parqueCacheByDay || {}).length) {
+      parqueLoadPersistentCache_();
+    }
+
+    if (Array.isArray(__parqueCacheByDay[dayKey])) {
+      parqueRenderSchedule_(dayKey, __parqueCacheByDay[dayKey]);
+      return __parqueCacheByDay[dayKey];
+    }
+  }
+
+  const items = await gsParqueSchedule(dayKey);
+  __parqueCacheByDay[dayKey] = Array.isArray(items) ? items : [];
+  parqueSaveSchedulesCache_();
+  parqueRenderSchedule_(dayKey, __parqueCacheByDay[dayKey]);
+  return __parqueCacheByDay[dayKey];
+}
+
+async function parqueOpen_() {
+  try {
+    setMenuOpen(false);
+  } catch (e) {
+    if (userMenu) userMenu.hidden = true;
+  }
+
+  parqueSetHint_("");
+  if (parqueModal) parqueModal.hidden = false;
+
+  try {
+    parqueLoadPersistentCache_();
+
+    const hasCachedDays = __parqueDaysLoaded && __parqueDays.length;
+
+    if (hasCachedDays) {
+      parqueRenderDays_(__parqueDays);
+
+      if (parqueResult) {
+        parqueResult.innerHTML = `<div class="muted small">Selecciona un día para consultar.</div>`;
+      }
+      return;
+    }
+
+    setLoading(true, "Cargando…", "Consultando horario de parque.");
+    await parqueLoadDays_(false);
+
+    if (parqueResult) {
+      parqueResult.innerHTML = `<div class="muted small">Selecciona un día para consultar.</div>`;
+    }
+  } catch (e) {
+    parqueSetHint_(String(e && e.message ? e.message : e));
+    if (parqueResult) {
+      parqueResult.innerHTML = `<div class="ubicate-empty">No pude cargar el horario de parque.</div>`;
+    }
+  } finally {
+    setLoading(false);
+  }
 }
 
 async function pisosLoadDays_(forceRefresh = false) {
@@ -6174,6 +6478,72 @@ btnPisosMenu?.addEventListener("click", async () => {
 
 btnPisosClose?.addEventListener("click", () => {
   pisosModal?.setAttribute("hidden", "");
+});
+
+
+btnParqueMenu?.addEventListener("click", async () => {
+  await parqueOpen_();
+});
+
+btnParqueClose?.addEventListener("click", () => {
+  parqueModal?.setAttribute("hidden", "");
+});
+
+btnParqueRefresh?.addEventListener("click", async () => {
+  try {
+    parqueSetHint_("");
+    setLoading(true, "Actualizando…", "Recargando horario de parque.");
+
+    const selectedDayBeforeRefresh = String(parqueDaySelect?.value || "").trim();
+
+    __parqueCacheByDay = {};
+    __parqueDays = [];
+    __parqueDaysLoaded = false;
+    parqueClearPersistentCache_();
+
+    await parqueLoadDays_(true);
+
+    if (selectedDayBeforeRefresh && parqueDaySelect) {
+      parqueDaySelect.value = selectedDayBeforeRefresh;
+    }
+
+    const selectedDay = String(parqueDaySelect?.value || "").trim();
+    if (selectedDay) {
+      await parqueLoadSchedule_(selectedDay, true);
+    } else if (parqueResult) {
+      parqueResult.innerHTML = `<div class="muted small">Selecciona un día para consultar.</div>`;
+    }
+  } catch (e) {
+    parqueSetHint_(String(e && e.message ? e.message : e));
+  } finally {
+    setLoading(false);
+  }
+});
+
+parqueModal?.addEventListener("click", (e) => {
+  if (e.target === parqueModal) {
+    parqueModal.setAttribute("hidden", "");
+  }
+});
+
+parqueDaySelect?.addEventListener("change", async () => {
+  const day = String(parqueDaySelect.value || "").trim();
+  parqueSetHint_("");
+
+  if (!day) {
+    parqueRenderSchedule_("", []);
+    return;
+  }
+
+  try {
+    setLoading(true, "Consultando…", "Cargando horario de parque.");
+    await parqueLoadSchedule_(day, false);
+  } catch (e) {
+    parqueSetHint_(String(e && e.message ? e.message : e));
+    parqueRenderSchedule_(day, []);
+  } finally {
+    setLoading(false);
+  }
 });
 
 btnParqueMenu?.addEventListener("click", () => {
