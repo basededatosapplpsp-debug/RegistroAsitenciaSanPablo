@@ -2363,10 +2363,10 @@ const btnUbicateNext = $("btnUbicateNext");
 const btnUbicateAll = $("btnUbicateAll");
 
 let __ubicateTeachers = [];
-let __ubicateLastMode = "now"; // now | next | all
-
-let __ubicateScheduleCache = [];   // todas las clases del docente
-let __ubicateNextIndex = -1;        // índice actual
+let __ubicateLastMode = "now";
+let __ubicateScheduleCache = [];
+let __ubicateNextIndex = -1;
+let __ubicateSelectedDayKey = "";
 
 
 
@@ -3541,43 +3541,25 @@ function ubicateRenderNext_(data) {
   `;
 }
 
-function ubicateRenderAll_(data) {
-  if (!ubicateResult) return;
 
-  if (!data || !data.teacher) {
-    ubicateResult.innerHTML = `<div class="ubicate-empty">No encontré información del docente.</div>`;
-    return;
-  }
+function ubicateNormalizeDay_(s) {
+  return String(s || "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim();
+}
 
-  const items = Array.isArray(data.items) ? data.items : [];
+function ubicateToMinutes_(hhmm) {
+  const s = String(hhmm || "").trim();
+  const m = s.match(/^(\d{1,2}):(\d{2})$/);
+  if (!m) return 0;
+  return (Number(m[1]) * 60) + Number(m[2]);
+}
 
-  if (!items.length) {
-    ubicateResult.innerHTML = `
-      <div class="ubicate-card">
-        <div class="ubicate-title">${escapeHtml(data.teacher)}</div>
-        <div class="ubicate-line">No tiene horario registrado.</div>
-      </div>
-    `;
-    return;
-  }
-
-  const normalizeDay_ = (s) => {
-    return String(s || "")
-      .toLowerCase()
-      .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "")
-      .trim();
-  };
-
-  const toMinutes_ = (hhmm) => {
-    const s = String(hhmm || "").trim();
-    const m = s.match(/^(\d{1,2}):(\d{2})$/);
-    if (!m) return 0;
-    return (Number(m[1]) * 60) + Number(m[2]);
-  };
-
+function ubicateGetTodayInfo_() {
   const now = new Date();
-  const jsDay = now.getDay();
+  const jsDay = now.getDay(); // 0 domingo, 1 lunes...
   const nowMinutes = (now.getHours() * 60) + now.getMinutes();
 
   const dayNames = {
@@ -3602,46 +3584,152 @@ function ubicateRenderAll_(data) {
     6: [6]
   }[jsDay] || [];
 
+  return { jsDay, todayName, todayIndexCandidates, nowMinutes };
+}
+
+function ubicateGetDayKey_(item) {
+  const di = Number(item?.day_index ?? -1);
+  const dl = ubicateNormalizeDay_(item?.day_label || "");
+  if (dl) return `${di}|${dl}`;
+  return `${di}|`;
+}
+
+function ubicateGetDayLabelFromKey_(key, items) {
+  const found = (items || []).find(it => ubicateGetDayKey_(it) === key);
+  return found?.day_label || "Día";
+}
+
+function ubicateRenderDaySchedule_(teacher, allItems, selectedDayKey) {
+  if (!ubicateResult) return;
+
+  const items = Array.isArray(allItems) ? allItems : [];
+
+  if (!items.length) {
+    ubicateResult.innerHTML = `
+      <div class="ubicate-card">
+        <div class="ubicate-title">${escapeHtml(teacher)}</div>
+        <div class="ubicate-line">No tiene horario registrado.</div>
+      </div>
+    `;
+    return;
+  }
+
+  const { todayName, todayIndexCandidates, nowMinutes } = ubicateGetTodayInfo_();
+
   const sortedItems = [...items].sort((a, b) => {
     const dayA = Number(a.day_index || 0);
     const dayB = Number(b.day_index || 0);
     if (dayA !== dayB) return dayA - dayB;
-    return toMinutes_(a.start_time) - toMinutes_(b.start_time);
+    return ubicateToMinutes_(a.start_time) - ubicateToMinutes_(b.start_time);
   });
 
-  const todayItems = sortedItems.filter(it => {
-    const di = Number(it.day_index);
-    const dl = normalizeDay_(it.day_label);
-    return todayIndexCandidates.includes(di) || dl === todayName;
+  const dayMap = new Map();
+  sortedItems.forEach(it => {
+    const key = ubicateGetDayKey_(it);
+    if (!dayMap.has(key)) {
+      dayMap.set(key, {
+        key,
+        label: it.day_label || "Día",
+        index: Number(it.day_index || 0),
+        normalized: ubicateNormalizeDay_(it.day_label || "")
+      });
+    }
   });
 
-  let currentTodayIdx = -1;
-  let nextTodayIdx = -1;
+  const dayCards = Array.from(dayMap.values()).sort((a, b) => a.index - b.index);
 
-  currentTodayIdx = todayItems.findIndex(it => {
-    const ini = toMinutes_(it.start_time);
-    const fin = toMinutes_(it.end_time);
-    return nowMinutes >= ini && nowMinutes < fin;
-  });
+  let activeDayKey = selectedDayKey;
 
-  if (currentTodayIdx >= 0) {
-    nextTodayIdx = currentTodayIdx + 1;
-    if (nextTodayIdx >= todayItems.length) nextTodayIdx = 0;
-  } else {
-    nextTodayIdx = todayItems.findIndex(it => {
-      const ini = toMinutes_(it.start_time);
-      return ini > nowMinutes;
+  if (!activeDayKey || !dayMap.has(activeDayKey)) {
+    const todayCard = dayCards.find(d =>
+      todayIndexCandidates.includes(Number(d.index)) || d.normalized === todayName
+    );
+    activeDayKey = todayCard ? todayCard.key : (dayCards[0]?.key || "");
+    __ubicateSelectedDayKey = activeDayKey;
+  }
+
+  const dayItems = sortedItems
+    .filter(it => ubicateGetDayKey_(it) === activeDayKey)
+    .sort((a, b) => ubicateToMinutes_(a.start_time) - ubicateToMinutes_(b.start_time));
+
+  const activeDayData = dayCards.find(d => d.key === activeDayKey);
+  const activeDayIsToday = !!activeDayData && (
+    todayIndexCandidates.includes(Number(activeDayData.index)) ||
+    activeDayData.normalized === todayName
+  );
+
+  let currentIdx = -1;
+  let nextIdx = -1;
+
+  if (activeDayIsToday) {
+    currentIdx = dayItems.findIndex(it => {
+      const ini = ubicateToMinutes_(it.start_time);
+      const fin = ubicateToMinutes_(it.end_time);
+      return nowMinutes >= ini && nowMinutes < fin;
     });
 
-    if (nextTodayIdx === -1 && todayItems.length) {
-      nextTodayIdx = 0;
+    if (currentIdx >= 0) {
+      nextIdx = currentIdx + 1;
+      if (nextIdx >= dayItems.length) nextIdx = 0;
+    } else {
+      nextIdx = dayItems.findIndex(it => ubicateToMinutes_(it.start_time) > nowMinutes);
+      if (nextIdx === -1 && dayItems.length) nextIdx = 0;
     }
   }
 
   ubicateResult.innerHTML = `
     <div class="ubicate-card">
-      <div class="ubicate-title">${escapeHtml(data.teacher)}</div>
-      <div class="ubicate-line" style="margin-bottom:10px;"><strong>Horario completo</strong></div>
+      <div class="ubicate-title">${escapeHtml(teacher)}</div>
+      <div class="ubicate-line" style="margin-bottom:10px;"><strong>Horario por día</strong></div>
+
+      <div style="
+        display:grid;
+        grid-template-columns:repeat(auto-fit,minmax(92px,1fr));
+        gap:10px;
+        margin-bottom:14px;
+      ">
+        ${dayCards.map(d => {
+          const isSelected = d.key === activeDayKey;
+          const isToday = todayIndexCandidates.includes(Number(d.index)) || d.normalized === todayName;
+
+          return `
+            <button
+              type="button"
+              class="ubicate-day-card"
+              data-day-key="${escapeHtml(d.key)}"
+              style="
+                border:1px solid ${isSelected ? 'rgba(59,130,246,.60)' : 'rgba(255,255,255,.10)'};
+                background:${isSelected ? 'rgba(59,130,246,.14)' : 'rgba(255,255,255,.03)'};
+                color:${isSelected ? '#dbeafe' : 'inherit'};
+                border-radius:14px;
+                padding:12px 10px;
+                text-align:center;
+                cursor:pointer;
+                transition:.18s ease;
+              "
+            >
+              <div style="font-weight:800; font-size:13px; line-height:1.2;">
+                ${escapeHtml(d.label)}
+              </div>
+              <div style="margin-top:6px; min-height:18px;">
+                ${isToday ? `
+                  <span style="
+                    display:inline-block;
+                    padding:2px 8px;
+                    border-radius:999px;
+                    font-size:10px;
+                    font-weight:800;
+                    letter-spacing:.3px;
+                    background:rgba(34,197,94,.16);
+                    color:#86efac;
+                    border:1px solid rgba(34,197,94,.35);
+                  ">HOY</span>
+                ` : ``}
+              </div>
+            </button>
+          `;
+        }).join("")}
+      </div>
 
       <div style="
         display:flex;
@@ -3694,24 +3782,15 @@ function ubicateRenderAll_(data) {
         </span>
       </div>
 
-      ${sortedItems.map((it) => {
-        const isToday = (() => {
-          const di = Number(it.day_index);
-          const dl = normalizeDay_(it.day_label);
-          return todayIndexCandidates.includes(di) || dl === todayName;
-        })();
+      <div class="ubicate-line" style="margin-bottom:8px;">
+        <strong>Día seleccionado:</strong> ${escapeHtml(activeDayData?.label || "Día")}
+      </div>
 
-        const idxInToday = todayItems.findIndex(x =>
-          String(x.day_label || "") === String(it.day_label || "") &&
-          String(x.start_time || "") === String(it.start_time || "") &&
-          String(x.end_time || "") === String(it.end_time || "") &&
-          String(x.course || "") === String(it.course || "") &&
-          String(x.subject || "") === String(it.subject || "") &&
-          String(x.salon || "") === String(it.salon || "")
-        );
-
-        const isCurrent = isToday && idxInToday >= 0 && idxInToday === currentTodayIdx;
-        const isNext = isToday && idxInToday >= 0 && idxInToday === nextTodayIdx;
+      ${!dayItems.length ? `
+        <div class="ubicate-empty">No hay clases registradas para este día.</div>
+      ` : dayItems.map((it, idx) => {
+        const isCurrent = activeDayIsToday && idx === currentIdx;
+        const isNext = activeDayIsToday && idx === nextIdx;
 
         let borderColor = "rgba(255,255,255,.10)";
         let bgStyle = "";
@@ -3763,10 +3842,9 @@ function ubicateRenderAll_(data) {
             ${bgStyle}
           ">
             <div class="ubicate-line">
-              <strong>Día:</strong> ${escapeHtml(it.day_label || "-")}
+              <strong>Bloque:</strong> ${escapeHtml(it.start_time || "-")} - ${escapeHtml(it.end_time || "-")}
               ${badge}
             </div>
-            <div class="ubicate-line"><strong>Bloque:</strong> ${escapeHtml(it.start_time || "-")} - ${escapeHtml(it.end_time || "-")}</div>
             <div class="ubicate-line"><strong>Salón:</strong> ${escapeHtml(it.salon || "Sin salón")}</div>
             <div class="ubicate-line"><strong>Materia:</strong> ${escapeHtml(it.subject || "-")}</div>
             <div class="ubicate-line"><strong>Curso:</strong> ${escapeHtml(it.course || "-")}</div>
@@ -3775,6 +3853,28 @@ function ubicateRenderAll_(data) {
       }).join("")}
     </div>
   `;
+
+  ubicateResult.querySelectorAll(".ubicate-day-card").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const key = String(btn.dataset.dayKey || "").trim();
+      __ubicateSelectedDayKey = key;
+      ubicateRenderDaySchedule_(teacher, items, key);
+    });
+  });
+}
+
+function ubicateRenderAll_(data) {
+  if (!ubicateResult) return;
+
+  if (!data || !data.teacher) {
+    ubicateResult.innerHTML = `<div class="ubicate-empty">No encontré información del docente.</div>`;
+    return;
+  }
+
+  const items = Array.isArray(data.items) ? data.items : [];
+  __ubicateScheduleCache = items;
+
+  ubicateRenderDaySchedule_(data.teacher, items, __ubicateSelectedDayKey);
 }
 
 async function ubicateConsultarAhora_() {
@@ -4028,6 +4128,7 @@ async function ubicateLoadTeachers_() {
 }
 
 async function ubicateOpen_() {
+  __ubicateSelectedDayKey = "";
   try {
     setMenuOpen(false);
   } catch (e) {
@@ -5104,8 +5205,9 @@ ubicateTeacherSelect?.addEventListener("change", async () => {
   const teacher = String(ubicateTeacherSelect.value || "").trim();
 
   if (!teacher) {
-    __ubicateScheduleCache = [];
-    __ubicateNextIndex = -1;
+   __ubicateScheduleCache = [];
+__ubicateNextIndex = -1;
+__ubicateSelectedDayKey = "";
 
     if (ubicateResult) {
       ubicateResult.innerHTML = `<div class="muted small">Selecciona un docente para consultar.</div>`;
@@ -5115,8 +5217,9 @@ ubicateTeacherSelect?.addEventListener("change", async () => {
   }
 
   // reset al cambiar de docente
-  __ubicateScheduleCache = [];
-  __ubicateNextIndex = -1;
+ __ubicateScheduleCache = [];
+__ubicateNextIndex = -1;
+__ubicateSelectedDayKey = "";
 
   try {
     ubicateSetHint_("");
