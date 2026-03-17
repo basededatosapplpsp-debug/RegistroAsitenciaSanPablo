@@ -2365,6 +2365,11 @@ const btnUbicateAll = $("btnUbicateAll");
 let __ubicateTeachers = [];
 let __ubicateLastMode = "now"; // now | next | all
 
+let __ubicateScheduleCache = [];   // todas las clases del docente
+let __ubicateNextIndex = 0;        // índice actual
+
+
+
 
 const btnToggleRecords = $("btnToggleRecords");
 const recordsPanel = $("recordsPanel");
@@ -3609,9 +3614,52 @@ async function ubicateConsultarSiguiente_() {
   try {
     __ubicateLastMode = "next";
     ubicateSetHint_("");
-    setLoading(true, "Consultando…", "Buscando la próxima clase del docente.");
-    const data = await gsUbicateNext(teacher);
-    ubicateRenderNext_(data);
+
+    // 🔹 Si no hay cache, lo cargamos
+    if (!__ubicateScheduleCache.length) {
+      setLoading(true, "Consultando…", "Cargando horario del docente...");
+
+      const data = await gsUbicateAll(teacher);
+
+      __ubicateScheduleCache = Array.isArray(data.items) ? data.items : [];
+
+      // ordenar por día + hora
+      __ubicateScheduleCache.sort((a, b) => {
+        const dayA = Number(a.day_index || 0);
+        const dayB = Number(b.day_index || 0);
+
+        if (dayA !== dayB) return dayA - dayB;
+
+        return String(a.start_time || "").localeCompare(String(b.start_time || ""));
+      });
+
+      __ubicateNextIndex = 0;
+    }
+
+    if (!__ubicateScheduleCache.length) {
+      ubicateResult.innerHTML = `<div class="ubicate-empty">No tiene horario registrado.</div>`;
+      return;
+    }
+
+    const item = __ubicateScheduleCache[__ubicateNextIndex];
+
+    ubicateRenderNext_({
+      teacher,
+      found_next: true,
+      day_label: item.day_label,
+      start_time: item.start_time,
+      end_time: item.end_time,
+      salon: item.salon,
+      subject: item.subject,
+      course: item.course
+    });
+
+    // 🔹 avanzar índice (circular)
+    __ubicateNextIndex++;
+    if (__ubicateNextIndex >= __ubicateScheduleCache.length) {
+      __ubicateNextIndex = 0;
+    }
+
   } catch (e) {
     ubicateSetHint_(String(e && e.message ? e.message : e));
   } finally {
@@ -4781,6 +4829,9 @@ ubicateTeacherSelect?.addEventListener("change", async () => {
   const teacher = String(ubicateTeacherSelect.value || "").trim();
 
   if (!teacher) {
+    __ubicateScheduleCache = [];
+    __ubicateNextIndex = 0;
+
     if (ubicateResult) {
       ubicateResult.innerHTML = `<div class="muted small">Selecciona un docente para consultar.</div>`;
     }
@@ -4788,17 +4839,20 @@ ubicateTeacherSelect?.addEventListener("change", async () => {
     return;
   }
 
+  // reset del carrusel al cambiar de docente
+  __ubicateScheduleCache = [];
+  __ubicateNextIndex = 0;
+
   try {
     ubicateSetHint_("");
 
     if (__ubicateLastMode === "next") {
-      setLoading(true, "Consultando…", "Buscando la próxima clase del docente.");
+      setLoading(true, "Consultando…", "Cargando clases del docente...");
       if (ubicateResult) {
-        ubicateResult.innerHTML = `<div class="muted small">Consultando próxima clase...</div>`;
+        ubicateResult.innerHTML = `<div class="muted small">Cargando próxima clase...</div>`;
       }
 
-      const data = await gsUbicateNext(teacher);
-      ubicateRenderNext_(data);
+      await ubicateConsultarSiguiente_();
       return;
     }
 
