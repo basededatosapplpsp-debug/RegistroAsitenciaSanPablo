@@ -1374,12 +1374,20 @@ input[list]::-moz-list-dropdown {
   left: 0;
   z-index: 2;
   background: #0f172a;
+  width: 120px;        /* 👈 controla el ancho */
+  min-width: 120px;
+  max-width: 120px;
+  white-space: nowrap;
 }
 
 #pisosResult .pisos-table thead th:first-child{
   z-index: 3;
 }
 
+#pisosResult .pisos-table td,
+#pisosResult .pisos-table th{
+  padding: 8px 10px;
+}
 
 </style>
 </head>
