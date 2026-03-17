@@ -3774,22 +3774,7 @@ async function gsPisosSchedule(day) {
   return Array.isArray(data.items) ? data.items : [];
 }
   
-async function gsPisosHorario() {
-  const res = await fetch(GS_WEBAPP_URL, {
-    method: "POST",
-    body: JSON.stringify({
-      action: "pisos_schedule",
-      key: GS_API_KEY
-    })
-  });
 
-  let data = null;
-  try { data = await res.json(); }
-  catch { throw new Error("Respuesta inválida del servidor"); }
-
-  if (!data.ok) throw new Error(data.msg || data.error || "pisos_schedule_failed");
-  return Array.isArray(data.items) ? data.items : [];
-}
 
   
 async function ubicateGetScheduleCached_(teacher, forceRefresh = false) {
@@ -4621,78 +4606,10 @@ function pisosSetHint_(msg = "") {
   if (pisosHint) pisosHint.textContent = msg || "";
 }
 
-function pisosRenderTable_(items) {
-  if (!pisosTableBody) return;
 
-  const rows = Array.isArray(items) ? items : [];
 
-  if (!rows.length) {
-    pisosTableBody.innerHTML = `
-      <tr>
-        <td colspan="7" class="muted small">No hay horario de pisos registrado.</td>
-      </tr>
-    `;
-    return;
-  }
 
-  pisosTableBody.innerHTML = rows.map(r => `
-    <tr>
-      <td><strong>${escapeHtml(r.floor || "-")}</strong></td>
-      <td>${escapeHtml(r.break_label || "-")}</td>
-      <td>${escapeHtml(r.lunes || "-")}</td>
-      <td>${escapeHtml(r.martes || "-")}</td>
-      <td>${escapeHtml(r.miercoles || "-")}</td>
-      <td>${escapeHtml(r.jueves || "-")}</td>
-      <td>${escapeHtml(r.viernes || "-")}</td>
-    </tr>
-  `).join("");
-}
 
-async function pisosLoad_(forceRefresh = false) {
-  try {
-    pisosSetHint_("");
-
-    if (!forceRefresh && Array.isArray(__pisosCache) && __pisosCache.length) {
-      pisosRenderTable_(__pisosCache);
-      return;
-    }
-
-    if (pisosTableBody) {
-      pisosTableBody.innerHTML = `
-        <tr>
-          <td colspan="7" class="muted small">Cargando horario de pisos...</td>
-        </tr>
-      `;
-    }
-
-    setLoading(true, "Cargando…", "Consultando horario de pisos.");
-    const items = await gsPisosHorario();
-    __pisosCache = items;
-    pisosRenderTable_(items);
-  } catch (e) {
-    pisosSetHint_(String(e && e.message ? e.message : e));
-    if (pisosTableBody) {
-      pisosTableBody.innerHTML = `
-        <tr>
-          <td colspan="7" class="muted small">No pude cargar el horario de pisos.</td>
-        </tr>
-      `;
-    }
-  } finally {
-    setLoading(false);
-  }
-}
-
-async function pisosOpen_() {
-  try {
-    setMenuOpen(false);
-  } catch (e) {
-    if (userMenu) userMenu.hidden = true;
-  }
-
-  if (pisosModal) pisosModal.hidden = false;
-  await pisosLoad_(false);
-}
 
 
 function pisosSetHint_(msg = "") {
@@ -6082,6 +5999,8 @@ pisosDaySelect?.addEventListener("change", async () => {
   }
 });
 
+
+
 btnPisosMenu?.addEventListener("click", async () => {
   await pisosOpen_();
 });
@@ -6091,12 +6010,53 @@ btnPisosClose?.addEventListener("click", () => {
 });
 
 btnPisosRefresh?.addEventListener("click", async () => {
-  await pisosLoad_(true);
+  try {
+    pisosSetHint_("");
+    setLoading(true, "Actualizando…", "Recargando horario de pisos.");
+    __pisosCacheByDay = {};
+    __pisosDays = [];
+    __pisosDaysLoaded = false;
+
+    await pisosLoadDays_(true);
+
+    const selectedDay = String(pisosDaySelect?.value || "").trim();
+    if (selectedDay) {
+      await pisosLoadSchedule_(selectedDay, true);
+    } else if (pisosResult) {
+      pisosResult.innerHTML = `<div class="muted small">Selecciona un día para consultar.</div>`;
+    }
+  } catch (e) {
+    pisosSetHint_(String(e && e.message ? e.message : e));
+  } finally {
+    setLoading(false);
+  }
 });
 
 pisosModal?.addEventListener("click", (e) => {
   if (e.target === pisosModal) {
     pisosModal.setAttribute("hidden", "");
+  }
+});
+
+pisosDaySelect?.addEventListener("change", async () => {
+  const day = String(pisosDaySelect?.value || "").trim();
+
+  if (!day) {
+    pisosRenderSchedule_("", []);
+    return;
+  }
+
+  try {
+    pisosSetHint_("");
+    setLoading(true, "Consultando…", "Cargando horario del día.");
+    await pisosLoadSchedule_(day, false);
+  } catch (e) {
+    pisosSetHint_(String(e && e.message ? e.message : e));
+    if (pisosResult) {
+      pisosResult.innerHTML = `<div class="ubicate-empty">No pude cargar el horario de pisos.</div>`;
+    }
+  } finally {
+    setLoading(false);
   }
 });
   
