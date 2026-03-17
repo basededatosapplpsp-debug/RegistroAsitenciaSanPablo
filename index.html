@@ -3615,11 +3615,11 @@ async function ubicateConsultarSiguiente_() {
     __ubicateLastMode = "next";
     ubicateSetHint_("");
 
-    // cargar horario completo del docente solo una vez
+    // Cargar horario una sola vez
     if (!__ubicateScheduleCache.length) {
       const data = await gsUbicateAll(teacher);
       __ubicateScheduleCache = Array.isArray(data.items) ? data.items : [];
-      __ubicateNextIndex = -1; // importante: aún no inicializado para el día actual
+      __ubicateNextIndex = -1;
     }
 
     if (!__ubicateScheduleCache.length) {
@@ -3629,17 +3629,29 @@ async function ubicateConsultarSiguiente_() {
       return;
     }
 
-    // Día actual del navegador: 0 domingo, 1 lunes, ..., 6 sábado
     const now = new Date();
-    const jsDay = now.getDay();
-
-    // Ajusta este mapa a tu backend:
-    // lunes=1, martes=2, miercoles=3, jueves=4, viernes=5, sabado=6, domingo=7
-    const todayMap = { 1: 1, 2: 2, 3: 3, 4: 4, 5: 5, 6: 6, 0: 7 };
-    const todayIndex = todayMap[jsDay];
-
-    // Hora actual en minutos
+    const jsDay = now.getDay(); // 0 domingo, 1 lunes, 2 martes...
     const nowMinutes = (now.getHours() * 60) + now.getMinutes();
+
+    const dayNames = {
+      0: "domingo",
+      1: "lunes",
+      2: "martes",
+      3: "miercoles",
+      4: "jueves",
+      5: "viernes",
+      6: "sabado"
+    };
+
+    const todayName = dayNames[jsDay];
+
+    const normalizeDay_ = (s) => {
+      return String(s || "")
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .trim();
+    };
 
     const toMinutes_ = (hhmm) => {
       const s = String(hhmm || "").trim();
@@ -3648,9 +3660,24 @@ async function ubicateConsultarSiguiente_() {
       return (Number(m[1]) * 60) + Number(m[2]);
     };
 
-    // solo clases del día actual, ordenadas por hora
+    // Mapeo alterno por índice
+    const todayIndexCandidates = {
+      0: [0, 7], // domingo
+      1: [1],    // lunes
+      2: [2],    // martes
+      3: [3],    // miércoles
+      4: [4],    // jueves
+      5: [5],    // viernes
+      6: [6]     // sábado
+    }[jsDay] || [];
+
+    // Filtrar por day_index o por day_label
     const todayItems = __ubicateScheduleCache
-      .filter(it => Number(it.day_index || 0) === Number(todayIndex))
+      .filter(it => {
+        const di = Number(it.day_index);
+        const dl = normalizeDay_(it.day_label);
+        return todayIndexCandidates.includes(di) || dl === todayName;
+      })
       .sort((a, b) => toMinutes_(a.start_time) - toMinutes_(b.start_time));
 
     if (!todayItems.length) {
@@ -3665,11 +3692,10 @@ async function ubicateConsultarSiguiente_() {
       return;
     }
 
-    // Inicializar el índice SOLO la primera vez para el día/docente actual
-    // Regla:
-    // 1. si hay una clase actual, empieza en esa
-    // 2. si no, empieza en la más cercana que sigue hoy
-    // 3. si ya pasaron todas, vuelve a la primera del día
+    // Primera vez:
+    // 1. Si está en una clase actual, empieza ahí
+    // 2. Si no, en la siguiente más cercana
+    // 3. Si ya pasaron todas, vuelve a la primera de hoy
     if (__ubicateNextIndex < 0 || __ubicateNextIndex >= todayItems.length) {
       let startIdx = todayItems.findIndex(it => {
         const ini = toMinutes_(it.start_time);
@@ -3704,7 +3730,7 @@ async function ubicateConsultarSiguiente_() {
       course: item.course
     });
 
-    // avanzar circularmente dentro del día actual
+    // Avanzar circularmente solo dentro del día actual
     __ubicateNextIndex++;
     if (__ubicateNextIndex >= todayItems.length) {
       __ubicateNextIndex = 0;
