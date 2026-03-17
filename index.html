@@ -2616,6 +2616,10 @@ let __pisosDays = [];
 let __pisosDaysLoaded = false;
 let __pisosCacheByDay = {};
 
+const PISOS_CACHE_VERSION = "1";
+const PISOS_DAYS_STORAGE_KEY = `pisos_days_cache_v${PISOS_CACHE_VERSION}`;
+const PISOS_SCHEDULES_STORAGE_KEY = `pisos_schedules_cache_v${PISOS_CACHE_VERSION}`;
+
 let __ubicateTeachers = [];
 let __ubicateTeachersLoaded = false;
 let __ubicateTeachersPromise = null;
@@ -4708,6 +4712,42 @@ function pisosBreakOrder_(label) {
   return 99;
 }
 
+
+function pisosLoadPersistentCache_() {
+  try {
+    const savedDays = ubicateReadStorage_(PISOS_DAYS_STORAGE_KEY, []);
+    const savedSchedules = ubicateReadStorage_(PISOS_SCHEDULES_STORAGE_KEY, {});
+
+    if (Array.isArray(savedDays) && savedDays.length) {
+      __pisosDays = savedDays;
+      __pisosDaysLoaded = true;
+    }
+
+    if (savedSchedules && typeof savedSchedules === "object") {
+      __pisosCacheByDay = savedSchedules;
+    }
+  } catch (e) {}
+}
+
+function pisosSaveDaysCache_() {
+  try {
+    ubicateWriteStorage_(PISOS_DAYS_STORAGE_KEY, __pisosDays);
+  } catch (e) {}
+}
+
+function pisosSaveSchedulesCache_() {
+  try {
+    ubicateWriteStorage_(PISOS_SCHEDULES_STORAGE_KEY, __pisosCacheByDay);
+  } catch (e) {}
+}
+
+function pisosClearPersistentCache_() {
+  try {
+    localStorage.removeItem(PISOS_DAYS_STORAGE_KEY);
+    localStorage.removeItem(PISOS_SCHEDULES_STORAGE_KEY);
+  } catch (e) {}
+}
+
 function pisosRenderSchedule_(day, items) {
   if (!pisosResult) return;
 
@@ -4771,14 +4811,21 @@ function pisosRenderSchedule_(day, items) {
 }
 
 async function pisosLoadDays_(forceRefresh = false) {
-  if (!forceRefresh && __pisosDaysLoaded && __pisosDays.length) {
-    pisosRenderDays_(__pisosDays);
-    return __pisosDays;
+  if (!forceRefresh) {
+    if (!__pisosDaysLoaded || !__pisosDays.length) {
+      pisosLoadPersistentCache_();
+    }
+
+    if (__pisosDaysLoaded && __pisosDays.length) {
+      pisosRenderDays_(__pisosDays);
+      return __pisosDays;
+    }
   }
 
   const days = await gsPisosDaysList();
   __pisosDays = Array.isArray(days) ? days : [];
   __pisosDaysLoaded = true;
+  pisosSaveDaysCache_();
   pisosRenderDays_(__pisosDays);
   return __pisosDays;
 }
@@ -4791,13 +4838,20 @@ async function pisosLoadSchedule_(day, forceRefresh = false) {
     return [];
   }
 
-  if (!forceRefresh && Array.isArray(__pisosCacheByDay[dayKey])) {
-    pisosRenderSchedule_(dayKey, __pisosCacheByDay[dayKey]);
-    return __pisosCacheByDay[dayKey];
+  if (!forceRefresh) {
+    if (!__pisosDaysLoaded && !Object.keys(__pisosCacheByDay || {}).length) {
+      pisosLoadPersistentCache_();
+    }
+
+    if (Array.isArray(__pisosCacheByDay[dayKey])) {
+      pisosRenderSchedule_(dayKey, __pisosCacheByDay[dayKey]);
+      return __pisosCacheByDay[dayKey];
+    }
   }
 
   const items = await gsPisosSchedule(dayKey);
   __pisosCacheByDay[dayKey] = Array.isArray(items) ? items : [];
+  pisosSaveSchedulesCache_();
   pisosRenderSchedule_(dayKey, __pisosCacheByDay[dayKey]);
   return __pisosCacheByDay[dayKey];
 }
@@ -4813,6 +4867,19 @@ async function pisosOpen_() {
   if (pisosModal) pisosModal.hidden = false;
 
   try {
+    pisosLoadPersistentCache_();
+
+    const hasCachedDays = __pisosDaysLoaded && __pisosDays.length;
+
+    if (hasCachedDays) {
+      pisosRenderDays_(__pisosDays);
+
+      if (pisosResult) {
+        pisosResult.innerHTML = `<div class="muted small">Selecciona un día para consultar.</div>`;
+      }
+      return;
+    }
+
     setLoading(true, "Cargando…", "Consultando horario de pisos.");
     await pisosLoadDays_(false);
 
@@ -6056,11 +6123,19 @@ btnPisosRefresh?.addEventListener("click", async () => {
   try {
     pisosSetHint_("");
     setLoading(true, "Actualizando…", "Recargando horario de pisos.");
+
+    const selectedDayBeforeRefresh = String(pisosDaySelect?.value || "").trim();
+
     __pisosCacheByDay = {};
     __pisosDays = [];
     __pisosDaysLoaded = false;
+    pisosClearPersistentCache_();
 
     await pisosLoadDays_(true);
+
+    if (selectedDayBeforeRefresh && pisosDaySelect) {
+      pisosDaySelect.value = selectedDayBeforeRefresh;
+    }
 
     const selectedDay = String(pisosDaySelect?.value || "").trim();
     if (selectedDay) {
