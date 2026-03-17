@@ -2365,15 +2365,20 @@ const btnUbicateAll = $("btnUbicateAll");
 let __ubicateTeachers = [];
 let __ubicateTeachersLoaded = false;
 let __ubicateTeachersPromise = null;
-let __ubicatePrefetchPromise = null;
 
 let __ubicateLastMode = "now";
 
 let __ubicateScheduleCacheByTeacher = {};
+let __ubicateScheduleRequestByTeacher = {};
 
 let __ubicateScheduleCache = [];
 let __ubicateNextIndex = -1;
 let __ubicateSelectedDayKey = "";
+
+const UBICATE_CACHE_VERSION = "1";
+const UBICATE_TEACHERS_STORAGE_KEY = `ubicate_teachers_cache_v${UBICATE_CACHE_VERSION}`;
+const UBICATE_SCHEDULES_STORAGE_KEY = `ubicate_schedules_cache_v${UBICATE_CACHE_VERSION}`;
+const UBICATE_CACHE_MAX_AGE_MS = 1000 * 60 * 60 * 12; // 12 horas
 
 
 
@@ -3517,20 +3522,113 @@ async function gsUbicateAll(teacher) {
 }
 
 
-  async function ubicateGetScheduleCached_(teacher, forceRefresh = false) {
+async function ubicateGetScheduleCached_(teacher, forceRefresh = false) {
   const key = String(teacher || "").trim().toLowerCase();
   if (!key) return [];
 
   if (!forceRefresh && Array.isArray(__ubicateScheduleCacheByTeacher[key])) {
+    ubicateTouchSchedulesCacheTime_();
     return __ubicateScheduleCacheByTeacher[key];
   }
 
-  const data = await gsUbicateAll(teacher);
-  const items = Array.isArray(data?.items) ? data.items : [];
+  if (!forceRefresh) {
+    const saved = ubicateReadStorage_(UBICATE_SCHEDULES_STORAGE_KEY, null);
+    const savedItems = saved && saved.items && saved.items[key];
+    if (Array.isArray(savedItems) && ubicateIsFreshCache_(saved.savedAt)) {
+      __ubicateScheduleCacheByTeacher[key] = savedItems;
+      return savedItems;
+    }
+  }
 
-  __ubicateScheduleCacheByTeacher[key] = items;
-  return items;
+  if (!forceRefresh && __ubicateScheduleRequestByTeacher[key]) {
+    return __ubicateScheduleRequestByTeacher[key];
+  }
+
+  __ubicateScheduleRequestByTeacher[key] = (async () => {
+    const data = await gsUbicateAll(teacher);
+    const items = Array.isArray(data?.items) ? data.items : [];
+
+    __ubicateScheduleCacheByTeacher[key] = items;
+    ubicateSaveSchedulesCache_();
+    return items;
+  })();
+
+  try {
+    return await __ubicateScheduleRequestByTeacher[key];
+  } finally {
+    delete __ubicateScheduleRequestByTeacher[key];
+  }
 }
+
+  function ubicateReadStorage_(key, fallback) {
+  try {
+    const raw = localStorage.getItem(key);
+    if (!raw) return fallback;
+    return JSON.parse(raw);
+  } catch (e) {
+    return fallback;
+  }
+}
+
+function ubicateWriteStorage_(key, value) {
+  try {
+    localStorage.setItem(key, JSON.stringify(value));
+  } catch (e) {}
+}
+
+function ubicateIsFreshCache_(savedAt) {
+  const ts = Number(savedAt || 0);
+  if (!ts) return false;
+  return (Date.now() - ts) <= UBICATE_CACHE_MAX_AGE_MS;
+}
+
+function ubicateLoadPersistentCache_() {
+  const teachersBox = ubicateReadStorage_(UBICATE_TEACHERS_STORAGE_KEY, null);
+  if (
+    teachersBox &&
+    Array.isArray(teachersBox.items) &&
+    ubicateIsFreshCache_(teachersBox.savedAt)
+  ) {
+    __ubicateTeachers = teachersBox.items;
+    __ubicateTeachersLoaded = true;
+  }
+
+  const schedulesBox = ubicateReadStorage_(UBICATE_SCHEDULES_STORAGE_KEY, null);
+  if (
+    schedulesBox &&
+    schedulesBox.items &&
+    typeof schedulesBox.items === "object" &&
+    ubicateIsFreshCache_(schedulesBox.savedAt)
+  ) {
+    __ubicateScheduleCacheByTeacher = schedulesBox.items || {};
+  }
+}
+
+function ubicateSaveTeachersCache_() {
+  ubicateWriteStorage_(UBICATE_TEACHERS_STORAGE_KEY, {
+    savedAt: Date.now(),
+    items: Array.isArray(__ubicateTeachers) ? __ubicateTeachers : []
+  });
+}
+
+function ubicateSaveSchedulesCache_() {
+  ubicateWriteStorage_(UBICATE_SCHEDULES_STORAGE_KEY, {
+    savedAt: Date.now(),
+    items: __ubicateScheduleCacheByTeacher || {}
+  });
+}
+
+function ubicateTouchSchedulesCacheTime_() {
+  const current = ubicateReadStorage_(UBICATE_SCHEDULES_STORAGE_KEY, { items: {} });
+  ubicateWriteStorage_(UBICATE_SCHEDULES_STORAGE_KEY, {
+    savedAt: Date.now(),
+    items: current && current.items && typeof current.items === "object"
+      ? current.items
+      : (__ubicateScheduleCacheByTeacher || {})
+  });
+}
+
+  ubicateLoadPersistentCache_();
 
   function ubicateBuildNowFromItems_(teacher, items) {
   const list = Array.isArray(items) ? items : [];
@@ -3667,6 +3765,65 @@ function ubicateGetTodayInfo_() {
   return { jsDay, todayName, todayIndexCandidates, nowMinutes };
 }
 
+
+  function ubicateBuildNowFromItems_(teacher, items) {
+  const list = Array.isArray(items) ? items : [];
+  const { todayName, todayIndexCandidates, nowMinutes } = ubicateGetTodayInfo_();
+
+  const todayItems = list
+    .filter(it => {
+      const di = Number(it?.day_index ?? -1);
+      const dl = ubicateNormalizeDay_(it?.day_label || "");
+      return todayIndexCandidates.includes(di) || dl === todayName;
+    })
+    .sort((a, b) => ubicateToMinutes_(a.start_time) - ubicateToMinutes_(b.start_time));
+
+  const current = todayItems.find(it => {
+    const ini = ubicateToMinutes_(it.start_time);
+    const fin = ubicateToMinutes_(it.end_time);
+    return nowMinutes >= ini && nowMinutes < fin;
+  });
+
+  const hh = String(Math.floor(nowMinutes / 60)).padStart(2, "0");
+  const mm = String(nowMinutes % 60).padStart(2, "0");
+
+  if (!current) {
+    return {
+      teacher,
+      found_now: false,
+      day_label: todayItems[0]?.day_label || todayName || "-",
+      time_now: `${hh}:${mm}`
+    };
+  }
+
+  return {
+    teacher,
+    found_now: true,
+    salon: current?.salon || "",
+    subject: current?.subject || "",
+    course: current?.course || "",
+    start_time: current?.start_time || "",
+    end_time: current?.end_time || "",
+    day_label: current?.day_label || todayName || "-",
+    time_now: `${hh}:${mm}`
+  };
+}
+
+
+  function ubicateClearPersistentCache_() {
+  try {
+    localStorage.removeItem(UBICATE_TEACHERS_STORAGE_KEY);
+    localStorage.removeItem(UBICATE_SCHEDULES_STORAGE_KEY);
+  } catch (e) {}
+
+  __ubicateTeachers = [];
+  __ubicateTeachersLoaded = false;
+  __ubicateTeachersPromise = null;
+  __ubicateScheduleCacheByTeacher = {};
+  __ubicateScheduleRequestByTeacher = {};
+}
+
+  
 function ubicateGetDayKey_(item) {
   const di = Number(item?.day_index ?? -1);
   const dl = ubicateNormalizeDay_(item?.day_label || "");
@@ -3971,6 +4128,7 @@ async function ubicateConsultarAhora_() {
   try {
     __ubicateLastMode = "now";
     ubicateSetHint_("");
+    setLoading(true, "Consultando…", "Buscando clase actual del docente.");
 
     const items = await ubicateGetScheduleCached_(teacher);
     __ubicateScheduleCache = items;
@@ -3981,12 +4139,10 @@ async function ubicateConsultarAhora_() {
     ubicateRenderResult_(data);
   } catch (e) {
     ubicateSetHint_(String(e && e.message ? e.message : e));
-    if (ubicateResult) {
-      ubicateResult.innerHTML = `<div class="ubicate-empty">No pude consultar la ubicación del docente.</div>`;
-    }
+  } finally {
+    setLoading(false);
   }
 }
-
 async function ubicateConsultarSiguiente_() {
   const teacher = String(ubicateTeacherSelect?.value || "").trim();
 
@@ -4213,6 +4369,16 @@ async function ubicateLoadTeachers_(forceRefresh = false) {
     return __ubicateTeachers;
   }
 
+  if (!forceRefresh) {
+    const saved = ubicateReadStorage_(UBICATE_TEACHERS_STORAGE_KEY, null);
+    if (saved && Array.isArray(saved.items) && ubicateIsFreshCache_(saved.savedAt)) {
+      __ubicateTeachers = saved.items;
+      __ubicateTeachersLoaded = true;
+      ubicateRenderTeachers_(__ubicateTeachers);
+      return __ubicateTeachers;
+    }
+  }
+
   if (!forceRefresh && __ubicateTeachersPromise) {
     const teachers = await __ubicateTeachersPromise;
     ubicateRenderTeachers_(teachers);
@@ -4223,6 +4389,7 @@ async function ubicateLoadTeachers_(forceRefresh = false) {
     const teachers = await gsUbicateTeachersList();
     __ubicateTeachers = Array.isArray(teachers) ? teachers : [];
     __ubicateTeachersLoaded = true;
+    ubicateSaveTeachersCache_();
     return __ubicateTeachers;
   })();
 
