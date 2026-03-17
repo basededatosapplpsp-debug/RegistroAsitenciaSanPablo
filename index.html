@@ -1470,9 +1470,11 @@ input[list]::-moz-list-dropdown {
       <canvas id="qrCanvas" hidden></canvas>
     </div>
 
-    <div class="modal-actions" style="justify-content:flex-end;">
-      <button id="btnQrClose" type="button" class="btn btn-ghost">Cancelar</button>
-    </div>
+   <div class="modal-actions" style="justify-content:flex-end; flex-wrap:wrap;">
+  <button id="btnUbicateNext" type="button" class="btn btn-secondary">Siguiente</button>
+  <button id="btnUbicateAll" type="button" class="btn btn-primary">Todo</button>
+  <button id="btnUbicateClose" type="button" class="btn btn-ghost">Cerrar</button>
+</div>
   </div>
 </div>
 
@@ -2357,8 +2359,11 @@ const ubicateTeacherSelect = $("ubicateTeacherSelect");
 const ubicateResult = $("ubicateResult");
 const ubicateHint = $("ubicateHint");
 const btnUbicateClose = $("btnUbicateClose");
+const btnUbicateNext = $("btnUbicateNext");
+const btnUbicateAll = $("btnUbicateAll");
 
 let __ubicateTeachers = [];
+let __ubicateLastMode = "now"; // now | next | all
 
 
 const btnToggleRecords = $("btnToggleRecords");
@@ -3464,6 +3469,177 @@ async function gsUbicateNow(teacher) {
   return data;
 }
 
+async function gsUbicateNext(teacher) {
+  const res = await fetch(GS_WEBAPP_URL, {
+    method: "POST",
+    body: JSON.stringify({
+      action: "ubicacion_docente_next_class",
+      teacher,
+      key: GS_API_KEY
+    })
+  });
+
+  let data = null;
+  try { data = await res.json(); }
+  catch { throw new Error("Respuesta inválida del servidor"); }
+
+  if (!data.ok) throw new Error(data.msg || data.error || "ubicacion_docente_next_class_failed");
+  return data;
+}
+
+async function gsUbicateAll(teacher) {
+  const res = await fetch(GS_WEBAPP_URL, {
+    method: "POST",
+    body: JSON.stringify({
+      action: "ubicacion_docente_schedule",
+      teacher,
+      key: GS_API_KEY
+    })
+  });
+
+  let data = null;
+  try { data = await res.json(); }
+  catch { throw new Error("Respuesta inválida del servidor"); }
+
+  if (!data.ok) throw new Error(data.msg || data.error || "ubicacion_docente_schedule_failed");
+  return data;
+}
+
+function ubicateRenderNext_(data) {
+  if (!ubicateResult) return;
+
+  if (!data || !data.teacher) {
+    ubicateResult.innerHTML = `<div class="ubicate-empty">No encontré información del docente.</div>`;
+    return;
+  }
+
+  if (!data.found_next) {
+    ubicateResult.innerHTML = `
+      <div class="ubicate-card">
+        <div class="ubicate-title">${escapeHtml(data.teacher)}</div>
+        <div class="ubicate-line">No encontré una próxima clase programada.</div>
+      </div>
+    `;
+    return;
+  }
+
+  ubicateResult.innerHTML = `
+    <div class="ubicate-card">
+      <div class="ubicate-title">${escapeHtml(data.teacher)}</div>
+      <div class="ubicate-line"><strong>Próxima clase</strong></div>
+      <div class="ubicate-line"><strong>Día:</strong> ${escapeHtml(data.day_label || "-")}</div>
+      <div class="ubicate-line"><strong>Bloque:</strong> ${escapeHtml(data.start_time || "-")} - ${escapeHtml(data.end_time || "-")}</div>
+      <div class="ubicate-line"><strong>Salón:</strong> ${escapeHtml(data.salon || "Sin salón")}</div>
+      <div class="ubicate-line"><strong>Materia:</strong> ${escapeHtml(data.subject || "-")}</div>
+      <div class="ubicate-line"><strong>Curso:</strong> ${escapeHtml(data.course || "-")}</div>
+    </div>
+  `;
+}
+
+function ubicateRenderAll_(data) {
+  if (!ubicateResult) return;
+
+  if (!data || !data.teacher) {
+    ubicateResult.innerHTML = `<div class="ubicate-empty">No encontré información del docente.</div>`;
+    return;
+  }
+
+  const items = Array.isArray(data.items) ? data.items : [];
+
+  if (!items.length) {
+    ubicateResult.innerHTML = `
+      <div class="ubicate-card">
+        <div class="ubicate-title">${escapeHtml(data.teacher)}</div>
+        <div class="ubicate-line">No tiene horario registrado.</div>
+      </div>
+    `;
+    return;
+  }
+
+  ubicateResult.innerHTML = `
+    <div class="ubicate-card">
+      <div class="ubicate-title">${escapeHtml(data.teacher)}</div>
+      <div class="ubicate-line" style="margin-bottom:10px;"><strong>Horario completo</strong></div>
+
+      ${items.map(it => `
+        <div style="border-top:1px solid rgba(255,255,255,.10); padding-top:10px; margin-top:10px;">
+          <div class="ubicate-line"><strong>Día:</strong> ${escapeHtml(it.day_label || "-")}</div>
+          <div class="ubicate-line"><strong>Bloque:</strong> ${escapeHtml(it.start_time || "-")} - ${escapeHtml(it.end_time || "-")}</div>
+          <div class="ubicate-line"><strong>Salón:</strong> ${escapeHtml(it.salon || "Sin salón")}</div>
+          <div class="ubicate-line"><strong>Materia:</strong> ${escapeHtml(it.subject || "-")}</div>
+          <div class="ubicate-line"><strong>Curso:</strong> ${escapeHtml(it.course || "-")}</div>
+        </div>
+      `).join("")}
+    </div>
+  `;
+}
+
+async function ubicateConsultarAhora_() {
+  const teacher = String(ubicateTeacherSelect?.value || "").trim();
+
+  if (!teacher) {
+    ubicateSetHint_("Selecciona un docente.");
+    if (ubicateResult) {
+      ubicateResult.innerHTML = `<div class="muted small">Selecciona un docente para consultar.</div>`;
+    }
+    return;
+  }
+
+  try {
+    __ubicateLastMode = "now";
+    ubicateSetHint_("");
+    setLoading(true, "Consultando…", "Buscando clase actual del docente.");
+    const data = await gsUbicateNow(teacher);
+    ubicateRenderResult_(data);
+  } catch (e) {
+    ubicateSetHint_(String(e && e.message ? e.message : e));
+  } finally {
+    setLoading(false);
+  }
+}
+
+async function ubicateConsultarSiguiente_() {
+  const teacher = String(ubicateTeacherSelect?.value || "").trim();
+
+  if (!teacher) {
+    ubicateSetHint_("Selecciona un docente.");
+    return;
+  }
+
+  try {
+    __ubicateLastMode = "next";
+    ubicateSetHint_("");
+    setLoading(true, "Consultando…", "Buscando la próxima clase del docente.");
+    const data = await gsUbicateNext(teacher);
+    ubicateRenderNext_(data);
+  } catch (e) {
+    ubicateSetHint_(String(e && e.message ? e.message : e));
+  } finally {
+    setLoading(false);
+  }
+}
+
+async function ubicateConsultarTodo_() {
+  const teacher = String(ubicateTeacherSelect?.value || "").trim();
+
+  if (!teacher) {
+    ubicateSetHint_("Selecciona un docente.");
+    return;
+  }
+
+  try {
+    __ubicateLastMode = "all";
+    ubicateSetHint_("");
+    setLoading(true, "Consultando…", "Cargando horario completo del docente.");
+    const data = await gsUbicateAll(teacher);
+    ubicateRenderAll_(data);
+  } catch (e) {
+    ubicateSetHint_(String(e && e.message ? e.message : e));
+  } finally {
+    setLoading(false);
+  }
+}
+
 function ubicateSetHint_(msg = "") {
   if (ubicateHint) ubicateHint.textContent = msg || "";
 }
@@ -3535,9 +3711,11 @@ async function ubicateOpen_() {
     if (userMenu) userMenu.hidden = true;
   }
 
+  __ubicateLastMode = "now";
+
   ubicateSetHint_("");
   if (ubicateResult) {
-    ubicateResult.innerHTML = `<div class="muted small">Cargando docentes...</div>`;
+    ubicateResult.innerHTML = `<div class="muted small">Cargando docentes.</div>`;
   }
 
   if (ubicateModal) ubicateModal.hidden = false;
@@ -3558,7 +3736,6 @@ async function ubicateOpen_() {
     setLoading(false);
   }
 }
-
 
 function faltasPickArray_(resp, keys) {
   // resp puede venir como {ok, courses:[...]} o {ok, data:{courses:[...]}} o {ok, list:[...]} etc.
@@ -4578,11 +4755,20 @@ if (btnAgregarActividadPendiente) {
 
 
 btnUbicateMenu?.addEventListener("click", async () => {
+  __ubicateLastMode = "now";
   await ubicateOpen_();
 });
 
 btnUbicateClose?.addEventListener("click", () => {
   ubicateModal?.setAttribute("hidden", "");
+});
+
+btnUbicateNext?.addEventListener("click", async () => {
+  await ubicateConsultarSiguiente_();
+});
+
+btnUbicateAll?.addEventListener("click", async () => {
+  await ubicateConsultarTodo_();
 });
 
 ubicateModal?.addEventListener("click", (e) => {
@@ -4603,9 +4789,31 @@ ubicateTeacherSelect?.addEventListener("change", async () => {
   }
 
   try {
-    setLoading(true, "Consultando…", "Buscando ubicación actual del docente.");
     ubicateSetHint_("");
 
+    if (__ubicateLastMode === "next") {
+      setLoading(true, "Consultando…", "Buscando la próxima clase del docente.");
+      if (ubicateResult) {
+        ubicateResult.innerHTML = `<div class="muted small">Consultando próxima clase...</div>`;
+      }
+
+      const data = await gsUbicateNext(teacher);
+      ubicateRenderNext_(data);
+      return;
+    }
+
+    if (__ubicateLastMode === "all") {
+      setLoading(true, "Consultando…", "Cargando horario completo del docente.");
+      if (ubicateResult) {
+        ubicateResult.innerHTML = `<div class="muted small">Cargando horario completo...</div>`;
+      }
+
+      const data = await gsUbicateAll(teacher);
+      ubicateRenderAll_(data);
+      return;
+    }
+
+    setLoading(true, "Consultando…", "Buscando ubicación actual del docente.");
     if (ubicateResult) {
       ubicateResult.innerHTML = `<div class="muted small">Consultando ubicación actual...</div>`;
     }
@@ -4615,7 +4823,7 @@ ubicateTeacherSelect?.addEventListener("change", async () => {
   } catch (e) {
     ubicateSetHint_(String(e && e.message ? e.message : e));
     if (ubicateResult) {
-      ubicateResult.innerHTML = `<div class="ubicate-empty">No pude consultar la ubicación del docente.</div>`;
+      ubicateResult.innerHTML = `<div class="ubicate-empty">No pude consultar la información del docente.</div>`;
     }
   } finally {
     setLoading(false);
