@@ -1471,13 +1471,20 @@ input[list]::-moz-list-dropdown {
   <button id="btnReporteEjemplo2" class="menu-item" type="button" role="menuitem">Ejemplo 2</button>
   <button id="btnReporteEjemplo3" class="menu-item" type="button" role="menuitem">Ejemplo 3</button>
 </div>
-<button id="btnUbicateMenu" class="menu-item" type="button" role="menuitem">
-  Ubícate
+<!-- ✅ NUEVO: Botón que abre el submenú "Horarios" -->
+<button id="btnHorariosMenu" class="menu-item" type="button" role="menuitem" aria-haspopup="true" aria-expanded="false">
+  Horarios <span class="muted small" aria-hidden="true">›</span>
 </button>
 
-  <button id="btnPisosMenu" class="menu-item" type="button" role="menuitem">
-  Pisos
-</button>
+<!-- ✅ Submenú "Horarios" -->
+<div id="horariosSubMenu" class="menu-subpanel" hidden>
+  <div class="muted small" style="padding:6px 8px;">Horarios</div>
+
+  <!-- ✅ conservan los mismos IDs para no romper tu lógica actual -->
+  <button id="btnUbicateMenu" class="menu-item" type="button" role="menuitem">Ubícate</button>
+  <button id="btnPisosMenu" class="menu-item" type="button" role="menuitem">Pisos</button>
+  <button id="btnParqueMenu" class="menu-item" type="button" role="menuitem">Parque</button>
+</div>
 
   <button id="btnLogout" class="menu-item danger" type="button" role="menuitem">Cerrar sesión</button>
 </div>
@@ -2558,6 +2565,10 @@ const userInitialsEl = $("userInitials");
 const btnReportesMenu = $("btnReportesMenu");
 const reportesSubMenu = $("reportesSubMenu");
 
+const btnHorariosMenu = $("btnHorariosMenu");
+const horariosSubMenu = $("horariosSubMenu");
+const btnParqueMenu = $("btnParqueMenu");
+
 const btnReportePendientes = $("btnReportePendientes");
 const btnReporteEjemplo2 = $("btnReporteEjemplo2");
 const btnReporteEjemplo3 = $("btnReporteEjemplo3");
@@ -3492,6 +3503,49 @@ if (recordsTeacherSelect) {
   });
 }
 
+// ===== Submenú Horarios =====
+function closeHorariosSubMenu_(){
+  if (!horariosSubMenu) return;
+  horariosSubMenu.hidden = true;
+  if (btnHorariosMenu) btnHorariosMenu.setAttribute("aria-expanded", "false");
+}
+
+function toggleHorariosSubMenu_(){
+  if (!horariosSubMenu) return;
+  const willOpen = !!horariosSubMenu.hidden;
+
+  // cerrar otros submenús para que no se monten
+  closeFaltasSubMenu_();
+  closeFaltasTiposSubMenu_();
+  if (reportesSubMenu) reportesSubMenu.hidden = true;
+
+  horariosSubMenu.hidden = !willOpen;
+  if (btnHorariosMenu) btnHorariosMenu.setAttribute("aria-expanded", willOpen ? "true" : "false");
+}
+
+if (btnHorariosMenu) {
+  btnHorariosMenu.addEventListener("click", (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    toggleHorariosSubMenu_();
+  });
+}
+
+// click dentro => cierra submenú
+if (horariosSubMenu) {
+  horariosSubMenu.addEventListener("click", () => {
+    closeHorariosSubMenu_();
+  });
+}
+
+// click fuera => cierra submenú
+document.addEventListener("click", (e) => {
+  if (!horariosSubMenu || !btnHorariosMenu) return;
+  const inside = (e.target && (horariosSubMenu.contains(e.target) || btnHorariosMenu.contains(e.target)));
+  if (!inside) closeHorariosSubMenu_();
+});
+
+
 // ===== Submenú Faltas =====
 const btnFaltasMenu = document.getElementById("btnFaltasMenu");
 const faltasSubMenu = document.getElementById("faltasSubMenu");
@@ -3506,8 +3560,8 @@ function toggleFaltasSubMenu_(){
   if (!faltasSubMenu) return;
   const willOpen = !!faltasSubMenu.hidden;
   closeFaltasTiposSubMenu_();
+  closeHorariosSubMenu_();
   faltasSubMenu.hidden = !willOpen;
-  
 
   if (btnFaltasMenu) btnFaltasMenu.setAttribute("aria-expanded", willOpen ? "true" : "false");
 }
@@ -3552,8 +3606,10 @@ function toggleFaltasTiposSubMenu_(){
   if (!faltasTiposSubMenu) return;
   const willOpen = !!faltasTiposSubMenu.hidden;
 
-  // ✅ Si abro "Faltas", cierro el otro submenú (Llamados) para que no se monten
+  // ✅ Si abro "Faltas", cierro otros submenús para que no se monten
   closeFaltasSubMenu_();
+  closeHorariosSubMenu_();
+  if (reportesSubMenu) reportesSubMenu.hidden = true;
 
   faltasTiposSubMenu.hidden = !willOpen;
   if (btnFaltasTiposMenu) btnFaltasTiposMenu.setAttribute("aria-expanded", willOpen ? "true" : "false");
@@ -5955,6 +6011,7 @@ if (btnReportesMenu) {
 
     if (faltasSubMenu) faltasSubMenu.hidden = true;
     if (faltasTiposSubMenu) faltasTiposSubMenu.hidden = true;
+    closeHorariosSubMenu_();
 
     if (reportesSubMenu) {
       reportesSubMenu.hidden = !reportesSubMenu.hidden;
@@ -6117,6 +6174,14 @@ btnPisosMenu?.addEventListener("click", async () => {
 
 btnPisosClose?.addEventListener("click", () => {
   pisosModal?.setAttribute("hidden", "");
+});
+
+btnParqueMenu?.addEventListener("click", () => {
+  try {
+    setMenuOpen(false);
+  } catch (e) {
+    if (userMenu) userMenu.hidden = true;
+  }
 });
 
 btnPisosRefresh?.addEventListener("click", async () => {
