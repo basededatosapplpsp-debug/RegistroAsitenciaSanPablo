@@ -3615,33 +3615,50 @@ async function ubicateConsultarSiguiente_() {
     __ubicateLastMode = "next";
     ubicateSetHint_("");
 
-    // 🔹 Si no hay cache, lo cargamos
+    // cargar horario si aún no está en cache
     if (!__ubicateScheduleCache.length) {
-      setLoading(true, "Consultando…", "Cargando horario del docente...");
-
       const data = await gsUbicateAll(teacher);
-
       __ubicateScheduleCache = Array.isArray(data.items) ? data.items : [];
-
-      // ordenar por día + hora
-      __ubicateScheduleCache.sort((a, b) => {
-        const dayA = Number(a.day_index || 0);
-        const dayB = Number(b.day_index || 0);
-
-        if (dayA !== dayB) return dayA - dayB;
-
-        return String(a.start_time || "").localeCompare(String(b.start_time || ""));
-      });
-
       __ubicateNextIndex = 0;
     }
 
     if (!__ubicateScheduleCache.length) {
-      ubicateResult.innerHTML = `<div class="ubicate-empty">No tiene horario registrado.</div>`;
+      if (ubicateResult) {
+        ubicateResult.innerHTML = `<div class="ubicate-empty">No tiene horario registrado.</div>`;
+      }
       return;
     }
 
-    const item = __ubicateScheduleCache[__ubicateNextIndex];
+    // día actual real del navegador
+    const jsDay = new Date().getDay(); // 0 domingo, 1 lunes, 2 martes...
+    const todayMap = { 1: 1, 2: 2, 3: 3, 4: 4, 5: 5, 6: 6, 0: 7 };
+    const todayIndex = todayMap[jsDay];
+
+    // filtrar solo clases del día actual
+    const todayItems = __ubicateScheduleCache
+      .filter(it => Number(it.day_index || 0) === Number(todayIndex))
+      .sort((a, b) => {
+        return String(a.start_time || "").localeCompare(String(b.start_time || ""));
+      });
+
+    if (!todayItems.length) {
+      if (ubicateResult) {
+        ubicateResult.innerHTML = `
+          <div class="ubicate-card">
+            <div class="ubicate-title">${escapeHtml(teacher)}</div>
+            <div class="ubicate-line">No tiene clases programadas para hoy.</div>
+          </div>
+        `;
+      }
+      return;
+    }
+
+    // si el índice se sale, volver al inicio
+    if (__ubicateNextIndex >= todayItems.length) {
+      __ubicateNextIndex = 0;
+    }
+
+    const item = todayItems[__ubicateNextIndex];
 
     ubicateRenderNext_({
       teacher,
@@ -3654,16 +3671,17 @@ async function ubicateConsultarSiguiente_() {
       course: item.course
     });
 
-    // 🔹 avanzar índice (circular)
+    // avanzar en forma circular, pero solo dentro del día actual
     __ubicateNextIndex++;
-    if (__ubicateNextIndex >= __ubicateScheduleCache.length) {
+    if (__ubicateNextIndex >= todayItems.length) {
       __ubicateNextIndex = 0;
     }
 
   } catch (e) {
     ubicateSetHint_(String(e && e.message ? e.message : e));
-  } finally {
-    setLoading(false);
+    if (ubicateResult) {
+      ubicateResult.innerHTML = `<div class="ubicate-empty">No pude consultar la próxima clase.</div>`;
+    }
   }
 }
 
@@ -4839,7 +4857,7 @@ ubicateTeacherSelect?.addEventListener("change", async () => {
     return;
   }
 
-  // reset del carrusel al cambiar de docente
+  // reset al cambiar de docente
   __ubicateScheduleCache = [];
   __ubicateNextIndex = 0;
 
