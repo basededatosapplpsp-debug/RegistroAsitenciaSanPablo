@@ -2136,8 +2136,15 @@ input[list]::-moz-list-dropdown {
     <div id="ubicateHint" class="modal-hint muted small"></div>
 
  <div class="modal-actions" style="justify-content:flex-end; flex-wrap:wrap;">
-  <button id="btnUbicateNext" type="button" class="btn btn-secondary">Siguiente</button>
-  <button id="btnUbicateAll" type="button" class="btn btn-primary">Todo</button>
+<button
+  id="btnUbicateNext"
+  type="button"
+  class="btn btn-secondary icon-only"
+  title="Siguiente"
+  aria-label="Siguiente"
+>
+  <i class="fa-solid fa-forward" aria-hidden="true"></i>
+</button>  <button id="btnUbicateAll" type="button" class="btn btn-primary">Todo</button>
 
   <button
     id="btnUbicateRefresh"
