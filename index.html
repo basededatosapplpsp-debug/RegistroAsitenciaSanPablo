@@ -1400,6 +1400,10 @@ input[list]::-moz-list-dropdown {
   Ubícate
 </button>
 
+  <button id="btnPisosMenu" class="menu-item" type="button" role="menuitem">
+  Pisos
+</button>
+
   <button id="btnLogout" class="menu-item danger" type="button" role="menuitem">Cerrar sesión</button>
 </div>
 
@@ -2218,8 +2222,49 @@ input[list]::-moz-list-dropdown {
 
   <button id="btnUbicateClose" type="button" class="btn btn-ghost">Cerrar</button>
 </div>
+ </div>
+</div>
+
+<!-- ======= MODAL PISOS ======= -->
+<div id="pisosModal" class="modal-backdrop" hidden>
+  <div class="modal-card" style="width:min(980px,100%);">
+    <h2 class="modal-title">Horario de pisos</h2>
+    <p class="modal-sub">
+      Consulta la rotación de pisos por descanso y por día.
+    </p>
+
+    <div id="pisosHint" class="modal-hint muted small"></div>
+
+    <div class="table-wrap" style="margin-top:12px;">
+      <table class="table" id="pisosTable">
+        <thead>
+          <tr>
+            <th>Piso</th>
+            <th>Descanso</th>
+            <th>Lunes</th>
+            <th>Martes</th>
+            <th>Miércoles</th>
+            <th>Jueves</th>
+            <th>Viernes</th>
+          </tr>
+        </thead>
+        <tbody id="pisosTableBody">
+          <tr>
+            <td colspan="7" class="muted small">Cargando horario de pisos...</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="modal-actions" style="justify-content:flex-end; flex-wrap:wrap;">
+      <button id="btnPisosRefresh" type="button" class="btn btn-ghost icon-only" title="Actualizar" aria-label="Actualizar">
+        <i class="fa-solid fa-rotate-right" aria-hidden="true"></i>
+      </button>
+      <button id="btnPisosClose" type="button" class="btn btn-ghost">Cerrar</button>
+    </div>
   </div>
 </div>
+
 
 <script>
 // ======= CONFIG DEL COLEGIO (CAMBIA ESTO) =======
@@ -2449,6 +2494,16 @@ const btnUbicateClose = $("btnUbicateClose");
 const btnUbicateNext = $("btnUbicateNext");
 const btnUbicateAll = $("btnUbicateAll");
 const btnUbicateRefresh = $("btnUbicateRefresh");
+
+  // ======= PISOS =======
+const btnPisosMenu = $("btnPisosMenu");
+const pisosModal = $("pisosModal");
+const pisosHint = $("pisosHint");
+const pisosTableBody = $("pisosTableBody");
+const btnPisosClose = $("btnPisosClose");
+const btnPisosRefresh = $("btnPisosRefresh");
+
+let __pisosCache = null;
 
 let __ubicateTeachers = [];
 let __ubicateTeachersLoaded = false;
@@ -3616,7 +3671,24 @@ async function gsUbicateAll(teacher) {
   return data;
 }
 
+async function gsPisosHorario() {
+  const res = await fetch(GS_WEBAPP_URL, {
+    method: "POST",
+    body: JSON.stringify({
+      action: "pisos_schedule",
+      key: GS_API_KEY
+    })
+  });
 
+  let data = null;
+  try { data = await res.json(); }
+  catch { throw new Error("Respuesta inválida del servidor"); }
+
+  if (!data.ok) throw new Error(data.msg || data.error || "pisos_schedule_failed");
+  return Array.isArray(data.items) ? data.items : [];
+}
+
+  
 async function ubicateGetScheduleCached_(teacher, forceRefresh = false) {
   const key = String(teacher || "").trim().toLowerCase();
   if (!key) return [];
@@ -4442,6 +4514,83 @@ async function ubicateConsultarTodo_() {
   }
 }
 
+function pisosSetHint_(msg = "") {
+  if (pisosHint) pisosHint.textContent = msg || "";
+}
+
+function pisosRenderTable_(items) {
+  if (!pisosTableBody) return;
+
+  const rows = Array.isArray(items) ? items : [];
+
+  if (!rows.length) {
+    pisosTableBody.innerHTML = `
+      <tr>
+        <td colspan="7" class="muted small">No hay horario de pisos registrado.</td>
+      </tr>
+    `;
+    return;
+  }
+
+  pisosTableBody.innerHTML = rows.map(r => `
+    <tr>
+      <td><strong>${escapeHtml(r.floor || "-")}</strong></td>
+      <td>${escapeHtml(r.break_label || "-")}</td>
+      <td>${escapeHtml(r.lunes || "-")}</td>
+      <td>${escapeHtml(r.martes || "-")}</td>
+      <td>${escapeHtml(r.miercoles || "-")}</td>
+      <td>${escapeHtml(r.jueves || "-")}</td>
+      <td>${escapeHtml(r.viernes || "-")}</td>
+    </tr>
+  `).join("");
+}
+
+async function pisosLoad_(forceRefresh = false) {
+  try {
+    pisosSetHint_("");
+
+    if (!forceRefresh && Array.isArray(__pisosCache) && __pisosCache.length) {
+      pisosRenderTable_(__pisosCache);
+      return;
+    }
+
+    if (pisosTableBody) {
+      pisosTableBody.innerHTML = `
+        <tr>
+          <td colspan="7" class="muted small">Cargando horario de pisos...</td>
+        </tr>
+      `;
+    }
+
+    setLoading(true, "Cargando…", "Consultando horario de pisos.");
+    const items = await gsPisosHorario();
+    __pisosCache = items;
+    pisosRenderTable_(items);
+  } catch (e) {
+    pisosSetHint_(String(e && e.message ? e.message : e));
+    if (pisosTableBody) {
+      pisosTableBody.innerHTML = `
+        <tr>
+          <td colspan="7" class="muted small">No pude cargar el horario de pisos.</td>
+        </tr>
+      `;
+    }
+  } finally {
+    setLoading(false);
+  }
+}
+
+async function pisosOpen_() {
+  try {
+    setMenuOpen(false);
+  } catch (e) {
+    if (userMenu) userMenu.hidden = true;
+  }
+
+  if (pisosModal) pisosModal.hidden = false;
+  await pisosLoad_(false);
+}
+  
 function ubicateSetHint_(msg = "") {
   if (ubicateHint) ubicateHint.textContent = msg || "";
 }
@@ -5631,7 +5780,23 @@ btnUbicateRefresh?.addEventListener("click", async () => {
   await ubicateRefreshCurrentData_();
 });
 
+btnPisosMenu?.addEventListener("click", async () => {
+  await pisosOpen_();
+});
 
+btnPisosClose?.addEventListener("click", () => {
+  pisosModal?.setAttribute("hidden", "");
+});
+
+btnPisosRefresh?.addEventListener("click", async () => {
+  await pisosLoad_(true);
+});
+
+pisosModal?.addEventListener("click", (e) => {
+  if (e.target === pisosModal) {
+    pisosModal.setAttribute("hidden", "");
+  }
+});
   
 ubicateModal?.addEventListener("click", (e) => {
   if (e.target === ubicateModal) {
