@@ -1265,50 +1265,6 @@ input[list]::-moz-list-dropdown {
   color: var(--muted);
   font-size:13px;
 }
-
-#ubicateExtraContent{
-  min-height:80px;
-  max-height:320px;
-  overflow:auto;
-  -webkit-overflow-scrolling: touch;
-  border:1px solid var(--line);
-  border-radius:14px;
-  padding:12px;
-  background: rgba(0,0,0,.10);
-}
-
-.ubicate-schedule-table{
-  width:100%;
-  border-collapse:collapse;
-  font-size:14px;
-}
-
-.ubicate-schedule-table th,
-.ubicate-schedule-table td{
-  padding:8px 10px;
-  border-bottom:1px solid rgba(255,255,255,.08);
-  text-align:left;
-  vertical-align:top;
-}
-
-.ubicate-schedule-table th{
-  font-weight:800;
-}
-
-.ubicate-badge-now{
-  display:inline-block;
-  padding:3px 8px;
-  border-radius:999px;
-  font-size:12px;
-  font-weight:800;
-  border:1px solid rgba(255,255,255,.16);
-}
-
-.ubicate-section-title{
-  font-weight:900;
-  margin-bottom:10px;
-}
-
 </style>
 </head>
 
@@ -1514,11 +1470,9 @@ input[list]::-moz-list-dropdown {
       <canvas id="qrCanvas" hidden></canvas>
     </div>
 
-  <div class="modal-actions" style="justify-content:flex-end; gap:10px; flex-wrap:wrap;">
-  <button id="btnUbicateNextClass" type="button" class="btn btn-ghost">Próxima clase</button>
-  <button id="btnUbicateFullSchedule" type="button" class="btn btn-ghost">Ver horario completo</button>
-  <button id="btnUbicateClose" type="button" class="btn btn-ghost">Cerrar</button>
-</div>
+    <div class="modal-actions" style="justify-content:flex-end;">
+      <button id="btnQrClose" type="button" class="btn btn-ghost">Cancelar</button>
+    </div>
   </div>
 </div>
 
@@ -2172,12 +2126,6 @@ input[list]::-moz-list-dropdown {
 
     <div id="ubicateHint" class="modal-hint muted small"></div>
 
-    <div id="ubicateExtraBox" class="disc-reported" style="margin-top:16px;" hidden>
-  <div id="ubicateExtraContent" class="disc-reported-list">
-    <div class="muted small">Sin información adicional.</div>
-  </div>
-</div>
-
     <div class="modal-actions" style="justify-content:flex-end;">
       <button id="btnUbicateClose" type="button" class="btn btn-ghost">Cerrar</button>
     </div>
@@ -2409,11 +2357,6 @@ const ubicateTeacherSelect = $("ubicateTeacherSelect");
 const ubicateResult = $("ubicateResult");
 const ubicateHint = $("ubicateHint");
 const btnUbicateClose = $("btnUbicateClose");
-
-const btnUbicateNextClass = $("btnUbicateNextClass");
-const btnUbicateFullSchedule = $("btnUbicateFullSchedule");
-const ubicateExtraBox = $("ubicateExtraBox");
-const ubicateExtraContent = $("ubicateExtraContent");
 
 let __ubicateTeachers = [];
 
@@ -3521,42 +3464,6 @@ async function gsUbicateNow(teacher) {
   return data;
 }
 
-async function gsUbicateNextClass(teacher) {
-  const res = await fetch(GS_WEBAPP_URL, {
-    method: "POST",
-    body: JSON.stringify({
-      action: "ubicacion_docente_next_class",
-      teacher,
-      key: GS_API_KEY
-    })
-  });
-
-  let data = null;
-  try { data = await res.json(); }
-  catch { throw new Error("Respuesta inválida del servidor"); }
-
-  if (!data.ok) throw new Error(data.msg || data.error || "ubicacion_docente_next_class_failed");
-  return data;
-}
-
-async function gsUbicateFullSchedule(teacher) {
-  const res = await fetch(GS_WEBAPP_URL, {
-    method: "POST",
-    body: JSON.stringify({
-      action: "ubicacion_docente_schedule",
-      teacher,
-      key: GS_API_KEY
-    })
-  });
-
-  let data = null;
-  try { data = await res.json(); }
-  catch { throw new Error("Respuesta inválida del servidor"); }
-
-  if (!data.ok) throw new Error(data.msg || data.error || "ubicacion_docente_schedule_failed");
-  return data;
-}
-
 function ubicateSetHint_(msg = "") {
   if (ubicateHint) ubicateHint.textContent = msg || "";
 }
@@ -3616,96 +3523,12 @@ function ubicateRenderResult_(data) {
   `;
 }
 
-function ubicateHideExtra_() {
-  if (ubicateExtraBox) ubicateExtraBox.hidden = true;
-  if (ubicateExtraContent) {
-    ubicateExtraContent.innerHTML = `<div class="muted small">Sin información adicional.</div>`;
-  }
-}
-
-function ubicateShowExtra_(html) {
-  if (ubicateExtraBox) ubicateExtraBox.hidden = false;
-  if (ubicateExtraContent) ubicateExtraContent.innerHTML = html || "";
-}
-
-function ubicateRenderNextClass_(data) {
-  if (!data || !data.teacher) {
-    ubicateShowExtra_(`
-      <div class="ubicate-empty">No encontré información de la próxima clase.</div>
-    `);
-    return;
-  }
-
-  if (!data.found_next) {
-    ubicateShowExtra_(`
-      <div class="ubicate-card">
-        <div class="ubicate-title">${escapeHtml(data.teacher)}</div>
-        <div class="ubicate-line">No tiene más clases programadas desde este momento.</div>
-      </div>
-    `);
-    return;
-  }
-
-  ubicateShowExtra_(`
-    <div class="ubicate-card">
-      <div class="ubicate-title">Próxima clase de ${escapeHtml(data.teacher)}</div>
-      <div class="ubicate-line"><strong>Día:</strong> ${escapeHtml(data.day_label || "-")}</div>
-      <div class="ubicate-line"><strong>Hora:</strong> ${escapeHtml(data.start_time || "-")} - ${escapeHtml(data.end_time || "-")}</div>
-      <div class="ubicate-line"><strong>Materia:</strong> ${escapeHtml(data.subject || "-")}</div>
-      <div class="ubicate-line"><strong>Curso:</strong> ${escapeHtml(data.course || "-")}</div>
-      <div class="ubicate-line"><strong>Salón:</strong> ${escapeHtml(data.salon || "-")}</div>
-    </div>
-  `);
-}
-
-function ubicateRenderFullSchedule_(data) {
-  const items = Array.isArray(data?.items) ? data.items : [];
-
-  if (!data || !data.teacher || !items.length) {
-    ubicateShowExtra_(`
-      <div class="ubicate-empty">No encontré horario completo para este docente.</div>
-    `);
-    return;
-  }
-
-  const htmlRows = items.map(item => `
-    <tr>
-      <td>${escapeHtml(item.day_label || "-")}</td>
-      <td>${escapeHtml(item.start_time || "-")} - ${escapeHtml(item.end_time || "-")}</td>
-      <td>${escapeHtml(item.subject || "-")}</td>
-      <td>${escapeHtml(item.course || "-")}</td>
-      <td>${escapeHtml(item.salon || "-")}</td>
-    </tr>
-  `).join("");
-
-  ubicateShowExtra_(`
-    <div class="ubicate-section-title">Horario completo de ${escapeHtml(data.teacher)}</div>
-    <table class="ubicate-schedule-table">
-      <thead>
-        <tr>
-          <th>Día</th>
-          <th>Hora</th>
-          <th>Materia</th>
-          <th>Curso</th>
-          <th>Salón</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${htmlRows}
-      </tbody>
-    </table>
-  `);
-}
-
-
 async function ubicateLoadTeachers_() {
   __ubicateTeachers = await gsUbicateTeachersList();
   ubicateRenderTeachers_(__ubicateTeachers);
 }
 
 async function ubicateOpen_() {
-
-ubicateHideExtra_();
   try {
     setMenuOpen(false);
   } catch (e) {
@@ -3718,8 +3541,6 @@ ubicateHideExtra_();
   }
 
   if (ubicateModal) ubicateModal.hidden = false;
-
-  
 
   try {
     setLoading(true, "Cargando…", "Consultando docentes.");
@@ -4764,52 +4585,6 @@ btnUbicateClose?.addEventListener("click", () => {
   ubicateModal?.setAttribute("hidden", "");
 });
 
-btnUbicateNextClass?.addEventListener("click", async () => {
-  const teacher = String(ubicateTeacherSelect?.value || "").trim();
-
-  if (!teacher) {
-    ubicateSetHint_("Selecciona un docente primero.");
-    return;
-  }
-
-  try {
-    setLoading(true, "Consultando…", "Buscando próxima clase.");
-    ubicateSetHint_("");
-    const data = await gsUbicateNextClass(teacher);
-    ubicateRenderNextClass_(data);
-  } catch (e) {
-    ubicateSetHint_(String(e && e.message ? e.message : e));
-    ubicateShowExtra_(`
-      <div class="ubicate-empty">No pude consultar la próxima clase.</div>
-    `);
-  } finally {
-    setLoading(false);
-  }
-});
-
-btnUbicateFullSchedule?.addEventListener("click", async () => {
-  const teacher = String(ubicateTeacherSelect?.value || "").trim();
-
-  if (!teacher) {
-    ubicateSetHint_("Selecciona un docente primero.");
-    return;
-  }
-
-  try {
-    setLoading(true, "Consultando…", "Cargando horario completo.");
-    ubicateSetHint_("");
-    const data = await gsUbicateFullSchedule(teacher);
-    ubicateRenderFullSchedule_(data);
-  } catch (e) {
-    ubicateSetHint_(String(e && e.message ? e.message : e));
-    ubicateShowExtra_(`
-      <div class="ubicate-empty">No pude cargar el horario completo.</div>
-    `);
-  } finally {
-    setLoading(false);
-  }
-});
-
 ubicateModal?.addEventListener("click", (e) => {
   if (e.target === ubicateModal) {
     ubicateModal.setAttribute("hidden", "");
@@ -4817,8 +4592,6 @@ ubicateModal?.addEventListener("click", (e) => {
 });
 
 ubicateTeacherSelect?.addEventListener("change", async () => {
-
-ubicateHideExtra_();
   const teacher = String(ubicateTeacherSelect.value || "").trim();
 
   if (!teacher) {
@@ -9474,6 +9247,7 @@ setInterval(async () => {
 
 </body>
 </html>
+
 
 
 
