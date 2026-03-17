@@ -1266,6 +1266,58 @@ input[list]::-moz-list-dropdown {
   font-size:13px;
 }
 
+.ubicate-days-wrap{
+  margin-top: 10px;
+  margin-bottom: 12px;
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: #0b1220;
+  padding-bottom: 8px;
+}
+
+.ubicate-days-bar{
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+.ubicate-days-bar::-webkit-scrollbar{
+  display: none;
+}
+
+.ubicate-day-tab{
+  flex: 0 0 auto;
+  border: 1px solid var(--line);
+  background: rgba(255,255,255,.06);
+  color: var(--text);
+  border-radius: 999px;
+  padding: 8px 12px;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.ubicate-day-tab.active{
+  background: rgba(11,95,255,.18);
+  border-color: rgba(11,95,255,.55);
+  box-shadow: 0 0 0 3px rgba(11,95,255,.12);
+}
+
+.ubicate-day-panel{
+  display: grid;
+  gap: 10px;
+}
+
+.ubicate-day-header{
+  font-weight: 900;
+  font-size: 15px;
+  margin-bottom: 2px;
+}
+   
    .icon-only{
   min-width: 42px;
   width: 42px;
@@ -3901,20 +3953,34 @@ function ubicateRenderDaySchedule_(teacher, allItems, selectedDayKey) {
     return ubicateToMinutes_(a.start_time) - ubicateToMinutes_(b.start_time);
   });
 
+  const allowedDays = ["lunes", "martes", "miercoles", "jueves", "viernes"];
+
   const dayMap = new Map();
   sortedItems.forEach(it => {
+    const normalized = ubicateNormalizeDay_(it.day_label || "");
+    if (!allowedDays.includes(normalized)) return;
+
     const key = ubicateGetDayKey_(it);
     if (!dayMap.has(key)) {
       dayMap.set(key, {
         key,
         label: it.day_label || "Día",
         index: Number(it.day_index || 0),
-        normalized: ubicateNormalizeDay_(it.day_label || "")
+        normalized
       });
     }
   });
 
-  const dayCards = Array.from(dayMap.values()).sort((a, b) => a.index - b.index);
+  const dayCards = Array.from(dayMap.values()).sort((a, b) => {
+    const order = {
+      lunes: 1,
+      martes: 2,
+      miercoles: 3,
+      jueves: 4,
+      viernes: 5
+    };
+    return (order[a.normalized] || 99) - (order[b.normalized] || 99);
+  });
 
   let activeDayKey = selectedDayKey;
 
@@ -3960,53 +4026,24 @@ function ubicateRenderDaySchedule_(teacher, allItems, selectedDayKey) {
       <div class="ubicate-title">${escapeHtml(teacher)}</div>
       <div class="ubicate-line" style="margin-bottom:10px;"><strong>Horario por día</strong></div>
 
-      <div style="
-        display:grid;
-        grid-template-columns:repeat(auto-fit,minmax(92px,1fr));
-        gap:10px;
-        margin-bottom:14px;
-      ">
-        ${dayCards.map(d => {
-          const isSelected = d.key === activeDayKey;
-          const isToday = todayIndexCandidates.includes(Number(d.index)) || d.normalized === todayName;
+      <div class="ubicate-days-wrap">
+        <div class="ubicate-days-bar">
+          ${dayCards.map(d => {
+            const isSelected = d.key === activeDayKey;
+            const isToday = todayIndexCandidates.includes(Number(d.index)) || d.normalized === todayName;
 
-          return `
-            <button
-              type="button"
-              class="ubicate-day-card"
-              data-day-key="${escapeHtml(d.key)}"
-              style="
-                border:1px solid ${isSelected ? 'rgba(59,130,246,.60)' : 'rgba(255,255,255,.10)'};
-                background:${isSelected ? 'rgba(59,130,246,.14)' : 'rgba(255,255,255,.03)'};
-                color:${isSelected ? '#dbeafe' : 'inherit'};
-                border-radius:14px;
-                padding:12px 10px;
-                text-align:center;
-                cursor:pointer;
-                transition:.18s ease;
-              "
-            >
-              <div style="font-weight:800; font-size:13px; line-height:1.2;">
+            return `
+              <button
+                type="button"
+                class="ubicate-day-tab ${isSelected ? "active" : ""}"
+                data-day-key="${escapeHtml(d.key)}"
+              >
                 ${escapeHtml(d.label)}
-              </div>
-              <div style="margin-top:6px; min-height:18px;">
-                ${isToday ? `
-                  <span style="
-                    display:inline-block;
-                    padding:2px 8px;
-                    border-radius:999px;
-                    font-size:10px;
-                    font-weight:800;
-                    letter-spacing:.3px;
-                    background:rgba(34,197,94,.16);
-                    color:#86efac;
-                    border:1px solid rgba(34,197,94,.35);
-                  ">HOY</span>
-                ` : ``}
-              </div>
-            </button>
-          `;
-        }).join("")}
+                ${isToday ? ` <span style="opacity:.75;">•</span>` : ``}
+              </button>
+            `;
+          }).join("")}
+        </div>
       </div>
 
       <div style="
@@ -4132,7 +4169,7 @@ function ubicateRenderDaySchedule_(teacher, allItems, selectedDayKey) {
     </div>
   `;
 
-  ubicateResult.querySelectorAll(".ubicate-day-card").forEach(btn => {
+  ubicateResult.querySelectorAll(".ubicate-day-tab").forEach(btn => {
     btn.addEventListener("click", () => {
       const key = String(btn.dataset.dayKey || "").trim();
       __ubicateSelectedDayKey = key;
