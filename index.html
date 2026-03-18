@@ -2267,28 +2267,41 @@ input[list]::-moz-list-dropdown {
       Selecciona el curso y el estudiante. Luego agrega una o varias actividades pendientes con su nota.
     </p>
 
-    <!-- Curso + estudiante -->
- <div style="display:flex; gap:10px; align-items:flex-start; flex-wrap:wrap;">
+<!-- Curso + asignatura + estudiante -->
+<div style="display:flex; gap:10px; align-items:flex-start; flex-wrap:wrap;">
 
-        <label class="modal-label" for="reportesStudent">Estudiante</label>
+  <div style="flex:1; min-width:180px;">
+    <label class="modal-label" for="reportesCourse">Curso</label>
+    <select id="reportesCourse" class="modal-input"></select>
+  </div>
 
-        <!-- input con combo integrado -->
-        <div class="input-with-select">
+  <div style="flex:1; min-width:180px;">
+    <label class="modal-label" for="reportesAsignatura">Asignatura</label>
+    <select id="reportesAsignatura" class="modal-input">
+      <option value="">Selecciona una asignatura</option>
+    </select>
+  </div>
 
-          <input id="reportesStudent"
-                 class="modal-input input-real"
-                 placeholder="Escribe o selecciona."
-                 list="reportesStudentsList"
-                 autocomplete="off" />
+  <div style="flex:1; min-width:220px;">
+    <label class="modal-label" for="reportesStudent">Estudiante</label>
 
-          <select id="reportesStudentSelect"
-                  class="modal-input student-overlay">
-          </select>
+    <datalist id="reportesStudentsList"></datalist>
 
-        </div>
+    <div class="input-with-select">
+      <input id="reportesStudent"
+             class="modal-input input-real"
+             type="text"
+             placeholder="Escribe o selecciona."
+             list="reportesStudentsList"
+             autocomplete="off" />
 
-      </div>
+      <select id="reportesStudentSelect"
+              class="modal-input student-overlay">
+      </select>
     </div>
+  </div>
+
+</div>
 
   
 
