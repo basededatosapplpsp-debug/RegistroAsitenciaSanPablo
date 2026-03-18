@@ -1537,7 +1537,9 @@ input[list]::-moz-list-dropdown {
   <button id="btnPisosMenu" class="menu-item" type="button" role="menuitem">Pisos</button>
   <button id="btnParqueMenu" class="menu-item" type="button" role="menuitem">Parque</button>
 </div>
-
+<button id="btnAsignaturasMenu" class="menu-item" type="button" role="menuitem">
+  Asignaturas
+</button>
   <button id="btnLogout" class="menu-item danger" type="button" role="menuitem">Cerrar sesión</button>
 </div>
 
@@ -2144,6 +2146,36 @@ input[list]::-moz-list-dropdown {
 </div>
 
 
+<!-- ======= MODAL ASIGNATURAS ======= -->
+<div id="asignaturasModal" class="modal-backdrop" hidden>
+  <div class="modal-card" style="width:min(640px,100%);">
+    <h2 class="modal-title">Asignaturas</h2>
+    <p class="modal-sub">Guarda hasta 5 asignaturas para este usuario.</p>
+
+    <label class="modal-label" for="asg1">Asignatura 1</label>
+    <input id="asg1" class="modal-input" type="text" placeholder="Ej: Matemáticas" />
+
+    <label class="modal-label" for="asg2">Asignatura 2</label>
+    <input id="asg2" class="modal-input" type="text" placeholder="Ej: Geometría" />
+
+    <label class="modal-label" for="asg3">Asignatura 3</label>
+    <input id="asg3" class="modal-input" type="text" placeholder="Ej: Estadística" />
+
+    <label class="modal-label" for="asg4">Asignatura 4</label>
+    <input id="asg4" class="modal-input" type="text" placeholder="Ej: Física" />
+
+    <label class="modal-label" for="asg5">Asignatura 5</label>
+    <input id="asg5" class="modal-input" type="text" placeholder="Ej: Inglés" />
+
+    <div id="asignaturasHint" class="modal-hint muted small"></div>
+
+    <div class="modal-actions" style="justify-content:flex-end;">
+      <button id="btnAsignaturasSave" type="button" class="btn btn-primary">Guardar</button>
+      <button id="btnAsignaturasClose" type="button" class="btn btn-ghost">Cerrar</button>
+    </div>
+  </div>
+</div>
+
 <!-- ===== CONFIRM MODAL PRO ===== -->
 <div id="appConfirm" class="modal-backdrop" hidden>
   <div class="modal-card">
@@ -2731,6 +2763,19 @@ let __parqueCacheByDay = {};
 const PARQUE_CACHE_VERSION = "1";
 const PARQUE_DAYS_STORAGE_KEY = `parque_days_cache_v${PARQUE_CACHE_VERSION}`;
 const PARQUE_SCHEDULES_STORAGE_KEY = `parque_schedules_cache_v${PARQUE_CACHE_VERSION}`;
+
+// ======= ASIGNATURAS =======
+const btnAsignaturasMenu = $("btnAsignaturasMenu");
+const asignaturasModal = $("asignaturasModal");
+const asg1 = $("asg1");
+const asg2 = $("asg2");
+const asg3 = $("asg3");
+const asg4 = $("asg4");
+const asg5 = $("asg5");
+const asignaturasHint = $("asignaturasHint");
+const btnAsignaturasSave = $("btnAsignaturasSave");
+const btnAsignaturasClose = $("btnAsignaturasClose");
+
 
 const PISOS_CACHE_VERSION = "1";
 const PISOS_DAYS_STORAGE_KEY = `pisos_days_cache_v${PISOS_CACHE_VERSION}`;
@@ -4017,7 +4062,104 @@ async function gsParqueSchedule(day) {
   return Array.isArray(data.items) ? data.items : [];
 }
   
+function asignaturasSetHint_(msg) {
+  if (!asignaturasHint) return;
+  asignaturasHint.textContent = msg || "";
+}
 
+function asignaturasGetFormValues_() {
+  return [
+    String(asg1?.value || "").trim(),
+    String(asg2?.value || "").trim(),
+    String(asg3?.value || "").trim(),
+    String(asg4?.value || "").trim(),
+    String(asg5?.value || "").trim()
+  ];
+}
+
+function asignaturasFillForm_(items) {
+  const arr = Array.isArray(items) ? items : [];
+  if (asg1) asg1.value = arr[0] || "";
+  if (asg2) asg2.value = arr[1] || "";
+  if (asg3) asg3.value = arr[2] || "";
+  if (asg4) asg4.value = arr[3] || "";
+  if (asg5) asg5.value = arr[4] || "";
+}
+
+function asignaturasCurrentDeviceId_() {
+  try {
+    return String(deviceIdText?.textContent || "").trim();
+  } catch (e) {
+    return "";
+  }
+}
+
+async function gsAsignaturasGet(deviceId) {
+  const res = await fetch(GS_WEBAPP_URL, {
+    method: "POST",
+    body: JSON.stringify({
+      action: "asignaturas_get",
+      key: GS_API_KEY,
+      device_id: deviceId
+    })
+  });
+
+  let data = null;
+  try { data = await res.json(); }
+  catch { throw new Error("Respuesta inválida del servidor"); }
+
+  if (!data.ok) throw new Error(data.msg || data.error || "asignaturas_get_failed");
+  return Array.isArray(data.items) ? data.items : [];
+}
+
+async function gsAsignaturasSave(deviceId, items) {
+  const res = await fetch(GS_WEBAPP_URL, {
+    method: "POST",
+    body: JSON.stringify({
+      action: "asignaturas_save",
+      key: GS_API_KEY,
+      device_id: deviceId,
+      items: Array.isArray(items) ? items : []
+    })
+  });
+
+  let data = null;
+  try { data = await res.json(); }
+  catch { throw new Error("Respuesta inválida del servidor"); }
+
+  if (!data.ok) throw new Error(data.msg || data.error || "asignaturas_save_failed");
+  return true;
+}
+
+async function asignaturasLoadForCurrentUser_() {
+  const deviceId = asignaturasCurrentDeviceId_();
+  if (!deviceId) return [];
+
+  const items = await gsAsignaturasGet(deviceId);
+  asignaturasFillForm_(items);
+  return items;
+}
+
+async function asignaturasOpen_() {
+  try {
+    setMenuOpen(false);
+  } catch (e) {
+    if (userMenu) userMenu.hidden = true;
+  }
+
+  asignaturasSetHint_("");
+  asignaturasFillForm_([]);
+  if (asignaturasModal) asignaturasModal.hidden = false;
+
+  try {
+    setLoading(true, "Cargando…", "Consultando asignaturas guardadas.");
+    await asignaturasLoadForCurrentUser_();
+  } catch (e) {
+    asignaturasSetHint_(String(e && e.message ? e.message : e));
+  } finally {
+    setLoading(false);
+  }
+}
 
   
 async function ubicateGetScheduleCached_(teacher, forceRefresh = false) {
@@ -6614,6 +6756,46 @@ btnParqueMenu?.addEventListener("click", () => {
   }
 });
 
+
+
+btnAsignaturasMenu?.addEventListener("click", async () => {
+  await asignaturasOpen_();
+});
+
+btnAsignaturasClose?.addEventListener("click", () => {
+  asignaturasModal?.setAttribute("hidden", "");
+});
+
+asignaturasModal?.addEventListener("click", (e) => {
+  if (e.target === asignaturasModal) {
+    asignaturasModal.setAttribute("hidden", "");
+  }
+});
+
+btnAsignaturasSave?.addEventListener("click", async () => {
+  try {
+    asignaturasSetHint_("");
+
+    const deviceId = asignaturasCurrentDeviceId_();
+    if (!deviceId) {
+      asignaturasSetHint_("No pude identificar el dispositivo actual.");
+      return;
+    }
+
+    const items = asignaturasGetFormValues_();
+
+    setLoading(true, "Guardando…", "Actualizando asignaturas del usuario.");
+    await gsAsignaturasSave(deviceId, items);
+
+    asignaturasSetHint_("Asignaturas guardadas correctamente.");
+  } catch (e) {
+    asignaturasSetHint_(String(e && e.message ? e.message : e));
+  } finally {
+    setLoading(false);
+  }
+});
+
+
 btnPisosRefresh?.addEventListener("click", async () => {
   try {
     pisosSetHint_("");
@@ -7106,6 +7288,12 @@ btnLoginSave.addEventListener("click", async () => {
     refreshFromSheet({ silent: true, useCache: false });
     initAllModalCourses_();
 
+    // ✅ NUEVO: cargar asignaturas guardadas del usuario
+    try {
+      await asignaturasLoadForCurrentUser_();
+    } catch (e) {
+      console.warn("No pude cargar asignaturas:", e);
+    }
 
   } catch (e) {
     const msg = String(e && e.message ? e.message : e);
