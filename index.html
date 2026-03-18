@@ -2358,10 +2358,15 @@ input[list]::-moz-list-dropdown {
       Filtra por curso y comparte solo los estudiantes visibles.
     </p>
 
-    <label class="modal-label" for="reportesViewerCourseFilter">Curso / grado</label>
-    <select id="reportesViewerCourseFilter" class="modal-input">
-      <option value="">Todos los cursos</option>
-    </select>
+   <label class="modal-label" for="reportesViewerCourseFilter">Curso / grado</label>
+<select id="reportesViewerCourseFilter" class="modal-input">
+  <option value="">Todos los cursos</option>
+</select>
+
+<label class="modal-label" for="reportesViewerSubjectFilter">Asignatura</label>
+<select id="reportesViewerSubjectFilter" class="modal-input">
+  <option value="">Todas las asignaturas</option>
+</select>
 
     <div class="disc-reported" style="margin-top:20px;">
       <div id="reportesViewerList" class="disc-reported-list">
@@ -2725,6 +2730,7 @@ const reportesViewerListEl = document.getElementById('reportesViewerList');
 const btnCerrarViewerReportes = document.getElementById('btnCerrarViewerReportes');
 
 const reportesViewerCourseFilterEl = document.getElementById("reportesViewerCourseFilter");
+const reportesViewerSubjectFilterEl = document.getElementById("reportesViewerSubjectFilter");
 const btnCompartirViewerReportes = document.getElementById("btnCompartirViewerReportes");
 let __reportesLastItems = [];
 
@@ -6254,18 +6260,46 @@ function reportesBuildCourseFilter_(items) {
   }
 }
 
-function reportesGetFilteredViewerItems_() {
-  const items = Array.isArray(__reportesLastItems) ? __reportesLastItems : [];
-  const selectedCourse = reportesNormalizeCourse_(reportesViewerCourseFilterEl?.value || "");
-  const isAdmin = typeof isAdminMode === "function" ? isAdminMode() : false;
+function reportesBuildSubjectFilter_(items) {
+  if (!reportesViewerSubjectFilterEl) return;
 
-  if (isAdmin && !selectedCourse) {
-    return items;
+  const current = String(reportesViewerSubjectFilterEl.value || "").trim();
+
+  const subjects = Array.from(new Set(
+    (Array.isArray(items) ? items : [])
+      .map(it => reportesGetItemSubject_(it))
+      .filter(Boolean)
+  )).sort((a, b) => a.localeCompare(b, "es", { sensitivity: "base" }));
+
+  let html = `<option value="">Todas las asignaturas</option>`;
+  subjects.forEach(subject => {
+    html += `<option value="${escapeHtml(subject)}">${escapeHtml(subject)}</option>`;
+  });
+
+  reportesViewerSubjectFilterEl.innerHTML = html;
+
+  if (current && subjects.includes(current)) {
+    reportesViewerSubjectFilterEl.value = current;
+  } else {
+    reportesViewerSubjectFilterEl.value = "";
   }
+}
 
-  const courseToUse = selectedCourse || reportesNormalizeCourse_(reportesGetProfileCourse_());
 
-  return items.filter(item => reportesNormalizeCourse_(reportesGetItemCourse_(item)) === courseToUse);
+
+function reportesGetFilteredViewerItems_() {
+  const selectedCourse = reportesNormalizeCourse_(reportesViewerCourseFilterEl?.value || "");
+  const selectedSubject = String(reportesViewerSubjectFilterEl?.value || "").trim();
+
+  return (__reportesLastItems || []).filter(item => {
+    const itemCourse = reportesNormalizeCourse_(item?.course || item?.curso || "");
+    const itemSubject = reportesGetItemSubject_(item);
+
+    const matchCourse = !selectedCourse || itemCourse === selectedCourse;
+    const matchSubject = !selectedSubject || itemSubject === selectedSubject;
+
+    return matchCourse && matchSubject;
+  });
 }
 
 function reportesRenderViewerList_() {
@@ -6391,30 +6425,25 @@ function reportesRenderList_(items) {
   __reportesLastItems = Array.isArray(items) ? items : [];
   reportesBuildRows_(reportesReportedListEl, __reportesLastItems);
   reportesBuildCourseFilter_(__reportesLastItems);
+  reportesBuildSubjectFilter_(__reportesLastItems);
   reportesRenderViewerList_();
 }
 
 function reportesBuildShareText_() {
   const visibleItems = reportesGetFilteredViewerItems_();
   const selectedCourse = String(reportesViewerCourseFilterEl?.value || "").trim();
+  const selectedSubject = String(reportesViewerSubjectFilterEl?.value || "").trim();
   const profile = (typeof loadProfile === "function" ? loadProfile() : null) || {};
 
   const teacherName = String(profile?.name || profile?.teacher || profile?.docente || "").trim();
-  const subjectName = String(profile?.subject || profile?.materia || profile?.asignatura || "").trim();
-
   const courseLabel = selectedCourse || reportesGetProfileCourse_() || "este curso";
+  const subjectLabel = selectedSubject || "la asignatura seleccionada";
 
   if (!visibleItems.length) {
-    return `Hola profe, te envío los estudiantes que deben notas en mi materia para ${courseLabel}.\n\nNo hay estudiantes reportados en este filtro.`;
+    return `Hola profe, te envío los estudiantes que deben notas en la materia de ${subjectLabel} del curso ${courseLabel}.\n\nNo hay estudiantes reportados en este filtro.`;
   }
 
-  let text = `Hola profe, te envío los estudiantes que deben notas en mi materia`;
-
-  if (subjectName) {
-    text += ` (${subjectName})`;
-  }
-
-  text += ` del curso ${courseLabel}.`;
+  let text = `Hola profe, te envío los estudiantes que deben notas en la materia de ${subjectLabel} del curso ${courseLabel}.`;
 
   if (teacherName) {
     text += `\nDocente que reporta: ${teacherName}.`;
@@ -6422,33 +6451,40 @@ function reportesBuildShareText_() {
 
   text += `\n\nListado de estudiantes reportados:\n`;
 
-visibleItems.forEach((item, index) => {
-  const name = reportesGetItemStudentName_(item) || "Sin nombre";
-  const activities = reportesGetItemActivities_(item);
+  visibleItems.forEach((item, index) => {
+    const name = reportesGetItemStudentName_(item) || "Sin nombre";
+    const activities = reportesGetItemActivities_(item);
 
-text += `\n${index + 1}. *${name}*`;
-  if (activities.length) {
-    activities.forEach((a, i) => {
-      const actividad = String(a?.actividad || a?.activity || "").trim();
-      const nota = String(a?.nota || a?.note || "").trim();
+    text += `\n${index + 1}. *${name}*`;
 
-      if (actividad && nota) {
-        text += `\n   • ${i + 1}) ${actividad} - Nota: ${nota}`;
-      } else if (actividad) {
-        text += `\n   • ${i + 1}) ${actividad}`;
-      } else if (nota) {
-        text += `\n   • ${i + 1}) Nota: ${nota}`;
-      }
-    });
-  } else {
-    text += `\n   • Sin actividades registradas`;
-  }
-});
+    if (activities.length) {
+      activities.forEach((a, i) => {
+        const actividad = String(a?.actividad || a?.activity || "").trim();
+        const nota = String(a?.nota || a?.note || "").trim();
+
+        if (actividad && nota) {
+          text += `\n   • ${i + 1}) ${actividad} - Nota: ${nota}`;
+        } else if (actividad) {
+          text += `\n   • ${i + 1}) ${actividad}`;
+        } else if (nota) {
+          text += `\n   • ${i + 1}) Nota: ${nota}`;
+        }
+      });
+    } else {
+      text += `\n   • Sin actividades registradas`;
+    }
+  });
 
   return text.trim();
 }
-
 async function reportesShareVisibleItems_() {
+  const selectedSubject = String(reportesViewerSubjectFilterEl?.value || "").trim();
+
+  if (!selectedSubject) {
+    alert("Selecciona una asignatura para compartir.");
+    return;
+  }
+
   const text = reportesBuildShareText_();
 
   try {
@@ -6567,6 +6603,9 @@ reportesViewerCourseFilterEl?.addEventListener("change", () => {
   reportesRenderViewerList_();
 });
 
+reportesViewerSubjectFilterEl?.addEventListener("change", () => {
+  reportesRenderViewerList_();
+});
 
 // ======= click menú Reportes =======
 if (btnReportesMenu) {
