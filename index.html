@@ -2268,16 +2268,7 @@ input[list]::-moz-list-dropdown {
     </p>
 
     <!-- Curso + estudiante -->
-    <div style="display:flex; gap:10px; align-items:flex-start; flex-wrap:wrap;">
-
-      <div style="flex:1; min-width:220px;">
-        <label class="modal-label" for="reportesCourse">Curso</label>
-        <select id="reportesCourse" class="modal-input"></select>
-      </div>
-
-      <div style="flex:1; min-width:220px;">
-
-        <datalist id="reportesStudentsList"></datalist>
+ <div style="display:flex; gap:10px; align-items:flex-start; flex-wrap:wrap;">
 
         <label class="modal-label" for="reportesStudent">Estudiante</label>
 
@@ -2699,9 +2690,11 @@ const btnGuardarReportePendiente = $("btnGuardarReportePendiente");
 const btnAgregarActividadPendiente = $("btnAgregarActividadPendiente");
 
 const reportesCourseEl = $("reportesCourse");
+const reportesAsignaturaEl = $("reportesAsignatura");
 const reportesStudentEl = $("reportesStudent");
 const reportesStudentSelectEl = $("reportesStudentSelect");
 const reportesStudentsListEl = $("reportesStudentsList");
+
 const reportesTipoEl = $("reportesTipo");
 const reportesHintEl = $("reportesHint");
 const reportesReportedListEl = $("reportesReportedList");
@@ -2838,9 +2831,10 @@ function reportesBuildRows_(targetEl, items) {
   targetEl.innerHTML = "";
 
   list.forEach(item => {
-    const total = Number(item.totalPendientes || 0);
-    const detalles = Array.isArray(item.actividades) ? item.actividades : [];
-    const docentes = Array.isArray(item.who) ? item.who : [];
+  const total = Number(item.totalPendientes || 0);
+const detalles = Array.isArray(item.actividades) ? item.actividades : [];
+const docentes = Array.isArray(item.who) ? item.who : [];
+const subject = reportesGetItemSubject_(item);
 
     const row = document.createElement("div");
     row.className = "disc-item";
@@ -2858,10 +2852,17 @@ function reportesBuildRows_(targetEl, items) {
       : `<div class="muted small" style="margin-top:4px;">Sin docente registrado</div>`;
 
     const detalleHtml = `
-      <div style="margin-top:8px;">
-        <div class="muted small" style="font-weight:700;">Docente que reporta</div>
-        ${docentesHtml}
-      </div>
+   ${subject ? `
+  <div style="margin-top:8px;">
+    <div class="muted small" style="font-weight:700;">Asignatura</div>
+    <div class="muted small" style="margin-top:4px;">${subject}</div>
+  </div>
+` : ``}
+
+<div style="margin-top:8px;">
+  <div class="muted small" style="font-weight:700;">Docente que reporta</div>
+  ${docentesHtml}
+</div>
 
       <div style="margin-top:10px;">
         <div class="muted small" style="font-weight:700;">Actividades pendientes</div>
@@ -2882,7 +2883,7 @@ function reportesBuildRows_(targetEl, items) {
         <span class="lvl-dot lvl-2"></span>
         <div style="min-width:0;">
           <div class="name">${item.student || "Sin nombre"}</div>
-          <div class="muted small">${item.course || ""} • Debe ${total}</div>
+          <div class="muted small">${item.course || ""}${subject ? ` • ${subject}` : ""} • Debe ${total}</div>
           <div class="reportes-detalle" hidden style="margin-top:8px;">
             ${detalleHtml}
           </div>
@@ -5967,6 +5968,45 @@ function reportesRenderStudents_(students) {
   }
 }
 
+function reportesGetAsignaturasGuardadas_() {
+  return [
+    String(asg1?.value || "").trim(),
+    String(asg2?.value || "").trim(),
+    String(asg3?.value || "").trim(),
+    String(asg4?.value || "").trim(),
+    String(asg5?.value || "").trim()
+  ].filter(Boolean);
+}
+
+function reportesRenderAsignaturas_(items) {
+  if (!reportesAsignaturaEl) return;
+
+  const current = String(reportesAsignaturaEl.value || "").trim();
+  const list = Array.from(new Set((Array.isArray(items) ? items : []).map(x => String(x || "").trim()).filter(Boolean)));
+
+  reportesAsignaturaEl.innerHTML = `<option value="">Selecciona una asignatura</option>`;
+
+  list.forEach(item => {
+    const opt = document.createElement("option");
+    opt.value = item;
+    opt.textContent = item;
+    reportesAsignaturaEl.appendChild(opt);
+  });
+
+  if (current && list.includes(current)) {
+    reportesAsignaturaEl.value = current;
+  }
+}
+
+async function reportesLoadAsignaturas_() {
+  try {
+    await asignaturasLoadForCurrentUser_();
+  } catch (e) {}
+
+  const list = reportesGetAsignaturasGuardadas_();
+  reportesRenderAsignaturas_(list);
+}
+
 async function gsReportesGuardar(payload) {
   const res = await fetch(GS_WEBAPP_URL, {
     method: "POST",
@@ -6472,10 +6512,12 @@ const course = String(
       await reportesLoadStudentsForCourse_(course);
     }
 
-    if (reportesStudentEl) reportesStudentEl.value = "";
-    if (reportesStudentSelectEl) reportesStudentSelectEl.value = "";
-    reportesResetActividades_();
-    reportesSetHint_("Reporte listo ✅");
+ if (reportesStudentEl) reportesStudentEl.value = "";
+if (reportesStudentSelectEl) reportesStudentSelectEl.value = "";
+await reportesLoadAsignaturas_();
+if (reportesAsignaturaEl) reportesAsignaturaEl.value = "";
+reportesResetActividades_();
+reportesSetHint_("Reporte listo ✅");
 
     await reportesLoadList_();
 
@@ -6940,8 +6982,9 @@ if (btnGuardarReportePendiente) {
 
     try {
       const course = String(reportesCourseEl?.value || "").trim();
-      const student = String(reportesStudentEl?.value || "").trim();
-      const actividades = reportesGetActividades_();
+const subject = String(reportesAsignaturaEl?.value || "").trim();
+const student = String(reportesStudentEl?.value || "").trim();
+const actividades = reportesGetActividades_();
 
       if (!course) {
         reportesSetHint_("Selecciona un curso.");
@@ -6952,6 +6995,10 @@ if (btnGuardarReportePendiente) {
         reportesSetHint_("Selecciona o escribe un estudiante.");
         return;
       }
+      if (!subject) {
+  reportesSetHint_("Selecciona una asignatura.");
+  return;
+}
 
       if (!actividades.length) {
         reportesSetHint_("Agrega al menos una actividad pendiente.");
@@ -6960,16 +7007,17 @@ if (btnGuardarReportePendiente) {
 
       setLoading(true, "Guardando…", "Registrando actividades pendientes.");
 
-      await gsReportesGuardar({
-        month: reportesCurrentMonth_(),
-        tipo: __reporteTipoActual,
-        course,
-        student,
-        teacher: profile.name,
-        email: profile.email,
-        device_id: getDeviceId(),
-        actividades
-      });
+   await gsReportesGuardar({
+  month: reportesCurrentMonth_(),
+  tipo: __reporteTipoActual,
+  course,
+  subject,
+  student,
+  teacher: profile.name,
+  email: profile.email,
+  device_id: getDeviceId(),
+  actividades
+});
 
       reportesSetHint_("Reporte guardado ✅");
       reportesResetActividades_();
