@@ -4088,6 +4088,9 @@ function asignaturasFillForm_(items) {
 
 function asignaturasCurrentDeviceId_() {
   try {
+    const id = String(getDeviceId() || "").trim();
+    if (id) return id;
+
     return String(deviceIdText?.textContent || "").trim();
   } catch (e) {
     return "";
