@@ -5946,7 +5946,90 @@ if (btnFaltaReport) {
 // ==============================
 let __reportesCourses = [];
 let __reportesStudents = [];
+let __reportesStudentsByCourse = {};
 let __reporteTipoActual = "actividades_pendientes";
+
+const REPORTES_COURSES_CACHE_VERSION = "1";
+const REPORTES_COURSES_STORAGE_KEY = `reportes_courses_cache_v${REPORTES_COURSES_CACHE_VERSION}`;
+const REPORTES_STUDENTS_STORAGE_KEY = `reportes_students_cache_v${REPORTES_COURSES_CACHE_VERSION}`;
+const REPORTES_COURSES_CACHE_MAX_AGE_MS = 12 * 60 * 60 * 1000; // 12 horas
+
+function reportesReadStorage_(key, fallback) {
+  try {
+    const raw = localStorage.getItem(key);
+    if (!raw) return fallback;
+    return JSON.parse(raw);
+  } catch (e) {
+    return fallback;
+  }
+}
+
+function reportesWriteStorage_(key, value) {
+  try {
+    localStorage.setItem(key, JSON.stringify(value));
+  } catch (e) {}
+}
+
+function reportesIsFreshCache_(savedAt) {
+  const ts = Number(savedAt || 0);
+  if (!ts) return false;
+  return (Date.now() - ts) <= REPORTES_COURSES_CACHE_MAX_AGE_MS;
+}
+
+function reportesLoadPersistentSelectorsCache_() {
+  const coursesBox = reportesReadStorage_(REPORTES_COURSES_STORAGE_KEY, null);
+  if (
+    coursesBox &&
+    Array.isArray(coursesBox.items) &&
+    reportesIsFreshCache_(coursesBox.savedAt)
+  ) {
+    __reportesCourses = coursesBox.items;
+  }
+
+  const studentsBox = reportesReadStorage_(REPORTES_STUDENTS_STORAGE_KEY, null);
+  if (
+    studentsBox &&
+    studentsBox.items &&
+    typeof studentsBox.items === "object" &&
+    reportesIsFreshCache_(studentsBox.savedAt)
+  ) {
+    __reportesStudentsByCourse = studentsBox.items || {};
+  }
+}
+
+function reportesSaveCoursesCache_() {
+  reportesWriteStorage_(REPORTES_COURSES_STORAGE_KEY, {
+    savedAt: Date.now(),
+    items: Array.isArray(__reportesCourses) ? __reportesCourses : []
+  });
+}
+
+function reportesSaveStudentsCache_() {
+  reportesWriteStorage_(REPORTES_STUDENTS_STORAGE_KEY, {
+    savedAt: Date.now(),
+    items: __reportesStudentsByCourse || {}
+  });
+}
+
+function reportesNormalizeCourseKey_(course) {
+  return String(course || "").trim().replace(/\s+/g, " ").toUpperCase();
+}
+
+function reportesGetStudentsCached_(course) {
+  const key = reportesNormalizeCourseKey_(course);
+  const list = __reportesStudentsByCourse[key];
+  return Array.isArray(list) ? list : null;
+}
+
+function reportesSetStudentsCached_(course, students) {
+  const key = reportesNormalizeCourseKey_(course);
+  __reportesStudentsByCourse[key] = Array.isArray(students) ? students : [];
+  __reportesStudents = __reportesStudentsByCourse[key];
+  reportesSaveStudentsCache_();
+}
+
+
+reportesLoadPersistentSelectorsCache_();
 
 function reportesSetHint_(msg = "") {
   if (reportesHintEl) reportesHintEl.textContent = msg || "";
@@ -6086,7 +6169,14 @@ async function gsReportesDelete(payload) {
   return data;
 }
 
-async function reportesLoadCourses_() {
+async function reportesLoadCourses_(opts = {}) {
+  const force = !!opts.force;
+
+  if (!force && Array.isArray(__reportesCourses) && __reportesCourses.length) {
+    reportesRenderCourses_(__reportesCourses);
+    return __reportesCourses;
+  }
+
   const resp = await gsCoursesList_();
 
   const courses =
@@ -6097,35 +6187,51 @@ async function reportesLoadCourses_() {
     throw new Error(String((resp && (resp.msg || resp.error)) || "No pude cargar cursos."));
   }
 
-  __reportesCourses = courses.map(x => String(x || "").trim()).filter(Boolean);
-  reportesRenderCourses_(__reportesCourses);
+  __reportesCourses = courses
+    .map(x => String(x || "").trim())
+    .filter(Boolean);
 
-  if (reportesCourseEl && __reportesCourses.length && !String(reportesCourseEl.value || "").trim()) {
-    reportesCourseEl.value = __reportesCourses[0];
-  }
+  reportesRenderCourses_(__reportesCourses);
+  reportesSaveCoursesCache_();
+  return __reportesCourses;
 }
 
-async function reportesLoadStudentsForCourse_(course) {
-  const c = String(course || "").trim();
+async function reportesLoadStudentsForCourse_(course, opts = {}) {
+  const force = !!opts.force;
+  const courseClean = String(course || "").trim();
 
-  if (!c) {
+  if (!courseClean) {
     __reportesStudents = [];
     reportesRenderStudents_([]);
-    return;
+    return [];
   }
 
-  const resp = await gsCourseStudents_(c);
+  if (!force) {
+    const cached = reportesGetStudentsCached_(courseClean);
+    if (Array.isArray(cached) && cached.length) {
+      __reportesStudents = cached;
+      reportesRenderStudents_(cached);
+      return cached;
+    }
+  }
+
+  const resp = await gsCourseStudents_(courseClean);
 
   const students =
     faltasPickArray_(resp, ["students", "items", "list"]) ||
     (Array.isArray(resp) ? resp : null);
 
   if (!resp || resp.ok === false || !Array.isArray(students)) {
-    throw new Error(String((resp && (resp.msg || resp.error)) || "No pude cargar estudiantes del curso."));
+    throw new Error(String((resp && (resp.msg || resp.error)) || "No pude cargar estudiantes."));
   }
 
-  __reportesStudents = students.map(x => String(x || "").trim()).filter(Boolean);
-  reportesRenderStudents_(__reportesStudents);
+  const cleanStudents = students
+    .map(x => String(x || "").trim())
+    .filter(Boolean);
+
+  reportesSetStudentsCached_(courseClean, cleanStudents);
+  reportesRenderStudents_(cleanStudents);
+  return cleanStudents;
 }
 
 function reportesAddActividadItem_(actividad = "", nota = "") {
@@ -6642,9 +6748,7 @@ async function openReportePendientes_() {
   try {
     setLoading(true, "Cargando…", "Cargando cursos y estudiantes.");
 
-    if (!__reportesCourses.length) {
-      await reportesLoadCourses_();
-    }
+    await reportesLoadCourses_();
 
     const profileCourse = reportesGetProfileCourse_();
 
@@ -6666,7 +6770,7 @@ async function openReportePendientes_() {
     if (reportesAsignaturaEl) reportesAsignaturaEl.value = "";
     reportesResetActividades_();
 
-    const cached = reportesReadCache_();
+    const cached = typeof reportesReadCache_ === "function" ? reportesReadCache_() : null;
     if (Array.isArray(cached) && cached.length) {
       reportesRenderList_(cached);
       reportesSetHint_("Reporte listo ✅ (desde caché)");
