@@ -2329,7 +2329,7 @@ input[list]::-moz-list-dropdown {
   -webkit-overflow-scrolling: touch;
   padding-right: 6px;
 ">
-  <div class="actividad-pendiente-item" style="border:1px solid var(--line); border-radius:14px; padding:12px; background:rgba(255,255,255,04);">
+  <div class="actividad-pendiente-item" style="border:1px solid var(--line); border-radius:14px; padding:12px; background:var(--panel);">
     <label class="modal-label">Actividad pendiente 1</label>
     <input class="modal-input actividad-texto" type="text" placeholder="Ej: Cuaderno, ensayo, taller, exposición." />
 
@@ -6307,8 +6307,7 @@ function reportesAddActividadItem_(actividad = "", nota = "") {
 
   const wrap = document.createElement("div");
   wrap.className = "actividad-pendiente-item";
-  wrap.style.cssText = "border:1px solid var(--line); border-radius:14px; padding:12px; background:rgba(255,255,255,04);";
-
+wrap.style.cssText = "border:1px solid var(--line); border-radius:14px; padding:12px; background:var(--panel);";
   wrap.innerHTML = `
     <div class="row row-between" style="margin-top:0;">
       <label class="modal-label" style="margin-top:0;">Actividad pendiente ${total}</label>
@@ -6351,8 +6350,7 @@ function reportesResetActividades_() {
 
   const wrap = document.createElement("div");
   wrap.className = "actividad-pendiente-item";
-  wrap.style.cssText = "border:1px solid var(--line); border-radius:14px; padding:12px; background:rgba(255,255,255,.04);";
-
+wrap.style.cssText = "border:1px solid var(--line); border-radius:14px; padding:12px; background:var(--panel);";
   wrap.innerHTML = `
     <label class="modal-label">Actividad pendiente 1</label>
     <input class="modal-input actividad-texto" type="text" placeholder="Ej: Cuaderno, ensayo, taller, exposición..." />
