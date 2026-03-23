@@ -2943,11 +2943,13 @@ const subject = reportesGetItemSubject_(item);
 
         try {
           setLoading(true, "Eliminando…", "Quitando reporte del estudiante.");
-          await gsReportesDelete({
-            month: reportesCurrentMonth_(),
-            tipo: __reporteTipoActual,
-            student: item.student
-          });
+       await gsReportesDelete({
+  month: reportesCurrentMonth_(),
+  tipo: __reporteTipoActual,
+  course: item.course || "",
+  subject: reportesGetItemSubject_(item) || "",
+  student: item.student || ""
+});
           await reportesLoadList_();
         } catch (err) {
           reportesSetHint_(String(err && err.message ? err.message : err));
@@ -6478,50 +6480,37 @@ function reportesBuildShareText_() {
   return text.trim();
 }
 async function reportesShareVisibleItems_() {
-  const selectedCourse = String(reportesViewerCourseFilterEl?.value || "").trim();
   const selectedSubject = String(reportesViewerSubjectFilterEl?.value || "").trim();
 
-  if (!selectedSubject || selectedSubject === "__ALL__") {
+  if (!selectedSubject) {
     alert("Selecciona una asignatura para compartir.");
     return;
   }
 
-  let items = Array.isArray(__reportesLastItems) ? [...__reportesLastItems] : [];
-
-  // filtrar por curso si aplica
-  if (selectedCourse && selectedCourse !== "__ALL__") {
-    items = items.filter(it =>
-      String(it.course || "").trim() === selectedCourse
-    );
-  }
-
-  // filtrar por asignatura
-  items = items.filter(it =>
-    String(it.subject || "").trim() === selectedSubject
-  );
+  const items = reportesGetFilteredViewerItems_();
 
   if (!items.length) {
     alert("No hay reportes para la asignatura seleccionada.");
     return;
   }
 
+  const selectedCourse = String(reportesViewerCourseFilterEl?.value || "").trim();
+
   let text = `Hola profe, te envío los estudiantes que deben notas en la materia de ${selectedSubject}`;
-  if (selectedCourse && selectedCourse !== "__ALL__") {
+  if (selectedCourse) {
     text += ` del curso ${selectedCourse}`;
   }
   text += ":\n\n";
 
   items.forEach((item, idx) => {
-    const actividades = Array.isArray(item.actividades)
-      ? item.actividades
-      : (Array.isArray(item.activities) ? item.activities : []);
+    const actividades = Array.isArray(item.actividades) ? item.actividades : [];
 
     text += `${idx + 1}. ${item.student || "Sin nombre"}`;
 
     if (actividades.length) {
       actividades.forEach((a, i) => {
-        const actividad = String(a?.actividad || a?.activity || "").trim();
-        const nota = String(a?.nota || a?.note || "").trim();
+        const actividad = String(a?.actividad || "").trim();
+        const nota = String(a?.nota || "").trim();
 
         if (actividad && nota) {
           text += `\n   • ${i + 1}) ${actividad} - Nota: ${nota}`;
