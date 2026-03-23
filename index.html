@@ -6478,40 +6478,46 @@ function reportesBuildShareText_() {
   return text.trim();
 }
 async function reportesShareVisibleItems_() {
-  const selectedSubject = String(reportesViewerSubjectFilterEl?.value || "").trim();
-
-  if (!selectedSubject) {
-    alert("Selecciona una asignatura para compartir.");
-    return;
-  }
-
-  const text = reportesBuildShareText_();
-
   try {
-    if (navigator.share) {
-      await navigator.share({
-        title: "Reportados por actividades",
-        text
+    const course = String(reportesViewerCourseFilterEl?.value || "").trim();
+    const subject = String(reportesViewerSubjectFilterEl?.value || "").trim();
+
+    // ⚠️ ESTA ES LA CLAVE: usar SOLO los visibles (filtrados)
+    let items = Array.isArray(__reportesLastItems) ? __reportesLastItems : [];
+
+    // 🔥 FILTRAR POR CURSO
+    if (course && course !== "__ALL__") {
+      items = items.filter(it =>
+        String(it.course || "").trim() === course
+      );
+    }
+
+    // 🔥 FILTRAR POR ASIGNATURA (AQUÍ ESTABA EL ERROR)
+    if (subject && subject !== "__ALL__") {
+      items = items.filter(it =>
+        String(it.subject || "").trim() === subject
+      );
+    }
+
+    // 🚫 Si no hay nada
+    if (!items.length) {
+      await alertPro({
+        title: "Sin reportes",
+        msg: "No hay reportes para la asignatura seleccionada."
       });
       return;
     }
-  } catch (err) {
-    if (err && err.name === "AbortError") return;
-    console.warn("Share API error:", err);
-  }
 
-  try {
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      await navigator.clipboard.writeText(text);
-      alert("El mensaje se copió al portapapeles. Ahora pégalo en la app que quieras.");
-      return;
-    }
-  } catch (err) {
-    console.warn("Clipboard error:", err);
-  }
+    // 👉 reutiliza tu función existente
+    reportesShareItems_(items);
 
-  const waUrl = `https://wa.me/?text=${encodeURIComponent(text)}`;
-  window.open(waUrl, "_blank");
+  } catch (err) {
+    console.error(err);
+    await alertPro({
+      title: "Error",
+      msg: "No se pudo compartir los reportes."
+    });
+  }
 }
 
 async function reportesLoadList_() {
@@ -11663,6 +11669,5 @@ setInterval(async () => {
 
 </body>
 </html>
-
 
 
