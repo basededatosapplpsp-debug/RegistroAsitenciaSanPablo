@@ -1168,6 +1168,15 @@ input[list]::-moz-list-dropdown {
 }
 
 
+#actividadesPendientesBox::-webkit-scrollbar{
+  width: 6px;
+}
+
+#actividadesPendientesBox::-webkit-scrollbar-thumb{
+  background: #c5c5c5;
+  border-radius: 6px;
+}
+
 /* input + combo estudiante en una sola fila */
 .student-input-row{
   display:flex;
@@ -2311,15 +2320,23 @@ input[list]::-moz-list-dropdown {
   <button id="btnAgregarActividadPendiente" type="button" class="btn btn-ghost">+ Agregar actividad</button>
 </div>
 
-      <div id="actividadesPendientesBox" style="margin-top:10px; display:grid; gap:10px;">
-        <div class="actividad-pendiente-item" style="border:1px solid var(--line); border-radius:14px; padding:12px; background:rgba(255,255,255,.04);">
-          <label class="modal-label">Actividad pendiente 1</label>
-          <input class="modal-input actividad-texto" type="text" placeholder="Ej: Cuaderno, ensayo, taller, exposición..." />
+  <div id="actividadesPendientesBox" style="
+  margin-top:10px;
+  display:grid;
+  gap:10px;
+  max-height: min(34dvh, 320px);
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding-right: 6px;
+">
+  <div class="actividad-pendiente-item" style="border:1px solid var(--line); border-radius:14px; padding:12px; background:rgba(255,255,255,04);">
+    <label class="modal-label">Actividad pendiente 1</label>
+    <input class="modal-input actividad-texto" type="text" placeholder="Ej: Cuaderno, ensayo, taller, exposición." />
 
-          <label class="modal-label" style="margin-top:10px;">Nota</label>
-          <input class="modal-input actividad-nota" type="text" placeholder="Ej: 2.5, 3.0, sin nota..." />
-        </div>
-      </div>
+    <label class="modal-label" style="margin-top:10px;">Nota</label>
+    <input class="modal-input actividad-nota" type="text" placeholder="Ej: 2.5, 3.0, sin nota." />
+  </div>
+</div>
     </div>
 
     <div id="reportesHint" class="modal-hint muted small"></div>
@@ -6290,7 +6307,7 @@ function reportesAddActividadItem_(actividad = "", nota = "") {
 
   const wrap = document.createElement("div");
   wrap.className = "actividad-pendiente-item";
-  wrap.style.cssText = "border:1px solid var(--line); border-radius:14px; padding:12px; background:rgba(255,255,255,.04);";
+  wrap.style.cssText = "border:1px solid var(--line); border-radius:14px; padding:12px; background:rgba(255,255,255,04);";
 
   wrap.innerHTML = `
     <div class="row row-between" style="margin-top:0;">
@@ -6298,13 +6315,17 @@ function reportesAddActividadItem_(actividad = "", nota = "") {
       <button type="button" class="btn btn-ghost btnQuitarActividad">Quitar</button>
     </div>
 
-    <input class="modal-input actividad-texto" type="text" placeholder="Ej: Cuaderno, ensayo, taller..." value="${String(actividad).replace(/"/g, '&quot;')}" />
+    <input class="modal-input actividad-texto" type="text" placeholder="Ej: Cuaderno, ensayo, taller." value="${String(actividad).replace(/"/g, '&quot;')}" />
 
     <label class="modal-label" style="margin-top:10px;">Nota</label>
-    <input class="modal-input actividad-nota" type="text" placeholder="Ej: 2.5, 3.0, sin nota..." value="${String(nota).replace(/"/g, '&quot;')}" />
+    <input class="modal-input actividad-nota" type="text" placeholder="Ej: 2.5, 3.0, sin nota." value="${String(nota).replace(/"/g, '&quot;')}" />
   `;
 
   actividadesPendientesBox.appendChild(wrap);
+
+  requestAnimationFrame(() => {
+    wrap.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  });
 
   const btnQuitar = wrap.querySelector(".btnQuitarActividad");
   if (btnQuitar) {
