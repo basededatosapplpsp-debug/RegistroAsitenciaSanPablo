@@ -2943,7 +2943,7 @@ const subject = reportesGetItemSubject_(item);
 
         try {
           setLoading(true, "Eliminando…", "Quitando reporte del estudiante.");
-       await gsReportesDelete({
+await gsReportesDelete({
   month: reportesCurrentMonth_(),
   tipo: __reporteTipoActual,
   course: item.course || "",
