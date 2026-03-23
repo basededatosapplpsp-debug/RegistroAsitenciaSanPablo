@@ -2906,11 +2906,13 @@ const btnComprasRefresh = document.getElementById("btnComprasRefresh");
 const COMPRAS_CACHE_VERSION = "1";
 const COMPRAS_DAYS_STORAGE_KEY = `compras_days_cache_v${COMPRAS_CACHE_VERSION}`;
 const COMPRAS_SCHEDULES_STORAGE_KEY = `compras_schedules_cache_v${COMPRAS_CACHE_VERSION}`;
+const COMPRAS_LAST_DAY_STORAGE_KEY = `compras_last_day_v${COMPRAS_CACHE_VERSION}`;
 
 let __comprasDays = [];
 let __comprasDaysLoaded = false;
 let __comprasCacheByDay = {};
 let __comprasRequestByDay = {};
+let __comprasLastSelectedDay = "";
 
 
 const PISOS_CACHE_VERSION = "1";
@@ -2965,10 +2967,29 @@ function comprasSetHint_(msg = "") {
   if (comprasHint) comprasHint.textContent = msg || "";
 }
 
+function comprasSaveLastSelectedDay_(day) {
+  __comprasLastSelectedDay = String(day || "").trim();
+  try {
+    ubicateWriteStorage_(COMPRAS_LAST_DAY_STORAGE_KEY, __comprasLastSelectedDay);
+  } catch (e) {}
+}
+
+function comprasLoadLastSelectedDay_() {
+  try {
+    __comprasLastSelectedDay = String(
+      ubicateReadStorage_(COMPRAS_LAST_DAY_STORAGE_KEY, __comprasLastSelectedDay || "")
+    ).trim();
+  } catch (e) {
+    __comprasLastSelectedDay = "";
+  }
+  return __comprasLastSelectedDay;
+}
+
 function comprasRenderDays_(days) {
   if (!comprasDaySelect) return;
 
   const prev = String(comprasDaySelect.value || "").trim();
+  const lastSaved = String(__comprasLastSelectedDay || "").trim();
 
   comprasDaySelect.innerHTML = "";
   const opt0 = document.createElement("option");
@@ -2985,6 +3006,16 @@ function comprasRenderDays_(days) {
 
   if (prev && (days || []).includes(prev)) {
     comprasDaySelect.value = prev;
+    return;
+  }
+
+  if (lastSaved && (days || []).includes(lastSaved)) {
+    comprasDaySelect.value = lastSaved;
+    return;
+  }
+
+  if ((days || []).length === 1) {
+    comprasDaySelect.value = String(days[0] || "");
   }
 }
 
@@ -3007,6 +3038,7 @@ function comprasLoadPersistentCache_() {
   try {
     const savedDays = ubicateReadStorage_(COMPRAS_DAYS_STORAGE_KEY, []);
     const savedSchedules = ubicateReadStorage_(COMPRAS_SCHEDULES_STORAGE_KEY, {});
+    const savedLastDay = ubicateReadStorage_(COMPRAS_LAST_DAY_STORAGE_KEY, "");
 
     if (Array.isArray(savedDays) && savedDays.length) {
       __comprasDays = savedDays;
@@ -3016,6 +3048,8 @@ function comprasLoadPersistentCache_() {
     if (savedSchedules && typeof savedSchedules === "object") {
       __comprasCacheByDay = savedSchedules;
     }
+
+    __comprasLastSelectedDay = String(savedLastDay || "").trim();
   } catch (e) {}
 }
 
@@ -3131,6 +3165,8 @@ async function comprasOpen_() {
   }
 
   comprasSetHint_("");
+  comprasLoadPersistentCache_();
+
   if (comprasResult) {
     comprasResult.innerHTML = `<div class="muted small">Cargando descansos.</div>`;
   }
@@ -3144,21 +3180,38 @@ async function comprasOpen_() {
       setLoading(true, "Cargando…", "Consultando horario de compras.");
     }
 
-    comprasLoadPersistentCache_();
-    if (__comprasDaysLoaded && Array.isArray(__comprasDays) && __comprasDays.length) {
-      comprasRenderDays_(__comprasDays);
+    let days = __comprasDays;
+
+    if (!hadCache) {
+      days = await comprasLoadDays_();
+    } else {
+      comprasRenderDays_(days);
+    }
+
+    if (!Array.isArray(days) || !days.length) {
+      if (comprasResult) {
+        comprasResult.innerHTML = `<div class="ubicate-empty">No hay descansos registrados.</div>`;
+      }
+      return;
+    }
+
+    const selectedDay = String(comprasDaySelect?.value || __comprasLastSelectedDay || "").trim();
+
+    if (!selectedDay) {
       if (comprasResult) {
         comprasResult.innerHTML = `<div class="muted small">Selecciona un descanso para consultar.</div>`;
       }
       return;
     }
 
-    const days = await comprasLoadDays_();
-    comprasRenderDays_(days);
+    const alreadyCached = Array.isArray(__comprasCacheByDay[selectedDay]);
 
-    if (comprasResult) {
-      comprasResult.innerHTML = `<div class="muted small">Selecciona un descanso para consultar.</div>`;
+    if (!alreadyCached && comprasResult) {
+      comprasResult.innerHTML = `<div class="muted small">Cargando horario de compras.</div>`;
     }
+
+    const items = await comprasGetScheduleCached_(selectedDay);
+    comprasRenderSchedule_(selectedDay, items);
   } catch (e) {
     comprasSetHint_(String(e && e.message ? e.message : e));
     if (comprasResult) {
@@ -3170,8 +3223,7 @@ async function comprasOpen_() {
 }
 
 async function comprasRefreshCurrentData_() {
-  const day = String(comprasDaySelect?.value || "").trim();
-
+const day = String(comprasDaySelect?.value || __comprasLastSelectedDay || "").trim();
   try {
     comprasSetHint_("");
     setLoading(true, "Actualizando…", "Recargando horario de compras.");
@@ -3185,16 +3237,18 @@ async function comprasRefreshCurrentData_() {
     const days = await comprasLoadDays_(true);
     comprasRenderDays_(days);
 
-    if (!day) {
-      if (comprasResult) {
-        comprasResult.innerHTML = `<div class="muted small">Selecciona un descanso para consultar.</div>`;
-      }
-      return;
-    }
+if (!day) {
+  if (comprasResult) {
+    comprasResult.innerHTML = `<div class="muted small">Selecciona un descanso para consultar.</div>`;
+  }
+  return;
+}
 
-    comprasDaySelect.value = day;
-    const items = await comprasGetScheduleCached_(day, true);
-    comprasRenderSchedule_(day, items);
+comprasDaySelect.value = day;
+comprasSaveLastSelectedDay_(day);
+
+const items = await comprasGetScheduleCached_(day, true);
+comprasRenderSchedule_(day, items);
   } catch (e) {
     comprasSetHint_(String(e && e.message ? e.message : e));
     if (comprasResult) {
@@ -7904,6 +7958,7 @@ if (comprasDaySelect) {
 
     try {
       comprasSetHint_("");
+      comprasSaveLastSelectedDay_(day);
 
       if (!day) {
         comprasRenderSchedule_("", []);
