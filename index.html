@@ -6543,32 +6543,19 @@ async function reportesShareVisibleItems_() {
 
   text = text.trim();
 
-  // ✅ cerrar el modal "Ver reportes" antes de compartir
-  if (reportesViewerModal) {
-    reportesViewerModal.setAttribute("hidden", "");
+try {
+  if (navigator.share) {
+    await navigator.share({
+      title: "Reportados por actividades",
+      text
+    });
   }
-
-  try {
-    if (navigator.share) {
-      await navigator.share({
-        title: "Reportados por actividades",
-        text
-      });
-      return;
-    }
-  } catch (err) {
-    if (err && err.name === "AbortError") {
-      // ✅ si cancela compartir, vuelve a mostrar el modal
-      if (reportesViewerModal) {
-        reportesViewerModal.removeAttribute("hidden");
-      }
-      return;
-    }
-    console.warn("Share API error:", err);
-  }
-
-  const waUrl = `https://wa.me/?text=${encodeURIComponent(text)}`;
-  window.location.href = waUrl;
+  return;
+} catch (err) {
+  if (err && err.name === "AbortError") return;
+  console.warn("Share API error:", err);
+  return;
+}
 }
 
 async function reportesLoadList_() {
