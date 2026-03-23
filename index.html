@@ -6267,12 +6267,16 @@ function reportesBuildSubjectFilter_(items) {
 
   const current = String(reportesViewerSubjectFilterEl.value || "").trim();
   const selectedCourse = reportesNormalizeCourse_(reportesViewerCourseFilterEl?.value || "");
+  const isAdmin = typeof isAdminMode === "function" ? isAdminMode() : false;
+  const profileCourse = reportesNormalizeCourse_(reportesGetProfileCourse_());
+
+  const courseToUse = selectedCourse || (!isAdmin ? profileCourse : "");
 
   const baseItems = Array.isArray(items) ? items : [];
 
   const itemsForSubjects = baseItems.filter(item => {
     const itemCourse = reportesNormalizeCourse_(reportesGetItemCourse_(item));
-    return !selectedCourse || itemCourse === selectedCourse;
+    return !courseToUse || itemCourse === courseToUse;
   });
 
   const subjects = Array.from(new Set(
@@ -6295,9 +6299,6 @@ function reportesBuildSubjectFilter_(items) {
     reportesViewerSubjectFilterEl.value = "";
   }
 }
-
-
-
 
 function reportesGetProfileCourse_() {
   try {
@@ -6399,20 +6400,34 @@ function reportesBuildCourseFilter_(items) {
 function reportesGetFilteredViewerItems_() {
   const items = Array.isArray(__reportesLastItems) ? __reportesLastItems : [];
   const selectedCourse = reportesNormalizeCourse_(reportesViewerCourseFilterEl?.value || "");
+  const selectedSubject = String(reportesViewerSubjectFilterEl?.value || "").trim().toLowerCase();
   const isAdmin = typeof isAdminMode === "function" ? isAdminMode() : false;
+  const profileCourse = reportesNormalizeCourse_(reportesGetProfileCourse_());
 
-  if (isAdmin && !selectedCourse) return items;
+  const courseToUse = selectedCourse || (!isAdmin ? profileCourse : "");
 
-  const courseToUse = selectedCourse || reportesNormalizeCourse_(reportesGetProfileCourse_());
+  return items.filter(item => {
+    const itemCourse = reportesNormalizeCourse_(reportesGetItemCourse_(item));
+    const itemSubject = String(reportesGetItemSubject_(item) || "").trim().toLowerCase();
 
-  return items.filter(item =>
-    reportesNormalizeCourse_(reportesGetItemCourse_(item)) === courseToUse
-  );
+    const matchCourse = !courseToUse || itemCourse === courseToUse;
+    const matchSubject = !selectedSubject || itemSubject === selectedSubject;
+
+    return matchCourse && matchSubject;
+  });
 }
 
 function reportesRenderViewerList_() {
   const items = reportesGetFilteredViewerItems_();
   reportesBuildRows_(reportesViewerListEl, items);
+}
+
+function reportesRenderList_(items) {
+  __reportesLastItems = Array.isArray(items) ? items : [];
+  reportesBuildRows_(reportesReportedListEl, __reportesLastItems);
+  reportesBuildCourseFilter_(__reportesLastItems);
+  reportesBuildSubjectFilter_(__reportesLastItems);
+  reportesRenderViewerList_();
 }
 
 function reportesRenderList_(items) {
@@ -6606,6 +6621,7 @@ reportesSetHint_("Reporte listo ✅");
 
 btnVerReportados?.addEventListener('click', () => {
   reportesBuildCourseFilter_(__reportesLastItems);
+  reportesBuildSubjectFilter_(__reportesLastItems);
   reportesRenderViewerList_();
   reportesViewerModal?.removeAttribute('hidden');
 });
@@ -6624,8 +6640,8 @@ reportesViewerModal?.addEventListener('click', (e) => {
   }
 });
 
-
 reportesViewerCourseFilterEl?.addEventListener("change", () => {
+  reportesBuildSubjectFilter_(__reportesLastItems);
   reportesRenderViewerList_();
 });
 
