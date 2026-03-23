@@ -6047,30 +6047,31 @@ async function ubicateOpen_() {
     const firstLoad = !__ubicateTeachersLoaded || !__ubicateTeachers.length;
 
     if (firstLoad) {
-      if (ubicateResult) {
-        ubicateResult.innerHTML = `<div class="muted small">Cargando docentes y horarios...</div>`;
-      }
-      setLoading(true, "Cargando…", "Cargando docentes y horarios. Solo tarda la primera vez.");
-    } else {
+      setLoading(true, "Cargando…", "Consultando docentes.");
+    }
+
+    await ubicateLoadTeachers_();
+
+    const teacher = String(ubicateTeacherSelect?.value || "").trim();
+
+    if (!teacher) {
       if (ubicateResult) {
         ubicateResult.innerHTML = `<div class="muted small">Selecciona un docente para consultar.</div>`;
       }
-      setLoading(true, "Cargando…", "Abriendo Ubícate.");
+      return;
     }
 
-    const teachers = await ubicateLoadTeachers_();
+    const cacheKey = teacher.toLowerCase();
+    const alreadyCached = Array.isArray(__ubicateScheduleCacheByTeacher[cacheKey]);
 
-    if (firstLoad) {
-      if (!__ubicatePrefetchPromise) {
-        __ubicatePrefetchPromise = ubicateWarmSchedules_(teachers)
-          .finally(() => { __ubicatePrefetchPromise = null; });
+    if (!alreadyCached) {
+      if (ubicateResult) {
+        ubicateResult.innerHTML = `<div class="muted small">Cargando clase actual del docente.</div>`;
       }
-      await __ubicatePrefetchPromise;
     }
 
-    if (ubicateResult) {
-      ubicateResult.innerHTML = `<div class="muted small">Selecciona un docente para consultar.</div>`;
-    }
+    await ubicateConsultarAhora_();
+
   } catch (e) {
     ubicateSetHint_(String(e && e.message ? e.message : e));
     if (ubicateResult) {
