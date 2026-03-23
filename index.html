@@ -3604,6 +3604,28 @@ async function fetchJsonWithTimeout_(url, options = {}, timeoutMs = LIST_TIMEOUT
   }
 }
 
+
+async function api(action, payload = {}, timeoutMs = LIST_TIMEOUT_MS) {
+  const res = await fetchJsonWithTimeout_(
+    GS_WEBAPP_URL,
+    {
+      method: "POST",
+      body: JSON.stringify({
+        action,
+        ...payload,
+        key: GS_API_KEY
+      })
+    },
+    timeoutMs
+  );
+
+  if (!res || !res.ok) {
+    throw new Error((res && (res.msg || res.error)) || `${action}_failed`);
+  }
+
+  return res;
+}
+
   
 
 function isNTCRecord(r) {
