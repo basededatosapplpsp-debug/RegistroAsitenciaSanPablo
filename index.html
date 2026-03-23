@@ -2374,10 +2374,13 @@ input[list]::-moz-list-dropdown {
       </div>
     </div>
 
-    <div class="modal-actions" style="justify-content:flex-end; gap:10px; flex-wrap:wrap;">
-      <button id="btnCompartirViewerReportes" type="button" class="btn btn-ghost">Compartir</button>
-      <button id="btnCerrarViewerReportes" type="button" class="btn btn-primary">Cerrar</button>
-    </div>
+ <div class="modal-actions" style="justify-content:flex-end; gap:10px; flex-wrap:wrap;">
+  <button id="btnCerrarViewerReportes" type="button" class="btn btn-ghost">Cerrar</button>
+  <button id="btnActualizarViewerReportes" type="button" class="btn btn-ghost">
+    <i class="fa-solid fa-rotate-right" aria-hidden="true"></i> Actualizar
+  </button>
+  <button id="btnCompartirViewerReportes" type="button" class="btn btn-primary">Compartir</button>
+</div>
   </div>
 </div>
 
@@ -2728,6 +2731,7 @@ const btnVerReportados = document.getElementById('btnVerReportados');
 const reportesViewerModal = document.getElementById('reportesViewerModal');
 const reportesViewerListEl = document.getElementById('reportesViewerList');
 const btnCerrarViewerReportes = document.getElementById('btnCerrarViewerReportes');
+const btnActualizarViewerReportes = document.getElementById('btnActualizarViewerReportes');
 
 const reportesViewerCourseFilterEl = document.getElementById("reportesViewerCourseFilter");
 const reportesViewerSubjectFilterEl = document.getElementById("reportesViewerSubjectFilter");
@@ -6555,13 +6559,69 @@ try {
 }
 }
 
-async function reportesLoadList_() {
+
+const REPORTES_CACHE_VERSION = "1";
+const REPORTES_CACHE_KEY = `reportes_pendientes_cache_v${REPORTES_CACHE_VERSION}`;
+const REPORTES_CACHE_MAX_AGE_MS = 12 * 60 * 60 * 1000; // 12 horas
+
+function reportesGetCacheKey_() {
+  return `${REPORTES_CACHE_KEY}__${reportesCurrentMonth_()}__${String(__reporteTipoActual || "actividades_pendientes").trim()}`;
+}
+
+function reportesSaveCache_(items) {
+  try {
+    const payload = {
+      ts: Date.now(),
+      month: reportesCurrentMonth_(),
+      tipo: String(__reporteTipoActual || "actividades_pendientes").trim(),
+      items: Array.isArray(items) ? items : []
+    };
+    localStorage.setItem(reportesGetCacheKey_(), JSON.stringify(payload));
+  } catch (e) {}
+}
+
+function reportesReadCache_() {
+  try {
+    const raw = localStorage.getItem(reportesGetCacheKey_());
+    if (!raw) return null;
+
+    const data = JSON.parse(raw);
+    if (!data || !Array.isArray(data.items)) return null;
+
+    const age = Date.now() - Number(data.ts || 0);
+    if (age > REPORTES_CACHE_MAX_AGE_MS) return null;
+
+    return data.items;
+  } catch (e) {
+    return null;
+  }
+}
+
+function reportesClearCache_() {
+  try {
+    localStorage.removeItem(reportesGetCacheKey_());
+  } catch (e) {}
+}
+
+async function reportesLoadList_(opts = {}) {
+  const force = !!opts.force;
+
+  if (!force) {
+    const cached = reportesReadCache_();
+    if (Array.isArray(cached) && cached.length) {
+      reportesRenderList_(cached);
+      return cached;
+    }
+  }
+
   const items = await gsReportesList({
     month: reportesCurrentMonth_(),
     tipo: __reporteTipoActual
   });
 
   reportesRenderList_(items);
+  reportesSaveCache_(items);
+  return items;
 }
 
 async function openReportePendientes_() {
@@ -6586,30 +6646,34 @@ async function openReportePendientes_() {
       await reportesLoadCourses_();
     }
 
-  
+    const profileCourse = reportesGetProfileCourse_();
 
-const profileCourse = reportesGetProfileCourse_();
-
-const course = String(
-  (reportesCourseEl && reportesCourseEl.value) ||
-  profileCourse ||
-  __reportesCourses[0] ||
-  ""
-).trim();
+    const course = String(
+      (reportesCourseEl && reportesCourseEl.value) ||
+      profileCourse ||
+      __reportesCourses[0] ||
+      ""
+    ).trim();
 
     if (reportesCourseEl && course) {
       reportesCourseEl.value = course;
       await reportesLoadStudentsForCourse_(course);
     }
 
- if (reportesStudentEl) reportesStudentEl.value = "";
-if (reportesStudentSelectEl) reportesStudentSelectEl.value = "";
-await reportesLoadAsignaturas_();
-if (reportesAsignaturaEl) reportesAsignaturaEl.value = "";
-reportesResetActividades_();
-reportesSetHint_("Reporte listo ✅");
+    if (reportesStudentEl) reportesStudentEl.value = "";
+    if (reportesStudentSelectEl) reportesStudentSelectEl.value = "";
+    await reportesLoadAsignaturas_();
+    if (reportesAsignaturaEl) reportesAsignaturaEl.value = "";
+    reportesResetActividades_();
 
-    await reportesLoadList_();
+    const cached = reportesReadCache_();
+    if (Array.isArray(cached) && cached.length) {
+      reportesRenderList_(cached);
+      reportesSetHint_("Reporte listo ✅ (desde caché)");
+    } else {
+      await reportesLoadList_({ force: true });
+      reportesSetHint_("Reporte listo ✅");
+    }
 
   } catch (e) {
     reportesSetHint_(String(e && e.message ? e.message : e));
@@ -6617,7 +6681,6 @@ reportesSetHint_("Reporte listo ✅");
     setLoading(false);
   }
 }
-
 
 btnVerReportados?.addEventListener('click', () => {
   reportesBuildCourseFilter_(__reportesLastItems);
@@ -6632,6 +6695,22 @@ btnCerrarViewerReportes?.addEventListener('click', () => {
 
 btnCompartirViewerReportes?.addEventListener("click", async () => {
   await reportesShareVisibleItems_();
+});
+
+btnActualizarViewerReportes?.addEventListener("click", async () => {
+  try {
+    setLoading(true, "Actualizando…", "Consultando reportes más recientes.");
+    reportesClearCache_();
+    await reportesLoadList_({ force: true });
+    reportesBuildCourseFilter_(__reportesLastItems);
+    reportesBuildSubjectFilter_(__reportesLastItems);
+    reportesRenderViewerList_();
+    reportesSetHint_("Lista actualizada ✅");
+  } catch (e) {
+    reportesSetHint_(String(e && e.message ? e.message : e));
+  } finally {
+    setLoading(false);
+  }
 });
 
 reportesViewerModal?.addEventListener('click', (e) => {
@@ -7140,7 +7219,7 @@ const actividades = reportesGetActividades_();
       if (reportesStudentEl) reportesStudentEl.value = "";
       if (reportesStudentSelectEl) reportesStudentSelectEl.value = "";
 
-      await reportesLoadList_();
+     await reportesLoadList_({ force: true });
 
     } catch (e) {
       reportesSetHint_(String(e && e.message ? e.message : e));
