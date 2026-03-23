@@ -2260,7 +2260,7 @@ input[list]::-moz-list-dropdown {
 
     <div id="asignaturasHint" class="modal-hint muted small"></div>
 
-    <div class="modal-actions" style="justify-content:flex-end;">
+<div class="modal-actions" style="justify-content:flex-end;">
   <button
     id="btnAsignaturasRefresh"
     type="button"
@@ -2268,7 +2268,7 @@ input[list]::-moz-list-dropdown {
     title="Actualizar asignaturas"
     aria-label="Actualizar asignaturas"
   >
-    <i class="fa-solid fa-rotate-right" aria-hidden="true"></i>
+    <i class="fas fa-sync-alt" aria-hidden="true"></i>
   </button>
 
   <button id="btnAsignaturasSave" type="button" class="btn btn-primary">Guardar</button>
@@ -4546,7 +4546,175 @@ async function gsParqueSchedule(day) {
   return Array.isArray(data.items) ? data.items : [];
 }
   
-function asignaturasSetHint_(msg) {async function asignaturasOpen_() {
+function asignaturasSetHint_(msg) {
+  if (!asignaturasHint) return;
+  asignaturasHint.textContent = msg || "";
+}
+
+function asignaturasGetFormValues_() {
+  return [
+    String(asg1?.value || "").trim(),
+    String(asg2?.value || "").trim(),
+    String(asg3?.value || "").trim(),
+    String(asg4?.value || "").trim(),
+    String(asg5?.value || "").trim()
+  ];
+}
+
+function asignaturasFillForm_(items) {
+  const arr = Array.isArray(items) ? items : [];
+  if (asg1) asg1.value = arr[0] || "";
+  if (asg2) asg2.value = arr[1] || "";
+  if (asg3) asg3.value = arr[2] || "";
+  if (asg4) asg4.value = arr[3] || "";
+  if (asg5) asg5.value = arr[4] || "";
+}
+
+function asignaturasCurrentDeviceId_() {
+  try {
+    const id = String(getDeviceId() || "").trim();
+    if (id) return id;
+
+    return String(deviceIdText?.textContent || "").trim();
+  } catch (e) {
+    return "";
+  }
+}
+
+function asignaturasStorageKey_(deviceId) {
+  return `asignaturas_cache_v${ASIGNATURAS_CACHE_VERSION}_${String(deviceId || "").trim()}`;
+}
+
+function asignaturasReadStorage_(key, fallback = null) {
+  try {
+    const raw = localStorage.getItem(key);
+    if (!raw) return fallback;
+    return JSON.parse(raw);
+  } catch (e) {
+    return fallback;
+  }
+}
+
+function asignaturasWriteStorage_(key, value) {
+  try {
+    localStorage.setItem(key, JSON.stringify(value));
+  } catch (e) {}
+}
+
+function asignaturasIsFreshCache_(savedAt) {
+  const ts = Number(savedAt || 0);
+  if (!ts) return false;
+  return (Date.now() - ts) <= ASIGNATURAS_CACHE_MAX_AGE_MS;
+}
+
+function asignaturasSaveCache_(deviceId, items) {
+  const key = asignaturasStorageKey_(deviceId);
+  const cleanItems = Array.isArray(items)
+    ? items.map(x => String(x || "").trim())
+    : [];
+
+  __asignaturasCacheByDevice[String(deviceId).trim()] = cleanItems;
+
+  asignaturasWriteStorage_(key, {
+    savedAt: Date.now(),
+    items: cleanItems
+  });
+}
+
+function asignaturasGetCached_(deviceId) {
+  const deviceKey = String(deviceId || "").trim();
+  if (!deviceKey) return null;
+
+  if (Array.isArray(__asignaturasCacheByDevice[deviceKey])) {
+    return __asignaturasCacheByDevice[deviceKey];
+  }
+
+  const saved = asignaturasReadStorage_(asignaturasStorageKey_(deviceKey), null);
+  if (
+    saved &&
+    Array.isArray(saved.items) &&
+    asignaturasIsFreshCache_(saved.savedAt)
+  ) {
+    __asignaturasCacheByDevice[deviceKey] = saved.items;
+    return saved.items;
+  }
+
+  return null;
+}
+
+function asignaturasClearCache_(deviceId) {
+  const deviceKey = String(deviceId || "").trim();
+  if (!deviceKey) return;
+
+  delete __asignaturasCacheByDevice[deviceKey];
+  try {
+    localStorage.removeItem(asignaturasStorageKey_(deviceKey));
+  } catch (e) {}
+}
+
+async function gsAsignaturasGet(deviceId) {
+  const res = await fetch(GS_WEBAPP_URL, {
+    method: "POST",
+    body: JSON.stringify({
+      action: "asignaturas_get",
+      key: GS_API_KEY,
+      device_id: deviceId
+    })
+  });
+
+  let data = null;
+  try { data = await res.json(); }
+  catch { throw new Error("Respuesta inválida del servidor"); }
+
+  if (!data.ok) throw new Error(data.msg || data.error || "asignaturas_get_failed");
+  return Array.isArray(data.items) ? data.items : [];
+}
+
+async function gsAsignaturasSave(deviceId, items) {
+  const cleanItems = Array.isArray(items)
+    ? items.map(x => String(x || "").trim())
+    : [];
+
+  const res = await fetch(GS_WEBAPP_URL, {
+    method: "POST",
+    body: JSON.stringify({
+      action: "asignaturas_save",
+      key: GS_API_KEY,
+      device_id: deviceId,
+      items: cleanItems
+    })
+  });
+
+  let data = null;
+  try { data = await res.json(); }
+  catch { throw new Error("Respuesta inválida del servidor"); }
+
+  if (!data.ok) throw new Error(data.msg || data.error || "asignaturas_save_failed");
+
+  asignaturasSaveCache_(deviceId, cleanItems);
+  return true;
+}
+
+async function asignaturasLoadForCurrentUser_(options = {}) {
+  const { force = false } = options || {};
+  const deviceId = asignaturasCurrentDeviceId_();
+  if (!deviceId) return [];
+
+  if (!force) {
+    const cached = asignaturasGetCached_(deviceId);
+    if (Array.isArray(cached)) {
+      asignaturasFillForm_(cached);
+      return cached;
+    }
+  }
+
+  const items = await gsAsignaturasGet(deviceId);
+  asignaturasFillForm_(items);
+  asignaturasSaveCache_(deviceId, items);
+  return items;
+}
+
+async function asignaturasOpen_() {
   try {
     setMenuOpen(false);
   } catch (e) {
@@ -4554,12 +4722,27 @@ function asignaturasSetHint_(msg) {async function asignaturasOpen_() {
   }
 
   asignaturasSetHint_("");
-  asignaturasFillForm_([]);
   if (asignaturasModal) asignaturasModal.hidden = false;
 
   try {
+    const deviceId = asignaturasCurrentDeviceId_();
+
+    if (!deviceId) {
+      asignaturasFillForm_([]);
+      asignaturasSetHint_("No pude identificar el dispositivo actual.");
+      return;
+    }
+
+    const cached = asignaturasGetCached_(deviceId);
+
+    if (Array.isArray(cached)) {
+      asignaturasFillForm_(cached);
+      return;
+    }
+
+    asignaturasFillForm_([]);
     setLoading(true, "Cargando…", "Consultando asignaturas guardadas.");
-    await asignaturasLoadForCurrentUser_();
+    await asignaturasLoadForCurrentUser_({ force: false });
   } catch (e) {
     asignaturasSetHint_(String(e && e.message ? e.message : e));
   } finally {
@@ -12559,5 +12742,4 @@ setInterval(async () => {
 
 </body>
 </html>
-
 
