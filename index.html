@@ -5821,7 +5821,11 @@ async function parqueOpen_() {
     if (hasCachedDays) {
       parqueRenderDays_(__parqueDays);
 
-      if (parqueResult) {
+      const selectedDay = String(parqueDaySelect?.value || "").trim();
+
+      if (selectedDay) {
+        await parqueLoadSchedule_(selectedDay, false);
+      } else if (parqueResult) {
         parqueResult.innerHTML = `<div class="muted small">Selecciona un día para consultar.</div>`;
       }
       return;
@@ -5830,7 +5834,11 @@ async function parqueOpen_() {
     setLoading(true, "Cargando…", "Consultando horario de parque.");
     await parqueLoadDays_(false);
 
-    if (parqueResult) {
+    const selectedDay = String(parqueDaySelect?.value || "").trim();
+
+    if (selectedDay) {
+      await parqueLoadSchedule_(selectedDay, false);
+    } else if (parqueResult) {
       parqueResult.innerHTML = `<div class="muted small">Selecciona un día para consultar.</div>`;
     }
   } catch (e) {
@@ -5907,7 +5915,11 @@ async function pisosOpen_() {
     if (hasCachedDays) {
       pisosRenderDays_(__pisosDays);
 
-      if (pisosResult) {
+      const selectedDay = String(pisosDaySelect?.value || "").trim();
+
+      if (selectedDay) {
+        await pisosLoadSchedule_(selectedDay, false);
+      } else if (pisosResult) {
         pisosResult.innerHTML = `<div class="muted small">Selecciona un día para consultar.</div>`;
       }
       return;
@@ -5916,7 +5928,11 @@ async function pisosOpen_() {
     setLoading(true, "Cargando…", "Consultando horario de pisos.");
     await pisosLoadDays_(false);
 
-    if (pisosResult) {
+    const selectedDay = String(pisosDaySelect?.value || "").trim();
+
+    if (selectedDay) {
+      await pisosLoadSchedule_(selectedDay, false);
+    } else if (pisosResult) {
       pisosResult.innerHTML = `<div class="muted small">Selecciona un día para consultar.</div>`;
     }
   } catch (e) {
@@ -5928,7 +5944,9 @@ async function pisosOpen_() {
     setLoading(false);
   }
 }
-  
+
+
+
 function ubicateSetHint_(msg = "") {
   if (ubicateHint) ubicateHint.textContent = msg || "";
 }
