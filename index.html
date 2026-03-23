@@ -6556,15 +6556,7 @@ async function reportesShareVisibleItems_() {
     console.warn("Share API error:", err);
   }
 
-  try {
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      await navigator.clipboard.writeText(text);
-      alert("El mensaje se copió al portapapeles. Ahora pégalo en la app que quieras.");
-      return;
-    }
-  } catch (err) {
-    console.warn("Clipboard error:", err);
-  }
+
 
   const waUrl = `https://wa.me/?text=${encodeURIComponent(text)}`;
   window.open(waUrl, "_blank");
