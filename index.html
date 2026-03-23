@@ -6109,13 +6109,17 @@ function reportesRenderAsignaturas_(items) {
 async function reportesLoadAsignaturas_(opts = {}) {
   const force = !!opts.force;
 
-  if (force) {
+  let list = reportesGetAsignaturasGuardadas_();
+
+  // ✅ Si no hay asignaturas cargadas todavía, sí consulta al servidor una vez
+  if (force || !list.length) {
     try {
       await asignaturasLoadForCurrentUser_();
     } catch (e) {}
+
+    list = reportesGetAsignaturasGuardadas_();
   }
 
-  const list = reportesGetAsignaturasGuardadas_();
   reportesRenderAsignaturas_(list);
   return list;
 }
