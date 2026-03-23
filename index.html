@@ -6266,10 +6266,19 @@ function reportesBuildSubjectFilter_(items) {
   if (!reportesViewerSubjectFilterEl) return;
 
   const current = String(reportesViewerSubjectFilterEl.value || "").trim();
+  const selectedCourse = reportesNormalizeCourse_(reportesViewerCourseFilterEl?.value || "");
+
+  const baseItems = Array.isArray(items) ? items : [];
+
+  const itemsForSubjects = baseItems.filter(item => {
+    const itemCourse = reportesNormalizeCourse_(reportesGetItemCourse_(item));
+    return !selectedCourse || itemCourse === selectedCourse;
+  });
 
   const subjects = Array.from(new Set(
-    (Array.isArray(items) ? items : [])
+    itemsForSubjects
       .map(it => reportesGetItemSubject_(it))
+      .map(s => String(s || "").trim())
       .filter(Boolean)
   )).sort((a, b) => a.localeCompare(b, "es", { sensitivity: "base" }));
 
@@ -6290,12 +6299,13 @@ function reportesBuildSubjectFilter_(items) {
 
 
 function reportesGetFilteredViewerItems_() {
+  const items = Array.isArray(__reportesLastItems) ? __reportesLastItems : [];
   const selectedCourse = reportesNormalizeCourse_(reportesViewerCourseFilterEl?.value || "");
-  const selectedSubject = String(reportesViewerSubjectFilterEl?.value || "").trim();
+  const selectedSubject = String(reportesViewerSubjectFilterEl?.value || "").trim().toLowerCase();
 
-  return (__reportesLastItems || []).filter(item => {
-    const itemCourse = reportesNormalizeCourse_(item?.course || item?.curso || "");
-    const itemSubject = reportesGetItemSubject_(item);
+  return items.filter(item => {
+    const itemCourse = reportesNormalizeCourse_(reportesGetItemCourse_(item));
+    const itemSubject = String(reportesGetItemSubject_(item) || "").trim().toLowerCase();
 
     const matchCourse = !selectedCourse || itemCourse === selectedCourse;
     const matchSubject = !selectedSubject || itemSubject === selectedSubject;
@@ -6487,7 +6497,10 @@ async function reportesShareVisibleItems_() {
     return;
   }
 
-  const items = reportesGetFilteredViewerItems_();
+  const items = reportesGetFilteredViewerItems_().filter(item => {
+    const itemSubject = String(reportesGetItemSubject_(item) || "").trim().toLowerCase();
+    return itemSubject === selectedSubject.toLowerCase();
+  });
 
   if (!items.length) {
     alert("No hay reportes para la asignatura seleccionada.");
@@ -6503,14 +6516,15 @@ async function reportesShareVisibleItems_() {
   text += ":\n\n";
 
   items.forEach((item, idx) => {
-    const actividades = Array.isArray(item.actividades) ? item.actividades : [];
+    const studentName = reportesGetItemStudentName_(item) || "Sin nombre";
+    const actividades = reportesGetItemActivities_(item);
 
-    text += `${idx + 1}. ${item.student || "Sin nombre"}`;
+    text += `${idx + 1}. ${studentName}`;
 
     if (actividades.length) {
       actividades.forEach((a, i) => {
-        const actividad = String(a?.actividad || "").trim();
-        const nota = String(a?.nota || "").trim();
+        const actividad = String(a?.actividad || a?.activity || "").trim();
+        const nota = String(a?.nota || a?.note || "").trim();
 
         if (actividad && nota) {
           text += `\n   • ${i + 1}) ${actividad} - Nota: ${nota}`;
@@ -6749,6 +6763,25 @@ if (reportesCourseEl) {
     } finally {
       setLoading(false);
     }
+  });
+}
+
+if (reportesViewerCourseFilterEl) {
+  reportesViewerCourseFilterEl.addEventListener("change", () => {
+    reportesBuildSubjectFilter_(__reportesLastItems || []);
+    reportesRenderViewerList_();
+  });
+}
+
+if (reportesViewerSubjectFilterEl) {
+  reportesViewerSubjectFilterEl.addEventListener("change", () => {
+    reportesRenderViewerList_();
+  });
+}
+
+if (btnCompartirViewerReportes) {
+  btnCompartirViewerReportes.addEventListener("click", async () => {
+    await reportesShareVisibleItems_();
   });
 }
 
