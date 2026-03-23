@@ -4971,111 +4971,219 @@ function ubicateRenderDaySchedule_(teacher, allItems, selectedDayKey) {
     return ubicateToMinutes_(a.start_time) - ubicateToMinutes_(b.start_time);
   });
 
-  const groupsMap = new Map();
+  const allowedDays = ["lunes", "martes", "miercoles", "jueves", "viernes"];
 
+  const dayMap = new Map();
   sortedItems.forEach(it => {
-    const rawKey = String(it.day_key || it.day_label || "").trim();
-    if (!rawKey) return;
+    const normalized = ubicateNormalizeDay_(it.day_label || "");
+    if (!allowedDays.includes(normalized)) return;
 
-    if (!groupsMap.has(rawKey)) {
-      groupsMap.set(rawKey, {
-        key: rawKey,
-        label: String(it.day_label || rawKey),
-        items: []
+    const key = ubicateGetDayKey_(it);
+    if (!dayMap.has(key)) {
+      dayMap.set(key, {
+        key,
+        label: it.day_label || "Día",
+        index: Number(it.day_index || 0),
+        normalized
       });
     }
-
-    groupsMap.get(rawKey).items.push(it);
   });
 
-  const groups = Array.from(groupsMap.values());
+  const dayCards = Array.from(dayMap.values()).sort((a, b) => {
+    const order = {
+      lunes: 1,
+      martes: 2,
+      miercoles: 3,
+      jueves: 4,
+      viernes: 5
+    };
+    return (order[a.normalized] || 99) - (order[b.normalized] || 99);
+  });
 
-  if (!groups.length) {
-    ubicateResult.innerHTML = `
-      <div class="ubicate-card">
-        <div class="ubicate-title">${escapeHtml(teacher)}</div>
-        <div class="ubicate-line">No tiene horario registrado.</div>
-      </div>
-    `;
-    return;
+  let activeDayKey = selectedDayKey;
+
+  if (!activeDayKey || !dayMap.has(activeDayKey)) {
+    const todayCard = dayCards.find(d =>
+      todayIndexCandidates.includes(Number(d.index)) || d.normalized === todayName
+    );
+    activeDayKey = todayCard ? todayCard.key : (dayCards[0]?.key || "");
+    __ubicateSelectedDayKey = activeDayKey;
   }
 
-  const availableKeys = groups.map(g => String(g.key || "").trim());
+  const dayItems = sortedItems
+    .filter(it => ubicateGetDayKey_(it) === activeDayKey)
+    .sort((a, b) => ubicateToMinutes_(a.start_time) - ubicateToMinutes_(b.start_time));
 
-  let effectiveDayKey = String(selectedDayKey || "").trim();
+  const activeDayData = dayCards.find(d => d.key === activeDayKey);
+  const activeDayIsToday = !!activeDayData && (
+    todayIndexCandidates.includes(Number(activeDayData.index)) ||
+    activeDayData.normalized === todayName
+  );
 
-  if (!effectiveDayKey || !availableKeys.includes(effectiveDayKey)) {
-    const todayGroup = groups.find(g => {
-      const normalized = ubicateNormalizeDay_(g.label || g.key || "");
-      return todayIndexCandidates.includes(normalized) || normalized === todayName;
+  let currentIdx = -1;
+  let nextIdx = -1;
+
+  if (activeDayIsToday) {
+    currentIdx = dayItems.findIndex(it => {
+      const ini = ubicateToMinutes_(it.start_time);
+      const fin = ubicateToMinutes_(it.end_time);
+      return nowMinutes >= ini && nowMinutes < fin;
     });
 
-    effectiveDayKey = todayGroup?.key || availableKeys[0] || "";
-  }
-
-  __ubicateSelectedDayKey = effectiveDayKey;
-
-  const selectedGroup =
-    groups.find(g => String(g.key || "").trim() === effectiveDayKey) || groups[0];
-
-  const selectedItems = Array.isArray(selectedGroup?.items) ? selectedGroup.items : [];
-
-  const currentIndex = selectedItems.findIndex(it => {
-    const ini = ubicateToMinutes_(it.start_time);
-    const fin = ubicateToMinutes_(it.end_time);
-    return nowMinutes >= ini && nowMinutes < fin;
-  });
-
-  let nextIndex = -1;
-
-  if (currentIndex >= 0) {
-    nextIndex = currentIndex + 1 < selectedItems.length ? currentIndex + 1 : -1;
-  } else {
-    nextIndex = selectedItems.findIndex(it => ubicateToMinutes_(it.start_time) > nowMinutes);
+    if (currentIdx >= 0) {
+      nextIdx = currentIdx + 1;
+      if (nextIdx >= dayItems.length) nextIdx = 0;
+    } else {
+      nextIdx = dayItems.findIndex(it => ubicateToMinutes_(it.start_time) > nowMinutes);
+      if (nextIdx === -1 && dayItems.length) nextIdx = 0;
+    }
   }
 
   ubicateResult.innerHTML = `
-    <div class="ubicate-days-wrap">
-      <div class="ubicate-days-bar">
-        ${groups.map(group => `
-          <button
-            type="button"
-            class="ubicate-day-tab ${String(group.key) === String(effectiveDayKey) ? "active" : ""}"
-            data-day-key="${escapeHtml(group.key)}"
-          >
-            ${escapeHtml(group.label)}
-          </button>
-        `).join("")}
+    <div class="ubicate-card">
+      <div class="ubicate-title">${escapeHtml(teacher)}</div>
+      <div class="ubicate-line" style="margin-bottom:10px;"><strong>Horario por día</strong></div>
+
+      <div class="ubicate-days-wrap">
+        <div class="ubicate-days-bar">
+          ${dayCards.map(d => {
+            const isSelected = d.key === activeDayKey;
+            const isToday = todayIndexCandidates.includes(Number(d.index)) || d.normalized === todayName;
+
+            return `
+              <button
+                type="button"
+                class="ubicate-day-tab ${isSelected ? "active" : ""}"
+                data-day-key="${escapeHtml(d.key)}"
+              >
+                ${escapeHtml(d.label)}
+                ${isToday ? ` <span style="opacity:.75;">•</span>` : ``}
+              </button>
+            `;
+          }).join("")}
+        </div>
       </div>
-    </div>
 
-    <div class="ubicate-day-panel">
-      <div class="ubicate-day-header">${escapeHtml(selectedGroup?.label || "Horario")}</div>
+      <div style="
+        display:flex;
+        gap:8px;
+        flex-wrap:wrap;
+        margin-bottom:12px;
+      ">
+        <span style="
+          display:inline-flex;
+          align-items:center;
+          gap:6px;
+          padding:4px 10px;
+          border-radius:999px;
+          font-size:12px;
+          font-weight:700;
+          background:rgba(34,197,94,.12);
+          color:#86efac;
+          border:1px solid rgba(34,197,94,.35);
+        ">
+          <span style="
+            width:10px;
+            height:10px;
+            border-radius:999px;
+            background:#22c55e;
+            display:inline-block;
+          "></span>
+          Actual
+        </span>
 
-      ${selectedItems.length ? selectedItems.map((it, idx) => {
-        const isCurrent = idx === currentIndex;
-        const isNext = idx === nextIndex;
+        <span style="
+          display:inline-flex;
+          align-items:center;
+          gap:6px;
+          padding:4px 10px;
+          border-radius:999px;
+          font-size:12px;
+          font-weight:700;
+          background:rgba(59,130,246,.12);
+          color:#93c5fd;
+          border:1px solid rgba(59,130,246,.35);
+        ">
+          <span style="
+            width:10px;
+            height:10px;
+            border-radius:999px;
+            background:#3b82f6;
+            display:inline-block;
+          "></span>
+          Siguiente
+        </span>
+      </div>
 
-        let extraStyle = "";
+      <div class="ubicate-line" style="margin-bottom:8px;">
+        <strong>Día seleccionado:</strong> ${escapeHtml(activeDayData?.label || "Día")}
+      </div>
+
+      ${!dayItems.length ? `
+        <div class="ubicate-empty">No hay clases registradas para este día.</div>
+      ` : dayItems.map((it, idx) => {
+        const isCurrent = activeDayIsToday && idx === currentIdx;
+        const isNext = activeDayIsToday && idx === nextIdx;
+
+        let borderColor = "rgba(255,255,255,.10)";
+        let bgStyle = "";
+        let badge = "";
+
         if (isCurrent) {
-          extraStyle = "border-color: rgba(34,197,94,.45); background: rgba(34,197,94,.12);";
+          borderColor = "rgba(34,197,94,.75)";
+          bgStyle = "background:rgba(34,197,94,.10);";
+          badge = `
+            <span style="
+              display:inline-block;
+              margin-left:8px;
+              padding:3px 8px;
+              border-radius:999px;
+              font-size:11px;
+              font-weight:800;
+              letter-spacing:.3px;
+              background:rgba(34,197,94,.18);
+              color:#86efac;
+              border:1px solid rgba(34,197,94,.45);
+            ">ACTUAL</span>
+          `;
         } else if (isNext) {
-          extraStyle = "border-color: rgba(59,130,246,.45); background: rgba(59,130,246,.12);";
+          borderColor = "rgba(59,130,246,.75)";
+          bgStyle = "background:rgba(59,130,246,.10);";
+          badge = `
+            <span style="
+              display:inline-block;
+              margin-left:8px;
+              padding:3px 8px;
+              border-radius:999px;
+              font-size:11px;
+              font-weight:800;
+              letter-spacing:.3px;
+              background:rgba(59,130,246,.18);
+              color:#93c5fd;
+              border:1px solid rgba(59,130,246,.45);
+            ">SIGUIENTE</span>
+          `;
         }
 
         return `
-          <div class="ubicate-card" style="${extraStyle}">
-            <div class="ubicate-line"><strong>Bloque:</strong> ${escapeHtml(it.start_time || "-")} - ${escapeHtml(it.end_time || "-")}</div>
+          <div style="
+            border-top:1px solid ${borderColor};
+            padding-top:10px;
+            margin-top:10px;
+            border-radius:12px;
+            padding:10px;
+            ${bgStyle}
+          ">
+            <div class="ubicate-line">
+              <strong>Bloque:</strong> ${escapeHtml(it.start_time || "-")} - ${escapeHtml(it.end_time || "-")}
+              ${badge}
+            </div>
             <div class="ubicate-line"><strong>Salón:</strong> ${escapeHtml(it.salon || "Sin salón")}</div>
             <div class="ubicate-line"><strong>Materia:</strong> ${escapeHtml(it.subject || "-")}</div>
             <div class="ubicate-line"><strong>Grado:</strong> ${escapeHtml(it.course || "-")}</div>
           </div>
         `;
-      }).join("") : `
-        <div class="ubicate-card">
-          <div class="ubicate-line">No hay clases registradas para este día.</div>
-        </div>
-      `}
+      }).join("")}
     </div>
   `;
 
