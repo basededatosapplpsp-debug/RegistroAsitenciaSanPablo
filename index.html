@@ -3041,14 +3041,13 @@ function comprasClearPersistentCache_() {
 async function comprasLoadDays_(force = false) {
   if (__comprasDaysLoaded && !force) return __comprasDays;
 
-  const resp = await api("compras_days_list", {});
-  const days = Array.isArray(resp?.days) ? resp.days : [];
+  const days = await gsComprasDaysList();
 
-  __comprasDays = days;
+  __comprasDays = Array.isArray(days) ? days : [];
   __comprasDaysLoaded = true;
   comprasSaveDaysCache_();
-  comprasRenderDays_(days);
-  return days;
+  comprasRenderDays_(__comprasDays);
+  return __comprasDays;
 }
 
 async function comprasGetScheduleCached_(day, force = false) {
@@ -3064,11 +3063,10 @@ async function comprasGetScheduleCached_(day, force = false) {
   }
 
   __comprasRequestByDay[key] = (async () => {
-    const resp = await api("compras_schedule", { day: key });
-    const items = Array.isArray(resp?.items) ? resp.items : [];
-    __comprasCacheByDay[key] = items;
+    const items = await gsComprasSchedule(key);
+    __comprasCacheByDay[key] = Array.isArray(items) ? items : [];
     comprasSaveSchedulesCache_();
-    return items;
+    return __comprasCacheByDay[key];
   })();
 
   try {
@@ -12145,6 +12143,48 @@ async function gsGetWhatsAppTo_(email, deviceId) {
   if (!data.ok) throw new Error(data.msg || data.error || "get_whatsapp_to_failed");
   return data; // { ok:true, wa_to:"..." }
 }
+
+async function gsComprasDaysList() {
+  const res = await fetch(GS_WEBAPP_URL, {
+    method: "POST",
+    body: JSON.stringify({
+      action: "compras_days_list",
+      key: GS_API_KEY
+    })
+  });
+
+  let data = null;
+  try {
+    data = await res.json();
+  } catch {
+    throw new Error("Respuesta inválida del servidor");
+  }
+
+  if (!data.ok) throw new Error(data.msg || data.error || "compras_days_list_failed");
+  return Array.isArray(data.days) ? data.days : [];
+}
+
+async function gsComprasSchedule(day) {
+  const res = await fetch(GS_WEBAPP_URL, {
+    method: "POST",
+    body: JSON.stringify({
+      action: "compras_schedule",
+      day,
+      key: GS_API_KEY
+    })
+  });
+
+  let data = null;
+  try {
+    data = await res.json();
+  } catch {
+    throw new Error("Respuesta inválida del servidor");
+  }
+
+  if (!data.ok) throw new Error(data.msg || data.error || "compras_schedule_failed");
+  return Array.isArray(data.items) ? data.items : [];
+}
+
 
 async function gsSetWhatsAppTo_(email, deviceId, whatsappTo) {
   const res = await fetch(GS_WEBAPP_URL, {
