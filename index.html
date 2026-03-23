@@ -6298,25 +6298,6 @@ function reportesBuildSubjectFilter_(items) {
 
 
 
-function reportesGetFilteredViewerItems_() {
-  const items = Array.isArray(__reportesLastItems) ? __reportesLastItems : [];
-  const selectedCourse = reportesNormalizeCourse_(reportesViewerCourseFilterEl?.value || "");
-  const selectedSubject = String(reportesViewerSubjectFilterEl?.value || "").trim().toLowerCase();
-
-  return items.filter(item => {
-    const itemCourse = reportesNormalizeCourse_(reportesGetItemCourse_(item));
-    const itemSubject = String(reportesGetItemSubject_(item) || "").trim().toLowerCase();
-
-    const matchCourse = !selectedCourse || itemCourse === selectedCourse;
-    const matchSubject = !selectedSubject || itemSubject === selectedSubject;
-
-    return matchCourse && matchSubject;
-  });
-}
-
-function reportesRenderViewerList_() {
-  reportesBuildRows_(reportesViewerListEl, reportesGetFilteredViewerItems_());
-}
 
 function reportesGetProfileCourse_() {
   try {
@@ -6430,7 +6411,8 @@ function reportesGetFilteredViewerItems_() {
 }
 
 function reportesRenderViewerList_() {
-  reportesBuildRows_(reportesViewerListEl, reportesGetFilteredViewerItems_());
+  const items = reportesGetFilteredViewerItems_();
+  reportesBuildRows_(reportesViewerListEl, items);
 }
 
 function reportesRenderList_(items) {
@@ -6644,6 +6626,10 @@ reportesViewerModal?.addEventListener('click', (e) => {
 
 
 reportesViewerCourseFilterEl?.addEventListener("change", () => {
+  reportesRenderViewerList_();
+});
+
+reportesViewerSubjectFilterEl?.addEventListener("change", () => {
   reportesRenderViewerList_();
 });
 
