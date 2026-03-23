@@ -6543,6 +6543,11 @@ async function reportesShareVisibleItems_() {
 
   text = text.trim();
 
+  // ✅ cerrar el modal "Ver reportes" antes de compartir
+  if (reportesViewerModal) {
+    reportesViewerModal.setAttribute("hidden", "");
+  }
+
   try {
     if (navigator.share) {
       await navigator.share({
@@ -6552,14 +6557,18 @@ async function reportesShareVisibleItems_() {
       return;
     }
   } catch (err) {
-    if (err && err.name === "AbortError") return;
+    if (err && err.name === "AbortError") {
+      // ✅ si cancela compartir, vuelve a mostrar el modal
+      if (reportesViewerModal) {
+        reportesViewerModal.removeAttribute("hidden");
+      }
+      return;
+    }
     console.warn("Share API error:", err);
   }
 
-
-
   const waUrl = `https://wa.me/?text=${encodeURIComponent(text)}`;
-  window.open(waUrl, "_blank");
+  window.location.href = waUrl;
 }
 
 async function reportesLoadList_() {
