@@ -4352,14 +4352,39 @@ async function gsFaltasDelete(payload){
 // ---- Render
 function faltasRenderCourses_(courses) {
   if (!faltasCourseEl) return;
+
+  const list = (courses || [])
+    .map(c => String(c || "").trim())
+    .filter(Boolean);
+
+  const prevValue = String(faltasCourseEl.value || "").trim();
+
   faltasCourseEl.innerHTML = "";
-  (courses || []).forEach(c => {
+
+  // ✅ opción Todos
+  const optAll = document.createElement("option");
+  optAll.value = "Todos";
+  optAll.textContent = "Todos";
+  faltasCourseEl.appendChild(optAll);
+
+  list.forEach(c => {
     const opt = document.createElement("option");
     opt.value = c;
     opt.textContent = c;
     faltasCourseEl.appendChild(opt);
   });
+
+  // conservar selección previa si existe
+  if (prevValue && ["Todos", ...list].includes(prevValue)) {
+    faltasCourseEl.value = prevValue;
+  } else if (list.length) {
+    // ✅ por defecto deja un curso real para no afectar guardar/cargar estudiantes
+    faltasCourseEl.value = list[0];
+  } else {
+    faltasCourseEl.value = "Todos";
+  }
 }
+
 
 function faltasRenderStudents_(students) {
   const list = Array.isArray(students) ? students : [];
@@ -6372,27 +6397,25 @@ async function openFaltaTipo_(tipo) {
       await faltasLoadCourses_();
     }
 
-    const course = String(
-      (faltasCourseEl && faltasCourseEl.value) ||
-      __faltasCourses[0] ||
-      ""
-    ).trim();
+    const currentValue = String((faltasCourseEl && faltasCourseEl.value) || "").trim();
 
-    if (faltasCourseEl && course) {
+    // ✅ si quedó "Todos", para estudiantes usamos el primer curso real
+    const course =
+      currentValue && currentValue !== "Todos"
+        ? currentValue
+        : String(__faltasCourses[0] || "").trim();
 
-      const prev = String(faltasCourseEl.value || "");
-
+    if (faltasCourseEl && currentValue) {
+      faltasCourseEl.value = currentValue;
+    } else if (faltasCourseEl && course) {
       faltasCourseEl.value = course;
-
-      // si no cambió el valor, igual forzamos carga
-      if (prev === course) {
-        await faltasLoadStudentsForCourse_(course);
-      }
-
     }
 
     if (course) {
       await faltasLoadStudentsForCourse_(course);
+    } else {
+      __faltasStudents = [];
+      faltasRenderStudents_([]);
     }
 
     if (faltasStudentEl) faltasStudentEl.value = "";
@@ -6412,7 +6435,7 @@ async function openFaltaTipo_(tipo) {
 
   // ✅ cargar listado de faltas reportadas
   try {
-    faltasLoadList_(__faltaTipo);
+    await faltasLoadList_(__faltaTipo);
   } catch (e) {}
 
 }
@@ -6432,8 +6455,22 @@ if (btnFaltaTipo3) btnFaltaTipo3.addEventListener("click", () => openFaltaTipo_(
 if (faltasCourseEl) {
   faltasCourseEl.addEventListener("change", async () => {
     try {
+      const selectedCourse = String(faltasCourseEl.value || "").trim();
+
+      // ✅ siempre recargar la lista reportada según curso/tipo
+      await faltasLoadList_(__faltaTipo);
+
+      // ✅ si es "Todos", NO intentar cargar estudiantes
+      if (selectedCourse === "Todos") {
+        __faltasStudents = [];
+        faltasRenderStudents_([]);
+        if (faltasStudentEl) faltasStudentEl.value = "";
+        faltasSetHint_("Mostrando faltas de todos los cursos ✅");
+        return;
+      }
+
       setLoading(true, "Cargando…", "Cargando estudiantes del curso.");
-      await faltasLoadStudentsForCourse_(faltasCourseEl.value);
+      await faltasLoadStudentsForCourse_(selectedCourse);
       if (faltasStudentEl) faltasStudentEl.value = "";
       faltasSetHint_("Lista actualizada ✅");
     } catch (e) {
@@ -11517,6 +11554,8 @@ async function faltasLoadList_(tipo) {
         ? discMonthKey_()
         : "";
 
+    const selectedCourse = String((faltasCourseEl && faltasCourseEl.value) || "").trim();
+
     const CACHE_TIME = 20000; // 20 segundos
 
     // ✅ usar cache si aún es válido
@@ -11531,10 +11570,17 @@ async function faltasLoadList_(tipo) {
 
     }
 
-    // ✅ filtrar por tipo en memoria
-    const items = (__faltasCache || []).filter(
+    // ✅ filtrar por tipo
+    let items = (__faltasCache || []).filter(
       x => Number(x.tipo) === Number(tipo)
     );
+
+    // ✅ filtrar por curso solo si NO es "Todos"
+    if (selectedCourse && selectedCourse !== "Todos") {
+      items = items.filter(
+        x => String(x.course || "").trim() === selectedCourse
+      );
+    }
 
     const list = document.getElementById("faltasReportedList");
 
@@ -11563,7 +11609,6 @@ async function faltasLoadList_(tipo) {
         div.classList.add("disc-new");
       }
 
-      // 📅 fecha
       let fecha = "";
       try {
         if (x.updatedAt) {
@@ -11571,7 +11616,6 @@ async function faltasLoadList_(tipo) {
         }
       } catch(e){}
 
-      // 👨‍🏫 docente
       let teacher = "-";
       try {
         if (x.who && x.who.length) {
@@ -11579,22 +11623,19 @@ async function faltasLoadList_(tipo) {
         }
       } catch(e){}
 
-      // evitar problemas de comillas en dataset
       const studentSafe = (x.student || "").replace(/"/g,'');
 
       div.innerHTML = `
-    <div style="display:flex; align-items:center; justify-content:space-between; gap:10px;">
+        <div style="display:flex; align-items:center; justify-content:space-between; gap:10px;">
+          <div style="font-weight:600; flex:1;">
+            ${x.student || ""}
+          </div>
 
-  <div style="font-weight:600; flex:1;">
-    ${x.student || ""}
-  </div>
-
-  <i class="fa-solid fa-trash disc-trash"
-     title="Eliminar falta"
-     data-student="${studentSafe}"
-     style="cursor:pointer; opacity:0.7;"></i>
-
-</div>
+          <i class="fa-solid fa-trash disc-trash"
+            title="Eliminar falta"
+            data-student="${studentSafe}"
+            style="cursor:pointer; opacity:0.7;"></i>
+        </div>
 
         <div class="small muted">
           ${x.course || ""} • ${x.subject || ""}
@@ -12742,4 +12783,3 @@ setInterval(async () => {
 
 </body>
 </html>
-
