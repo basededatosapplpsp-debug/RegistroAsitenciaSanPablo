@@ -2341,9 +2341,12 @@ input[list]::-moz-list-dropdown {
   </div>
 </div>
 
-     <div class="modal-actions" style="justify-content:flex-end; gap:10px; flex-wrap:wrap;">
+<div class="modal-actions" style="justify-content:flex-end; gap:10px; flex-wrap:wrap;">
   <button id="btnReportesClose" type="button" class="btn btn-ghost">Cerrar</button>
   <button id="btnVerReportados" type="button" class="btn btn-ghost">Ver</button>
+  <button id="btnActualizarReportesCache" type="button" class="btn btn-ghost">
+    <i class="fa-solid fa-rotate-right" aria-hidden="true"></i>
+  </button>
   <button id="btnGuardarReportePendiente" type="button" class="btn btn-primary">Guardar reporte</button>
 </div>
     </div>
@@ -2377,7 +2380,7 @@ input[list]::-moz-list-dropdown {
  <div class="modal-actions" style="justify-content:flex-end; gap:10px; flex-wrap:wrap;">
   <button id="btnCerrarViewerReportes" type="button" class="btn btn-ghost">Cerrar</button>
   <button id="btnActualizarViewerReportes" type="button" class="btn btn-ghost">
-    <i class="fa-solid fa-rotate-right" aria-hidden="true"></i> Actualizar
+    <i class="fa-solid fa-rotate-right" aria-hidden="true"></i>
   </button>
   <button id="btnCompartirViewerReportes" type="button" class="btn btn-primary">Compartir</button>
 </div>
@@ -2707,6 +2710,7 @@ const btnReporteEjemplo3 = $("btnReporteEjemplo3");
 
 const reportesModal = $("reportesModal");
 const btnReportesClose = $("btnReportesClose");
+const btnActualizarReportesCache = $("btnActualizarReportesCache");
 const btnGuardarReportePendiente = $("btnGuardarReportePendiente");
 const btnAgregarActividadPendiente = $("btnAgregarActividadPendiente");
 
@@ -5947,11 +5951,13 @@ if (btnFaltaReport) {
 let __reportesCourses = [];
 let __reportesStudents = [];
 let __reportesStudentsByCourse = {};
+let __reportesAsignaturas = [];
 let __reporteTipoActual = "actividades_pendientes";
 
-const REPORTES_COURSES_CACHE_VERSION = "1";
+const REPORTES_COURSES_CACHE_VERSION = "2";
 const REPORTES_COURSES_STORAGE_KEY = `reportes_courses_cache_v${REPORTES_COURSES_CACHE_VERSION}`;
 const REPORTES_STUDENTS_STORAGE_KEY = `reportes_students_cache_v${REPORTES_COURSES_CACHE_VERSION}`;
+const REPORTES_ASIGNATURAS_STORAGE_KEY = `reportes_asignaturas_cache_v${REPORTES_COURSES_CACHE_VERSION}`;
 const REPORTES_COURSES_CACHE_MAX_AGE_MS = 12 * 60 * 60 * 1000; // 12 horas
 
 function reportesReadStorage_(key, fallback) {
@@ -5995,6 +6001,15 @@ function reportesLoadPersistentSelectorsCache_() {
   ) {
     __reportesStudentsByCourse = studentsBox.items || {};
   }
+
+  const asignaturasBox = reportesReadStorage_(REPORTES_ASIGNATURAS_STORAGE_KEY, null);
+  if (
+    asignaturasBox &&
+    Array.isArray(asignaturasBox.items) &&
+    reportesIsFreshCache_(asignaturasBox.savedAt)
+  ) {
+    __reportesAsignaturas = asignaturasBox.items;
+  }
 }
 
 function reportesSaveCoursesCache_() {
@@ -6008,6 +6023,13 @@ function reportesSaveStudentsCache_() {
   reportesWriteStorage_(REPORTES_STUDENTS_STORAGE_KEY, {
     savedAt: Date.now(),
     items: __reportesStudentsByCourse || {}
+  });
+}
+
+function reportesSaveAsignaturasCache_() {
+  reportesWriteStorage_(REPORTES_ASIGNATURAS_STORAGE_KEY, {
+    savedAt: Date.now(),
+    items: Array.isArray(__reportesAsignaturas) ? __reportesAsignaturas : []
   });
 }
 
@@ -6028,6 +6050,16 @@ function reportesSetStudentsCached_(course, students) {
   reportesSaveStudentsCache_();
 }
 
+function reportesClearSelectorsCache_() {
+  __reportesCourses = [];
+  __reportesStudents = [];
+  __reportesStudentsByCourse = {};
+  __reportesAsignaturas = [];
+
+  try { localStorage.removeItem(REPORTES_COURSES_STORAGE_KEY); } catch (e) {}
+  try { localStorage.removeItem(REPORTES_STUDENTS_STORAGE_KEY); } catch (e) {}
+  try { localStorage.removeItem(REPORTES_ASIGNATURAS_STORAGE_KEY); } catch (e) {}
+}
 
 reportesLoadPersistentSelectorsCache_();
 
@@ -6109,19 +6141,27 @@ function reportesRenderAsignaturas_(items) {
 async function reportesLoadAsignaturas_(opts = {}) {
   const force = !!opts.force;
 
+  if (!force && Array.isArray(__reportesAsignaturas) && __reportesAsignaturas.length) {
+    reportesRenderAsignaturas_(__reportesAsignaturas);
+    return __reportesAsignaturas;
+  }
+
   let list = reportesGetAsignaturasGuardadas_();
 
-  // ✅ Si no hay asignaturas cargadas todavía, sí consulta al servidor una vez
   if (force || !list.length) {
     try {
       await asignaturasLoadForCurrentUser_();
     } catch (e) {}
-
     list = reportesGetAsignaturasGuardadas_();
   }
 
-  reportesRenderAsignaturas_(list);
-  return list;
+  __reportesAsignaturas = Array.from(
+    new Set((Array.isArray(list) ? list : []).map(x => String(x || "").trim()).filter(Boolean))
+  );
+
+  reportesRenderAsignaturas_(__reportesAsignaturas);
+  reportesSaveAsignaturasCache_();
+  return __reportesAsignaturas;
 }
 
 async function gsReportesGuardar(payload) {
@@ -6765,15 +6805,13 @@ async function openReportePendientes_() {
       ""
     ).trim();
 
-    const hasStudentsCache =
-      !!preferredCourse &&
-      Array.isArray(reportesGetStudentsCached_(preferredCourse)) &&
-      reportesGetStudentsCached_(preferredCourse).length > 0;
+    const cachedStudents = preferredCourse ? reportesGetStudentsCached_(preferredCourse) : null;
+    const hasStudentsCache = Array.isArray(cachedStudents) && cachedStudents.length > 0;
+    const hasAsignaturasCache = Array.isArray(__reportesAsignaturas) && __reportesAsignaturas.length > 0;
+    const cachedReportes = typeof reportesReadCache_ === "function" ? reportesReadCache_() : null;
+    const hasReportesCache = Array.isArray(cachedReportes) && cachedReportes.length > 0;
 
-    const hasReportesCache =
-      (typeof reportesReadCache_ === "function" && Array.isArray(reportesReadCache_()) && reportesReadCache_().length > 0);
-
-    const shouldShowLoader = !hasCoursesCache || !hasStudentsCache || !hasReportesCache;
+    const shouldShowLoader = !hasCoursesCache || !hasStudentsCache || !hasAsignaturasCache || !hasReportesCache;
 
     if (shouldShowLoader) {
       setLoading(true, "Cargando…", "Cargando cursos y estudiantes.");
@@ -6801,9 +6839,8 @@ async function openReportePendientes_() {
     if (reportesAsignaturaEl) reportesAsignaturaEl.value = "";
     reportesResetActividades_();
 
-    const cached = typeof reportesReadCache_ === "function" ? reportesReadCache_() : null;
-    if (Array.isArray(cached) && cached.length) {
-      reportesRenderList_(cached);
+    if (Array.isArray(cachedReportes) && cachedReportes.length) {
+      reportesRenderList_(cachedReportes);
       reportesSetHint_("Reporte listo ✅ (desde caché)");
     } else {
       await reportesLoadList_({ force: true });
@@ -6835,8 +6872,27 @@ btnCompartirViewerReportes?.addEventListener("click", async () => {
 btnActualizarViewerReportes?.addEventListener("click", async () => {
   try {
     setLoading(true, "Actualizando…", "Consultando reportes más recientes.");
+    reportesClearSelectorsCache_();
     reportesClearCache_();
+
+    await reportesLoadCourses_({ force: true });
+
+    const profileCourse = reportesGetProfileCourse_();
+    const course = String(
+      (reportesCourseEl && reportesCourseEl.value) ||
+      profileCourse ||
+      __reportesCourses[0] ||
+      ""
+    ).trim();
+
+    if (reportesCourseEl && course) {
+      reportesCourseEl.value = course;
+      await reportesLoadStudentsForCourse_(course, { force: true });
+    }
+
+    await reportesLoadAsignaturas_({ force: true });
     await reportesLoadList_({ force: true });
+
     reportesBuildCourseFilter_(__reportesLastItems);
     reportesBuildSubjectFilter_(__reportesLastItems);
     reportesRenderViewerList_();
@@ -6885,6 +6941,50 @@ if (btnReportePendientes) {
   btnReportePendientes.addEventListener("click", async () => {
     await openReportePendientes_();
     if (reportesSubMenu) reportesSubMenu.hidden = true;
+  });
+}
+
+if (btnActualizarReportesCache) {
+  btnActualizarReportesCache.addEventListener("click", async () => {
+    try {
+      setLoading(true, "Actualizando…", "Consultando cursos, estudiantes y asignaturas.");
+      reportesClearSelectorsCache_();
+      if (typeof reportesClearCache_ === "function") {
+        reportesClearCache_();
+      }
+
+      await reportesLoadCourses_({ force: true });
+
+      const profileCourse = reportesGetProfileCourse_();
+      const course = String(
+        (reportesCourseEl && reportesCourseEl.value) ||
+        profileCourse ||
+        __reportesCourses[0] ||
+        ""
+      ).trim();
+
+      if (reportesCourseEl && course) {
+        reportesCourseEl.value = course;
+        await reportesLoadStudentsForCourse_(course, { force: true });
+      }
+
+      await reportesLoadAsignaturas_({ force: true });
+      await reportesLoadList_({ force: true });
+
+      if (reportesStudentEl) reportesStudentEl.value = "";
+      if (reportesStudentSelectEl) reportesStudentSelectEl.value = "";
+      if (reportesAsignaturaEl) reportesAsignaturaEl.value = "";
+
+      reportesBuildCourseFilter_(__reportesLastItems);
+      reportesBuildSubjectFilter_(__reportesLastItems);
+      reportesRenderViewerList_();
+
+      reportesSetHint_("Cursos, estudiantes, asignaturas y lista actualizados ✅");
+    } catch (e) {
+      reportesSetHint_(String(e && e.message ? e.message : e));
+    } finally {
+      setLoading(false);
+    }
   });
 }
 
