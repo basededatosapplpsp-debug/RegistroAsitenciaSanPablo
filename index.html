@@ -6106,13 +6106,18 @@ function reportesRenderAsignaturas_(items) {
   }
 }
 
-async function reportesLoadAsignaturas_() {
-  try {
-    await asignaturasLoadForCurrentUser_();
-  } catch (e) {}
+async function reportesLoadAsignaturas_(opts = {}) {
+  const force = !!opts.force;
+
+  if (force) {
+    try {
+      await asignaturasLoadForCurrentUser_();
+    } catch (e) {}
+  }
 
   const list = reportesGetAsignaturasGuardadas_();
   reportesRenderAsignaturas_(list);
+  return list;
 }
 
 async function gsReportesGuardar(payload) {
@@ -6746,11 +6751,31 @@ async function openReportePendientes_() {
   }
 
   try {
-    setLoading(true, "Cargando…", "Cargando cursos y estudiantes.");
-
-    await reportesLoadCourses_();
+    const hasCoursesCache = Array.isArray(__reportesCourses) && __reportesCourses.length > 0;
 
     const profileCourse = reportesGetProfileCourse_();
+    const preferredCourse = String(
+      (reportesCourseEl && reportesCourseEl.value) ||
+      profileCourse ||
+      __reportesCourses[0] ||
+      ""
+    ).trim();
+
+    const hasStudentsCache =
+      !!preferredCourse &&
+      Array.isArray(reportesGetStudentsCached_(preferredCourse)) &&
+      reportesGetStudentsCached_(preferredCourse).length > 0;
+
+    const hasReportesCache =
+      (typeof reportesReadCache_ === "function" && Array.isArray(reportesReadCache_()) && reportesReadCache_().length > 0);
+
+    const shouldShowLoader = !hasCoursesCache || !hasStudentsCache || !hasReportesCache;
+
+    if (shouldShowLoader) {
+      setLoading(true, "Cargando…", "Cargando cursos y estudiantes.");
+    }
+
+    await reportesLoadCourses_();
 
     const course = String(
       (reportesCourseEl && reportesCourseEl.value) ||
@@ -6766,7 +6791,9 @@ async function openReportePendientes_() {
 
     if (reportesStudentEl) reportesStudentEl.value = "";
     if (reportesStudentSelectEl) reportesStudentSelectEl.value = "";
-    await reportesLoadAsignaturas_();
+
+    await reportesLoadAsignaturas_({ force: false });
+
     if (reportesAsignaturaEl) reportesAsignaturaEl.value = "";
     reportesResetActividades_();
 
