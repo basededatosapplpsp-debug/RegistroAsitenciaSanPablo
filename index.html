@@ -1462,7 +1462,62 @@ input[list]::-moz-list-dropdown {
   white-space:nowrap;
 }
 
+/* ================================
+   MODAL COMPRAS
+================================ */
+#comprasModal{
+  padding: max(12px, env(safe-area-inset-top)) 12px max(12px, env(safe-area-inset-bottom));
+}
 
+#comprasModal .modal-card{
+  width: min(720px, 100%);
+  max-height: calc(100dvh - 24px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+#comprasResultBox{
+  display:flex;
+  flex-direction:column;
+  min-height:0;
+}
+
+#comprasResult{
+  min-height:140px;
+  max-height:320px;
+  overflow:auto;
+  -webkit-overflow-scrolling: touch;
+  border:1px solid var(--line);
+  border-radius:14px;
+  padding:12px;
+  background: rgba(0,0,0,.10);
+}
+
+#comprasResult .compras-table{
+  width: max-content;
+  min-width: 0;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+#comprasResult .compras-table th,
+#comprasResult .compras-table td{
+  padding: 8px 10px;
+  white-space: nowrap;
+}
+
+#comprasResult .compras-table th:first-child,
+#comprasResult .compras-table td:first-child{
+  width: 1%;
+  min-width: fit-content;
+  padding-right: 8px;
+}
+
+#comprasResult .table.compras-table{
+  width: max-content !important;
+  min-width: 0 !important;
+}
 
 </style>
 </head>
@@ -1541,10 +1596,10 @@ input[list]::-moz-list-dropdown {
 <div id="horariosSubMenu" class="menu-subpanel" hidden>
   <div class="muted small" style="padding:6px 8px;">Horarios</div>
 
-  <!-- ✅ conservan los mismos IDs para no romper tu lógica actual -->
   <button id="btnUbicateMenu" class="menu-item" type="button" role="menuitem">Ubícate</button>
   <button id="btnPisosMenu" class="menu-item" type="button" role="menuitem">Pisos</button>
   <button id="btnParqueMenu" class="menu-item" type="button" role="menuitem">Parque</button>
+  <button id="btnComprasMenu" class="menu-item" type="button" role="menuitem">Compras</button>
 </div>
 <button id="btnAsignaturasMenu" class="menu-item" type="button" role="menuitem">
   Asignaturas
@@ -2150,6 +2205,33 @@ input[list]::-moz-list-dropdown {
         <i class="fa-solid fa-rotate-right" aria-hidden="true"></i>
       </button>
       <button id="btnParqueClose" type="button" class="btn btn-ghost">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- ======= MODAL COMPRAS ======= -->
+<div id="comprasModal" class="modal-backdrop" hidden>
+  <div class="modal-card">
+    <h2 class="modal-title">Horario de compras</h2>
+    <p class="modal-sub">Consulta qué cursos compran en cada descanso.</p>
+
+    <label class="modal-label" for="comprasDaySelect">Descanso</label>
+    <select id="comprasDaySelect" class="modal-input">
+      <option value="">Selecciona un descanso</option>
+    </select>
+
+    <div id="comprasResultBox" style="margin-top:12px;">
+      <div id="comprasResult" class="muted small">Selecciona un descanso para consultar.</div>
+    </div>
+
+    <div id="comprasHint" class="modal-hint muted small"></div>
+
+    <div class="modal-actions" style="justify-content:flex-end;">
+      <button id="btnComprasRefresh" type="button" class="btn btn-ghost icon-only" title="Actualizar">
+        <i class="fa-solid fa-rotate-right"></i>
+      </button>
+      <button id="btnComprasClose" type="button" class="btn btn-ghost">Cerrar</button>
     </div>
   </div>
 </div>
@@ -2813,6 +2895,23 @@ const asignaturasHint = $("asignaturasHint");
 const btnAsignaturasSave = $("btnAsignaturasSave");
 const btnAsignaturasClose = $("btnAsignaturasClose");
 
+const btnComprasMenu = document.getElementById("btnComprasMenu");
+const comprasModal = document.getElementById("comprasModal");
+const comprasDaySelect = document.getElementById("comprasDaySelect");
+const comprasResult = document.getElementById("comprasResult");
+const comprasHint = document.getElementById("comprasHint");
+const btnComprasClose = document.getElementById("btnComprasClose");
+const btnComprasRefresh = document.getElementById("btnComprasRefresh");
+
+const COMPRAS_CACHE_VERSION = "1";
+const COMPRAS_DAYS_STORAGE_KEY = `compras_days_cache_v${COMPRAS_CACHE_VERSION}`;
+const COMPRAS_SCHEDULES_STORAGE_KEY = `compras_schedules_cache_v${COMPRAS_CACHE_VERSION}`;
+
+let __comprasDays = [];
+let __comprasDaysLoaded = false;
+let __comprasCacheByDay = {};
+let __comprasRequestByDay = {};
+
 
 const PISOS_CACHE_VERSION = "1";
 const PISOS_DAYS_STORAGE_KEY = `pisos_days_cache_v${PISOS_CACHE_VERSION}`;
@@ -2861,6 +2960,254 @@ const monthRecordsCountEl = $("monthRecordsCount");
 const adminRecordsFilters = $("adminRecordsFilters");
 const recordsMonthSelect = $("recordsMonthSelect");
 const recordsTeacherSelect = $("recordsTeacherSelect");
+
+function comprasSetHint_(msg = "") {
+  if (comprasHint) comprasHint.textContent = msg || "";
+}
+
+function comprasRenderDays_(days) {
+  if (!comprasDaySelect) return;
+
+  const prev = String(comprasDaySelect.value || "").trim();
+
+  comprasDaySelect.innerHTML = "";
+  const opt0 = document.createElement("option");
+  opt0.value = "";
+  opt0.textContent = "Selecciona un descanso";
+  comprasDaySelect.appendChild(opt0);
+
+  (days || []).forEach(day => {
+    const opt = document.createElement("option");
+    opt.value = String(day || "");
+    opt.textContent = String(day || "");
+    comprasDaySelect.appendChild(opt);
+  });
+
+  if (prev && (days || []).includes(prev)) {
+    comprasDaySelect.value = prev;
+  }
+}
+
+function comprasNormalizeText_(s) {
+  return String(s || "")
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+}
+
+function comprasBreakOrder_(label) {
+  const v = comprasNormalizeText_(label);
+  if (v.includes("1")) return 1;
+  if (v.includes("2")) return 2;
+  return 99;
+}
+
+function comprasLoadPersistentCache_() {
+  try {
+    const savedDays = ubicateReadStorage_(COMPRAS_DAYS_STORAGE_KEY, []);
+    const savedSchedules = ubicateReadStorage_(COMPRAS_SCHEDULES_STORAGE_KEY, {});
+
+    if (Array.isArray(savedDays) && savedDays.length) {
+      __comprasDays = savedDays;
+      __comprasDaysLoaded = true;
+    }
+
+    if (savedSchedules && typeof savedSchedules === "object") {
+      __comprasCacheByDay = savedSchedules;
+    }
+  } catch (e) {}
+}
+
+function comprasSaveDaysCache_() {
+  try {
+    ubicateWriteStorage_(COMPRAS_DAYS_STORAGE_KEY, __comprasDays);
+  } catch (e) {}
+}
+
+function comprasSaveSchedulesCache_() {
+  try {
+    ubicateWriteStorage_(COMPRAS_SCHEDULES_STORAGE_KEY, __comprasCacheByDay);
+  } catch (e) {}
+}
+
+function comprasClearPersistentCache_() {
+  try {
+    localStorage.removeItem(COMPRAS_DAYS_STORAGE_KEY);
+    localStorage.removeItem(COMPRAS_SCHEDULES_STORAGE_KEY);
+  } catch (e) {}
+}
+
+async function comprasLoadDays_(force = false) {
+  if (__comprasDaysLoaded && !force) return __comprasDays;
+
+  const resp = await api("compras_days_list", {});
+  const days = Array.isArray(resp?.days) ? resp.days : [];
+
+  __comprasDays = days;
+  __comprasDaysLoaded = true;
+  comprasSaveDaysCache_();
+  comprasRenderDays_(days);
+  return days;
+}
+
+async function comprasGetScheduleCached_(day, force = false) {
+  const key = String(day || "").trim();
+  if (!key) return [];
+
+  if (!force && Array.isArray(__comprasCacheByDay[key])) {
+    return __comprasCacheByDay[key];
+  }
+
+  if (!force && __comprasRequestByDay[key]) {
+    return await __comprasRequestByDay[key];
+  }
+
+  __comprasRequestByDay[key] = (async () => {
+    const resp = await api("compras_schedule", { day: key });
+    const items = Array.isArray(resp?.items) ? resp.items : [];
+    __comprasCacheByDay[key] = items;
+    comprasSaveSchedulesCache_();
+    return items;
+  })();
+
+  try {
+    return await __comprasRequestByDay[key];
+  } finally {
+    delete __comprasRequestByDay[key];
+  }
+}
+
+function comprasRenderSchedule_(day, items) {
+  if (!comprasResult) return;
+
+  const rows = Array.isArray(items) ? [...items] : [];
+
+  if (!day) {
+    comprasResult.innerHTML = `<div class="muted small">Selecciona un descanso para consultar.</div>`;
+    return;
+  }
+
+  if (!rows.length) {
+    comprasResult.innerHTML = `
+      <div class="ubicate-card">
+        <div class="ubicate-title">${escapeHtml(day)}</div>
+        <div class="ubicate-line">No hay horario de compras registrado para este descanso.</div>
+      </div>
+    `;
+    return;
+  }
+
+  rows.sort((a, b) => String(a.time || "").localeCompare(String(b.time || ""), "es"));
+
+  comprasResult.innerHTML = `
+    <div class="ubicate-card">
+      <div class="ubicate-title">${escapeHtml(day)}</div>
+      <div style="overflow:auto; margin-top:10px;">
+        <table class="table compras-table">
+          <thead>
+            <tr>
+              <th>Curso</th>
+              <th>Hora</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rows.map(r => `
+              <tr>
+                <td><strong>${escapeHtml(String(r.course || "").trim() || "-")}</strong></td>
+                <td>${escapeHtml(String(r.time || "").trim() || "-")}</td>
+              </tr>
+            `).join("")}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  `;
+}
+
+async function comprasOpen_() {
+  try {
+    setMenuOpen(false);
+  } catch (e) {
+    if (userMenu) userMenu.hidden = true;
+  }
+
+  comprasSetHint_("");
+  if (comprasResult) {
+    comprasResult.innerHTML = `<div class="muted small">Cargando descansos.</div>`;
+  }
+
+  if (comprasModal) comprasModal.hidden = false;
+
+  try {
+    const hadCache = __comprasDaysLoaded && Array.isArray(__comprasDays) && __comprasDays.length;
+
+    if (!hadCache) {
+      setLoading(true, "Cargando…", "Consultando horario de compras.");
+    }
+
+    comprasLoadPersistentCache_();
+    if (__comprasDaysLoaded && Array.isArray(__comprasDays) && __comprasDays.length) {
+      comprasRenderDays_(__comprasDays);
+      if (comprasResult) {
+        comprasResult.innerHTML = `<div class="muted small">Selecciona un descanso para consultar.</div>`;
+      }
+      return;
+    }
+
+    const days = await comprasLoadDays_();
+    comprasRenderDays_(days);
+
+    if (comprasResult) {
+      comprasResult.innerHTML = `<div class="muted small">Selecciona un descanso para consultar.</div>`;
+    }
+  } catch (e) {
+    comprasSetHint_(String(e && e.message ? e.message : e));
+    if (comprasResult) {
+      comprasResult.innerHTML = `<div class="ubicate-empty">No pude cargar el horario de compras.</div>`;
+    }
+  } finally {
+    setLoading(false);
+  }
+}
+
+async function comprasRefreshCurrentData_() {
+  const day = String(comprasDaySelect?.value || "").trim();
+
+  try {
+    comprasSetHint_("");
+    setLoading(true, "Actualizando…", "Recargando horario de compras.");
+
+    comprasClearPersistentCache_();
+    __comprasDays = [];
+    __comprasDaysLoaded = false;
+    __comprasCacheByDay = {};
+    __comprasRequestByDay = {};
+
+    const days = await comprasLoadDays_(true);
+    comprasRenderDays_(days);
+
+    if (!day) {
+      if (comprasResult) {
+        comprasResult.innerHTML = `<div class="muted small">Selecciona un descanso para consultar.</div>`;
+      }
+      return;
+    }
+
+    comprasDaySelect.value = day;
+    const items = await comprasGetScheduleCached_(day, true);
+    comprasRenderSchedule_(day, items);
+  } catch (e) {
+    comprasSetHint_(String(e && e.message ? e.message : e));
+    if (comprasResult) {
+      comprasResult.innerHTML = `<div class="ubicate-empty">No pude actualizar el horario de compras.</div>`;
+    }
+  } finally {
+    setLoading(false);
+  }
+}
+
+comprasLoadPersistentCache_();
 
 function reportesBuildRows_(targetEl, items) {
   if (!targetEl) return;
@@ -7510,6 +7857,66 @@ if (btnAdminConfig) btnAdminConfig.hidden = !isAdminMode();
 if (btnAdminManual) btnAdminManual.hidden = !isAdminMode();
 
 
+
+
+if (btnComprasMenu) {
+  btnComprasMenu.addEventListener("click", async () => {
+    await comprasOpen_();
+  });
+}
+
+if (btnComprasClose) {
+  btnComprasClose.addEventListener("click", () => {
+    if (comprasModal) comprasModal.hidden = true;
+    comprasSetHint_("");
+  });
+}
+
+if (btnComprasRefresh) {
+  btnComprasRefresh.addEventListener("click", async () => {
+    await comprasRefreshCurrentData_();
+  });
+}
+
+if (comprasDaySelect) {
+  comprasDaySelect.addEventListener("change", async () => {
+    const day = String(comprasDaySelect.value || "").trim();
+
+    try {
+      comprasSetHint_("");
+
+      if (!day) {
+        comprasRenderSchedule_("", []);
+        return;
+      }
+
+      const alreadyCached = Array.isArray(__comprasCacheByDay[day]);
+
+      if (!alreadyCached) {
+        setLoading(true, "Consultando…", "Cargando horario de compras.");
+        if (comprasResult) {
+          comprasResult.innerHTML = `<div class="muted small">Cargando horario de compras.</div>`;
+        }
+      }
+
+      const items = await comprasGetScheduleCached_(day);
+      comprasRenderSchedule_(day, items);
+    } catch (e) {
+      comprasSetHint_(String(e && e.message ? e.message : e));
+      if (comprasResult) {
+        comprasResult.innerHTML = `<div class="ubicate-empty">No pude consultar el horario de compras.</div>`;
+      }
+    } finally {
+      setLoading(false);
+    }
+  });
+}
+
+if (comprasModal) {
+  comprasModal.addEventListener("click", (e) => {
+    if (e.target === comprasModal) comprasModal.hidden = true;
+  });
+}
 
 function getInitials(name) {
   const parts = String(name || "").trim().split(/\s+/).filter(Boolean);
