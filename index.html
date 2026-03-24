@@ -2727,7 +2727,7 @@ function initQrUi_() {
 // ✅ Ejecutar cuando el DOM ya existe
 document.addEventListener("DOMContentLoaded", async () => {
   initQrUi_();
-  await loadRuntimeConfig_();
+  loadRuntimeConfig_({ silent: true });
 });
 
 
@@ -3520,7 +3520,7 @@ function confirmPro({
 
 let hasEntradaToday = false;
 let hasSalidaToday  = false;
-let CONFIG_READY = false;
+
 
 
 function todayStr() {
@@ -3558,12 +3558,7 @@ function updateDailyButtonsState(records) {
     return;
   }
 
-    if (!CONFIG_READY) {
-    btnEntrada.disabled = true;
-    btnSalida.disabled = true;
-    btnSalida.classList.remove("is-inactive");
-    return;
-  }
+  
 
   const p = loadProfile();
   if (!p) return;
@@ -4100,11 +4095,11 @@ async function loadAdminConfigIntoUI() {
   cfgHint.textContent = "Listo ✅";
 }
 
-async function loadRuntimeConfig_() {
+async function loadRuntimeConfig_({ silent = false } = {}) {
   try {
-    CONFIG_READY = false;
-
-    setLoading(true, "Configuración", "Cargando parámetros del colegio...");
+    if (!silent) {
+      setLoading(true, "Configuración", "Actualizando parámetros del colegio...");
+    }
 
     const cfg = await gsAdminGetConfig();
 
@@ -4126,15 +4121,23 @@ async function loadRuntimeConfig_() {
       if (exitOk) EXIT_OK_HHMM_CLIENT = exitOk;
     }
 
-    CONFIG_READY = true;
-    setStatus("warn", "Listo", "Configuración cargada. Ya puedes registrar asistencia.");
-
+    return true;
   } catch (e) {
-    CONFIG_READY = false;
-    console.warn("No se pudo cargar CONFIG al iniciar:", e);
-    setStatus("bad", "Error de configuración", "No se pudo cargar la configuración del colegio.");
+    console.warn("No se pudo actualizar CONFIG:", e);
+
+    if (!silent) {
+      setStatus(
+        "bad",
+        "Error de configuración",
+        "No se pudo actualizar la configuración del colegio. Intenta de nuevo."
+      );
+    }
+
+    return false;
   } finally {
-    setLoading(false);
+    if (!silent) {
+      setLoading(false);
+    }
   }
 }
 
@@ -12553,10 +12556,8 @@ async function scanQrValidated_() {
 // ======= Registrar =======
 async function register(type) {
 
-    if (!CONFIG_READY) {
-    setStatus("warn", "Cargando configuración", "Espera un momento. Aún no está lista la configuración del colegio.");
-    return;
-  }
+  const configOk = await loadRuntimeConfig_();
+  if (!configOk) return;
 
   if (type === "SALIDA" && !hasEntradaToday) {
     setStatus(
@@ -12581,32 +12582,32 @@ async function register(type) {
   let qrText = "";
   try {
     setStatus("warn", "Escanea el QR", "Se abrirá la cámara para validar el QR del colegio.");
-qrText = await scanQrValidated_();
+    qrText = await scanQrValidated_();
   } catch (e) {
+    const msg = String(e && e.message ? e.message : "");
 
     if (msg.includes("QR_UI_NOT_READY")) {
-  setStatus("bad", "QR no listo", "El modal/cámara no está inicializado. Revisa que el initQrUi_ corra después del DOM.");
-  return;
-}
+      setStatus("bad", "QR no listo", "El modal/cámara no está inicializado. Revisa que el initQrUi_ corra después del DOM.");
+      return;
+    }
 
-    const msg = String(e && e.message ? e.message : e);
     if (msg.includes("QR_CANCELLED")) {
       setStatus("warn", "Cancelado", "No se registró nada porque cancelaste el escaneo.");
       return;
     }
+
     if (msg.includes("CAMERA_PERMISSION_DENIED")) {
       setStatus("bad", "Cámara denegada", "Activa permisos de cámara para poder escanear el QR.");
       return;
     }
+
     setStatus("bad", "No se pudo escanear", "Intenta de nuevo (mejor luz / enfoca el QR).");
     return;
   }
 
-// qrText ya viene validado
+  // qrText ya viene validado
 
-
-
-  // ===== 2) Verificar ubicación (como ya estaba) =====
+  // ===== 2) Verificar ubicación =====
   let geo;
   try {
     geo = await checkLocation();
@@ -12644,22 +12645,19 @@ qrText = await scanQrValidated_();
     setLoading(true, "Guardando…", "Enviando registro (QR + ubicación).");
 
     await gsRegister({
-  action: "register",
-  teacher,
-  type,
-  iso: t.iso,
-  email: profile.email,
-  course: profile.course,
-  device_id: getDeviceId(),
-  distance_m: Math.round(geo.dist),
-  accuracy_m: Math.round(geo.accuracy),
-  lat: geo.latitude,
-  lng: geo.longitude,
-
-  // ✅ NUEVO: mandar QR al backend
-  qr: qrText
-});
-
+      action: "register",
+      teacher,
+      type,
+      iso: t.iso,
+      email: profile.email,
+      course: profile.course,
+      device_id: getDeviceId(),
+      distance_m: Math.round(geo.dist),
+      accuracy_m: Math.round(geo.accuracy),
+      lat: geo.latitude,
+      lng: geo.longitude,
+      qr: qrText
+    });
 
     refreshFromSheet({ silent: true, useCache: false });
 
