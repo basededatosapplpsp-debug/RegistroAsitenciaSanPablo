@@ -1911,10 +1911,22 @@ input[list]::-moz-list-dropdown {
     <label class="modal-label">Radio del colegio (m)</label>
     <input id="cfgRadius" class="modal-input" type="number" min="1" placeholder="120" />
 
-    <label class="modal-label">Precisión requerida (m)</label>
-    <input id="cfgAccuracy" class="modal-input" type="number" min="1" placeholder="50" />
+  <label class="modal-label">Precisión requerida (m)</label>
+<input id="cfgAccuracy" class="modal-input" type="number" min="1" placeholder="50" />
 
-    <div class="modal-actions" style="justify-content:flex-end;">
+<label class="modal-label">Latitud del colegio</label>
+<input id="cfgLat" class="modal-input" type="text" placeholder="4.554450" />
+
+<label class="modal-label">Longitud del colegio</label>
+<input id="cfgLng" class="modal-input" type="text" placeholder="-74.111650" />
+
+<div class="row" style="margin-top:10px;">
+  <button id="btnCfgUseCurrentLocation" type="button" class="btn btn-ghost">
+    Usar ubicación actual
+  </button>
+</div>
+
+<div class="modal-actions" style="justify-content:flex-end;">
       <button id="btnCfgSave" type="button" class="btn btn-primary">Guardar</button>
       <button id="btnCfgClose" type="button" class="btn btn-ghost">Cerrar</button>
     </div>
@@ -2631,8 +2643,8 @@ input[list]::-moz-list-dropdown {
 
 <script>
 // ======= CONFIG DEL COLEGIO (CAMBIA ESTO) =======
-const SCHOOL_LAT = 4.55445;;
-const SCHOOL_LNG =-74.11165;
+let SCHOOL_LAT = 4.55445;
+let SCHOOL_LNG = -74.11165;
 let SCHOOL_RADIUS_METERS = 30;
 let REQUIRED_ACCURACY_METERS = 15;
 
@@ -2689,6 +2701,9 @@ const cfgOnTime = $("cfgOnTime");
 const cfgExitOk = $("cfgExitOk");
 const cfgRadius = $("cfgRadius");
 const cfgAccuracy = $("cfgAccuracy");
+const cfgLat = $("cfgLat");
+const cfgLng = $("cfgLng");
+const btnCfgUseCurrentLocation = $("btnCfgUseCurrentLocation");
 const btnCfgSave = $("btnCfgSave");
 const btnCfgClose = $("btnCfgClose");
 const cfgHint = $("cfgHint");
@@ -4085,12 +4100,20 @@ async function loadAdminConfigIntoUI() {
   cfgExitOk.value = cfg.EXIT_OK_HHMM || "14:00";
   cfgRadius.value = String(cfg.SCHOOL_RADIUS_METERS ?? 120);
   cfgAccuracy.value = String(cfg.REQUIRED_ACCURACY_METERS ?? 50);
+  cfgLat.value = String(cfg.SCHOOL_LAT ?? SCHOOL_LAT ?? 4.55445);
+  cfgLng.value = String(cfg.SCHOOL_LNG ?? SCHOOL_LNG ?? -74.11165);
 
   // aplicar en runtime (impacta ubicación + contadores)
   ON_TIME_HHMM_CLIENT = cfgOnTime.value;
   EXIT_OK_HHMM_CLIENT = cfgExitOk.value;
   SCHOOL_RADIUS_METERS = Number(cfgRadius.value) || 120;
   REQUIRED_ACCURACY_METERS = Number(cfgAccuracy.value) || 50;
+
+  const lat = Number(cfgLat.value);
+  const lng = Number(cfgLng.value);
+
+  if (Number.isFinite(lat)) SCHOOL_LAT = lat;
+  if (Number.isFinite(lng)) SCHOOL_LNG = lng;
 
   cfgHint.textContent = "Listo ✅";
 }
@@ -4103,9 +4126,11 @@ async function loadRuntimeConfig_({ silent = false } = {}) {
 
     const cfg = await gsAdminGetConfig();
 
-    if (cfg && typeof cfg === "object") {
+     if (cfg && typeof cfg === "object") {
       const radius = Number(cfg.SCHOOL_RADIUS_METERS);
       const acc = Number(cfg.REQUIRED_ACCURACY_METERS);
+      const lat = Number(cfg.SCHOOL_LAT);
+      const lng = Number(cfg.SCHOOL_LNG);
       const onTime = String(cfg.ON_TIME_HHMM || "").trim();
       const exitOk = String(cfg.EXIT_OK_HHMM || "").trim();
 
@@ -4115,6 +4140,14 @@ async function loadRuntimeConfig_({ silent = false } = {}) {
 
       if (Number.isFinite(acc) && acc > 0) {
         REQUIRED_ACCURACY_METERS = acc;
+      }
+
+      if (Number.isFinite(lat)) {
+        SCHOOL_LAT = lat;
+      }
+
+      if (Number.isFinite(lng)) {
+        SCHOOL_LNG = lng;
       }
 
       if (onTime) ON_TIME_HHMM_CLIENT = onTime;
@@ -4137,6 +4170,29 @@ async function loadRuntimeConfig_({ silent = false } = {}) {
   } finally {
     if (!silent) {
       setLoading(false);
+    }
+  }
+}
+
+async function fillConfigWithCurrentLocation_() {
+  try {
+    cfgHint.textContent = "Obteniendo ubicación actual...";
+    const pos = await getPosition();
+    const { latitude, longitude, accuracy } = pos.coords;
+
+    cfgLat.value = latitude.toFixed(6);
+    cfgLng.value = longitude.toFixed(6);
+
+    cfgHint.textContent = `Ubicación capturada ✅ Precisión aprox.: ${Math.round(accuracy)} m`;
+  } catch (e) {
+    const code = String(e && e.message ? e.message : e);
+
+    if (code === "PERMISSION_DENIED") {
+      cfgHint.textContent = "Permiso denegado para obtener la ubicación.";
+    } else if (code === "POSITION_UNAVAILABLE" || code === "TIMEOUT") {
+      cfgHint.textContent = "No se pudo obtener la ubicación actual. Intenta otra vez.";
+    } else {
+      cfgHint.textContent = "No fue posible capturar la ubicación actual.";
     }
   }
 }
@@ -8515,41 +8571,69 @@ if (btnAdminConfig) {
 
 if (btnCfgClose) btnCfgClose.addEventListener("click", closeAdminConfigModal);
 
+if (btnCfgUseCurrentLocation) {
+  btnCfgUseCurrentLocation.addEventListener("click", async () => {
+    await fillConfigWithCurrentLocation_();
+  });
+}
+
+
+
 if (btnCfgSave) {
   btnCfgSave.addEventListener("click", async () => {
     const onTime = String(cfgOnTime.value || "").trim();
     const exitOk = String(cfgExitOk.value || "").trim();
     const radius = String(cfgRadius.value || "").trim();
     const acc = String(cfgAccuracy.value || "").trim();
+    const latStr = String(cfgLat.value || "").trim();
+    const lngStr = String(cfgLng.value || "").trim();
 
     if (!isValidHHMM(onTime) || !isValidHHMM(exitOk)) {
       cfgHint.textContent = "Horas inválidas. Usa HH:MM (ej: 06:30).";
       return;
     }
+
     const r = Number(radius), a = Number(acc);
+    const lat = Number(latStr), lng = Number(lngStr);
+
     if (!Number.isFinite(r) || r <= 0 || !Number.isFinite(a) || a <= 0) {
       cfgHint.textContent = "Radio/precisión inválidos (números > 0).";
       return;
     }
 
-    try {
-      setLoading(true, "Guardando…", "Actualizando CONFIG.");
-      const resp = await gsAdminSetConfig({
-        on_time_hhmm: onTime,
-        exit_ok_hhmm: exitOk,
-        school_radius_m: r,
-        required_accuracy_m: a
-      });
+    if (!Number.isFinite(lat) || lat < -90 || lat > 90) {
+      cfgHint.textContent = "Latitud inválida.";
+      return;
+    }
 
-      // aplicar runtime
-      ON_TIME_HHMM_CLIENT = onTime;
-      EXIT_OK_HHMM_CLIENT = exitOk;
-      SCHOOL_RADIUS_METERS = r;
-      REQUIRED_ACCURACY_METERS = a;
+    if (!Number.isFinite(lng) || lng < -180 || lng > 180) {
+      cfgHint.textContent = "Longitud inválida.";
+      return;
+    }
 
-      cfgHint.textContent = resp.msg || "Guardado ✅";
-      setStatus("", "Configuración", "Cambios aplicados ✅");
-    } catch (e) {
+   try {
+  setLoading(true, "Guardando…", "Actualizando CONFIG.");
+
+  const resp = await gsAdminSetConfig({
+    ON_TIME_HHMM: onTime,
+    EXIT_OK_HHMM: exitOk,
+    SCHOOL_RADIUS_METERS: r,
+    REQUIRED_ACCURACY_METERS: a,
+    SCHOOL_LAT: lat,
+    SCHOOL_LNG: lng
+  });
+
+  // aplicar runtime
+  ON_TIME_HHMM_CLIENT = onTime;
+  EXIT_OK_HHMM_CLIENT = exitOk;
+  SCHOOL_RADIUS_METERS = r;
+  REQUIRED_ACCURACY_METERS = a;
+  SCHOOL_LAT = lat;
+  SCHOOL_LNG = lng;
+
+  cfgHint.textContent = resp.msg || "Configuración guardada ✅";
+  setStatus("", "Configuración", "Cambios aplicados ✅");
+} catch (e) {
       cfgHint.textContent = String(e && e.message ? e.message : e);
     } finally {
       setLoading(false);
