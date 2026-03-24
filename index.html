@@ -2725,7 +2725,10 @@ function initQrUi_() {
 }
 
 // ✅ Ejecutar cuando el DOM ya existe
-document.addEventListener("DOMContentLoaded", initQrUi_);
+document.addEventListener("DOMContentLoaded", async () => {
+  initQrUi_();
+  await loadRuntimeConfig_();
+});
 
 
 
@@ -4088,6 +4091,33 @@ async function loadAdminConfigIntoUI() {
 
   cfgHint.textContent = "Listo ✅";
 }
+
+async function loadRuntimeConfig_() {
+  try {
+    const cfg = await gsAdminGetConfig();
+
+    if (cfg && typeof cfg === "object") {
+      const radius = Number(cfg.SCHOOL_RADIUS_METERS);
+      const acc = Number(cfg.REQUIRED_ACCURACY_METERS);
+      const onTime = String(cfg.ON_TIME_HHMM || "").trim();
+      const exitOk = String(cfg.EXIT_OK_HHMM || "").trim();
+
+      if (Number.isFinite(radius) && radius > 0) {
+        SCHOOL_RADIUS_METERS = radius;
+      }
+
+      if (Number.isFinite(acc) && acc > 0) {
+        REQUIRED_ACCURACY_METERS = acc;
+      }
+
+      if (onTime) ON_TIME_HHMM_CLIENT = onTime;
+      if (exitOk) EXIT_OK_HHMM_CLIENT = exitOk;
+    }
+  } catch (e) {
+    console.warn("No se pudo cargar CONFIG al iniciar:", e);
+  }
+}
+
 
 function isValidHHMM(s) {
   return /^\d{2}:\d{2}$/.test(String(s || "").trim());
