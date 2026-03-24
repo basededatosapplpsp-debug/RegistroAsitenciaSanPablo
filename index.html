@@ -3944,17 +3944,19 @@ function setLoading(isLoading, title = "Procesando…", msg = "Por favor espera�
 
   const on = __loadingCount > 0;
 
-// Deshabilitar botones principales para evitar dobles registros
-if (on) {
-  btnEntrada.disabled = true;
-  btnSalida.disabled = true;
-  btnExport.disabled = true;
-} else {
-  // ✅ Al terminar el loader, restaurar el estado real del día
-  btnExport.disabled = false;
-  updateDailyButtonsState(cachedRecords); // cachedRecords ya es "lo que ve" el docente
-}
+  // Deshabilitar botones principales para evitar dobles registros
+  if (on) {
+    if (btnEntrada) btnEntrada.disabled = true;
+    if (btnSalida) btnSalida.disabled = true;
+    if (btnExport) btnExport.disabled = true;
+  } else {
+    if (btnExport) btnExport.disabled = false;
 
+    // restaurar estado real de los botones del día
+    try {
+      updateDailyButtonsState(cachedRecords);
+    } catch (e) {}
+  }
 
   // Mostrar overlay loader
   if (appLoader) {
@@ -3966,12 +3968,68 @@ if (on) {
   // Evitar scroll/taps detrás
   document.body.classList.toggle("is-loading", on);
 
-  // Mensaje visual (tu status bar)
-  if (on) setStatus("warn", title, msg);
+  // Mientras carga, mostrar mensaje temporal
+  if (on) {
+    setStatus("warn", title, msg);
+    return;
+  }
+
+  // ✅ Cuando termina, recalcular el estado real del bloque Registrar
+  try {
+    refreshHomeStatus_();
+  } catch (e) {
+    // fallback seguro por si todavía no existe geo o algo no cargó
+    setStatus("warn", "Listo", "Activa ubicación para registrar en el colegio.");
+  }
 }
 
 
+function refreshHomeStatus_() {
+  const hasGeo =
+    typeof currentGeo !== "undefined" &&
+    currentGeo &&
+    typeof currentGeo.distanceM === "number";
 
+  if (!hasGeo) {
+    setStatus("warn", "Listo", "Activa ubicación para registrar en el colegio.");
+    return;
+  }
+
+  const distance = Number(currentGeo.distanceM || 0);
+  const accuracy = Number(currentGeo.accuracy || 999999);
+
+  if (accuracy > Number(REQUIRED_ACCURACY_METERS || 50)) {
+    setStatus(
+      "warn",
+      "Ubicación imprecisa",
+      `Mejora la señal GPS. Precisión actual: ${Math.round(accuracy)} m.`
+    );
+    return;
+  }
+
+  if (distance > Number(SCHOOL_RADIUS_METERS || 60)) {
+    setStatus(
+      "bad",
+      "Fuera del rango",
+      `Estás a ${Math.round(distance)} m del colegio. Acércate para registrar.`
+    );
+    return;
+  }
+
+  if (hasEntradaToday) {
+    setStatus(
+      "",
+      "Dentro del rango",
+      "Ya registraste entrada. Si corresponde, puedes registrar la salida."
+    );
+  } else {
+    setStatus(
+      "",
+      "Dentro del rango",
+      "Estás dentro del rango permitido para registrar."
+    );
+  }
+}
 
 // ======= PERFIL + DEVICE ID =======
 const LS_PROFILE_KEY = "asistencia_profile_v1";
