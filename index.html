@@ -3520,6 +3520,7 @@ function confirmPro({
 
 let hasEntradaToday = false;
 let hasSalidaToday  = false;
+let CONFIG_READY = false;
 
 
 function todayStr() {
@@ -3551,6 +3552,13 @@ function normalizeDateYYYYMMDD(v) {
 function updateDailyButtonsState(records) {
   // En admin, no se usan estos botones (y además el input dice ADMINISTRADOR)
   if (isAdminMode()) {
+    btnEntrada.disabled = true;
+    btnSalida.disabled = true;
+    btnSalida.classList.remove("is-inactive");
+    return;
+  }
+
+    if (!CONFIG_READY) {
     btnEntrada.disabled = true;
     btnSalida.disabled = true;
     btnSalida.classList.remove("is-inactive");
@@ -4094,6 +4102,10 @@ async function loadAdminConfigIntoUI() {
 
 async function loadRuntimeConfig_() {
   try {
+    CONFIG_READY = false;
+
+    setLoading(true, "Configuración", "Cargando parámetros del colegio...");
+
     const cfg = await gsAdminGetConfig();
 
     if (cfg && typeof cfg === "object") {
@@ -4113,8 +4125,16 @@ async function loadRuntimeConfig_() {
       if (onTime) ON_TIME_HHMM_CLIENT = onTime;
       if (exitOk) EXIT_OK_HHMM_CLIENT = exitOk;
     }
+
+    CONFIG_READY = true;
+    setStatus("warn", "Listo", "Configuración cargada. Ya puedes registrar asistencia.");
+
   } catch (e) {
+    CONFIG_READY = false;
     console.warn("No se pudo cargar CONFIG al iniciar:", e);
+    setStatus("bad", "Error de configuración", "No se pudo cargar la configuración del colegio.");
+  } finally {
+    setLoading(false);
   }
 }
 
@@ -12532,6 +12552,11 @@ async function scanQrValidated_() {
 // ======= Registrar =======
 // ======= Registrar =======
 async function register(type) {
+
+    if (!CONFIG_READY) {
+    setStatus("warn", "Cargando configuración", "Espera un momento. Aún no está lista la configuración del colegio.");
+    return;
+  }
 
   if (type === "SALIDA" && !hasEntradaToday) {
     setStatus(
