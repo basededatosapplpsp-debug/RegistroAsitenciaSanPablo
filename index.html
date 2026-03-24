@@ -2640,7 +2640,7 @@ let REQUIRED_ACCURACY_METERS = 30;
 let __faltasCache = null;
 let __faltasCacheTime = 0;
 let __faltasLastUpdate = null;
-
+let __faltasExpandedStudent = "";
 
 
 // ======= GOOGLE SHEETS (CAMBIA ESTO) =======
@@ -6492,12 +6492,14 @@ if (faltasCourseEl) {
 if (faltasStudentEl) {
   faltasStudentEl.addEventListener("input", () => {
     try {
+      __faltasExpandedStudent = "";
       faltasLoadList_(__faltaTipo);
     } catch (e) {}
   });
 
   faltasStudentEl.addEventListener("change", () => {
     try {
+      __faltasExpandedStudent = "";
       faltasLoadList_(__faltaTipo);
     } catch (e) {}
   });
@@ -6509,6 +6511,7 @@ if (faltasStudentSelectEl) {
       if (faltasStudentEl) {
         faltasStudentEl.value = String(faltasStudentSelectEl.value || "").trim();
       }
+      __faltasExpandedStudent = "";
       faltasLoadList_(__faltaTipo);
     } catch (e) {}
   });
@@ -6527,7 +6530,48 @@ if (btnFaltaInfo) {
 }
 
 
+const faltasReportedListEl = document.getElementById("faltasReportedList");
+if (faltasReportedListEl) {
+  faltasReportedListEl.addEventListener("click", async (e) => {
+    const trash = e.target.closest(".disc-trash");
+    if (trash) return; // no interferir con eliminar
 
+    const row = e.target.closest(".faltas-row-toggle");
+    if (!row) return;
+
+    const student = String(row.dataset.student || "").trim();
+    if (!student) return;
+
+    const selectedStudent = String((faltasStudentEl && faltasStudentEl.value) || "").trim();
+
+    // Si hay estudiante seleccionado desde input/combo, el toque limpia esa selección
+    // y vuelve al modo lista. Si además toca el mismo, queda contraído.
+    if (selectedStudent) {
+      const sameSelected =
+        faltasNormalizeText_(selectedStudent) === faltasNormalizeText_(student);
+
+      if (sameSelected) {
+        if (faltasStudentEl) faltasStudentEl.value = "";
+        if (faltasStudentSelectEl) faltasStudentSelectEl.value = "";
+        __faltasExpandedStudent = "";
+        await faltasLoadList_(__faltaTipo);
+        return;
+      }
+    }
+
+    // Toggle normal de expandir/contraer desde la lista
+    const isSameExpanded =
+      faltasNormalizeText_(__faltasExpandedStudent) === faltasNormalizeText_(student);
+
+    __faltasExpandedStudent = isSameExpanded ? "" : student;
+
+    // mantener limpio input/combo para que el expandido sea solo visual por toque
+    if (faltasStudentEl) faltasStudentEl.value = "";
+    if (faltasStudentSelectEl) faltasStudentSelectEl.value = "";
+
+    await faltasLoadList_(__faltaTipo);
+  });
+}
 
 // ✅ Reportar falta con asunto (front listo)
 // NOTA: requiere endpoint GAS: action:"faltas_report"
@@ -11609,51 +11653,7 @@ function faltasNormalizeText_(value) {
 }
 
 
-function faltasNormalizeText_(value) {
-  return String(value || "")
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .trim()
-    .toLowerCase();
-}
 
-function faltasFormatDateOnly_(value) {
-  if (!value) return "";
-
-  try {
-    const d = new Date(value);
-    if (!isNaN(d.getTime())) {
-      return d.toLocaleDateString("es-CO");
-    }
-  } catch (e) {}
-
-  const s = String(value).trim();
-  if (!s) return "";
-  return s;
-}
-
-function faltasFormatDateTimeSafe_(value) {
-  if (!value) return "";
-
-  try {
-    const d = new Date(value);
-    if (!isNaN(d.getTime())) {
-      return d.toLocaleString("es-CO", {
-        year: "numeric",
-        month: "2-digit",
-        day: "2-digit",
-        hour: "2-digit",
-        minute: "2-digit"
-      });
-    }
-  } catch (e) {}
-
-  let s = String(value).trim();
-  if (!s) return "";
-
-  s = s.replace(/\s*GMT[^\s)]*(?:\s*\([^)]+\))?/gi, "").trim();
-  return s;
-}
 
 async function faltasLoadList_(tipo) {
   try {
@@ -11664,6 +11664,7 @@ async function faltasLoadList_(tipo) {
 
     const selectedCourse = String((faltasCourseEl && faltasCourseEl.value) || "").trim();
     const selectedStudent = String((faltasStudentEl && faltasStudentEl.value) || "").trim();
+    const expandedStudentKey = faltasNormalizeText_(__faltasExpandedStudent || "");
     const hasStudentSelected = !!selectedStudent;
 
     const CACHE_TIME = 20000; // 20 segundos
@@ -11685,7 +11686,7 @@ async function faltasLoadList_(tipo) {
       );
     }
 
-    // si hay estudiante seleccionado, mostrar solo ese
+    // si hay estudiante seleccionado desde input/combo, mostrar solo ese
     if (hasStudentSelected) {
       const studentKey = faltasNormalizeText_(selectedStudent);
       items = items.filter(
@@ -11717,7 +11718,12 @@ async function faltasLoadList_(tipo) {
         div.classList.add("disc-new");
       }
 
-      const fecha = faltasFormatDateOnly_(x.updatedAt);
+      let fecha = "";
+      try {
+        if (x.updatedAt) {
+          fecha = new Date(x.updatedAt).toLocaleDateString();
+        }
+      } catch (e) {}
 
       let teacher = "-";
       try {
@@ -11728,21 +11734,34 @@ async function faltasLoadList_(tipo) {
 
       const faltas = Array.isArray(x.faltas) ? x.faltas : [];
       const totalFaltas = Number(x.totalFaltas || faltas.length || 0);
-      const studentSafe = String(x.student || "").replace(/"/g, "&quot;");
+      const studentName = String(x.student || "");
+      const studentKey = faltasNormalizeText_(studentName);
+      const studentSafe = studentName.replace(/"/g, "&quot;");
 
-      if (!hasStudentSelected) {
+      // si hay selección en input/combo => expandido siempre
+      // si no hay selección => expandir solo el tocado en la lista
+      const isExpanded = hasStudentSelected || (!!expandedStudentKey && expandedStudentKey === studentKey);
+
+      if (!isExpanded) {
+        // =========================
         // VISTA CONTRAÍDA
+        // =========================
         div.innerHTML = `
-          <div style="
-            display:flex;
-            align-items:center;
-            justify-content:space-between;
-            gap:10px;
-            padding:10px 12px;
-            border:1px solid rgba(255,255,255,.10);
-            border-radius:14px;
-            background:rgba(255,255,255,.04);
-          ">
+          <div
+            class="faltas-row-toggle"
+            data-student="${studentSafe}"
+            style="
+              display:flex;
+              align-items:center;
+              justify-content:space-between;
+              gap:10px;
+              padding:10px 12px;
+              border:1px solid rgba(255,255,255,.10);
+              border-radius:14px;
+              background:rgba(255,255,255,.04);
+              cursor:pointer;
+            "
+          >
             <div style="min-width:0; flex:1;">
               <div style="
                 font-weight:800;
@@ -11752,7 +11771,7 @@ async function faltasLoadList_(tipo) {
                 overflow:hidden;
                 text-overflow:ellipsis;
               ">
-                ${escapeHtml(x.student || "")}
+                ${escapeHtml(studentName)}
               </div>
 
               <div class="small muted" style="margin-top:4px;">
@@ -11765,6 +11784,8 @@ async function faltasLoadList_(tipo) {
                 ${totalFaltas} falta${totalFaltas === 1 ? "" : "s"}
               </span>
 
+              <i class="fa-solid fa-chevron-down small muted"></i>
+
               <i class="fa-solid fa-trash disc-trash"
                 title="Eliminar falta"
                 data-student="${studentSafe}"
@@ -11773,27 +11794,26 @@ async function faltasLoadList_(tipo) {
           </div>
         `;
       } else {
+        // =========================
         // VISTA EXPANDIDA
+        // =========================
         const faltasHtml = faltas.length
-          ? faltas.map((f, i) => {
-              const detalleFecha = faltasFormatDateTimeSafe_(f.dt || f.ts || "");
-              return `
-                <div style="
-                  margin-top:${i === 0 ? "8px" : "6px"};
-                  padding:8px 10px;
-                  border-radius:10px;
-                  background:rgba(255,255,255,.05);
-                ">
-                  <div style="font-weight:600;">
-                    ${escapeHtml(f.subject || "")}
-                  </div>
-                  <div class="small muted">
-                    ${f.teacher ? "👨‍🏫 " + escapeHtml(f.teacher) : ""}
-                    ${detalleFecha ? " • 📅 " + escapeHtml(detalleFecha) : ""}
-                  </div>
+          ? faltas.map((f, i) => `
+              <div style="
+                margin-top:${i === 0 ? "8px" : "6px"};
+                padding:8px 10px;
+                border-radius:10px;
+                background:rgba(255,255,255,.05);
+              ">
+                <div style="font-weight:600;">
+                  ${escapeHtml(f.subject || "")}
                 </div>
-              `;
-            }).join("")
+                <div class="small muted">
+                  ${f.teacher ? "👨‍🏫 " + escapeHtml(f.teacher) : ""}
+                  ${f.dt ? " • 📅 " + escapeHtml(f.dt) : ""}
+                </div>
+              </div>
+            `).join("")
           : `
               <div style="
                 margin-top:8px;
@@ -11808,21 +11828,28 @@ async function faltasLoadList_(tipo) {
             `;
 
         div.innerHTML = `
-          <div style="
-            padding:12px;
-            border:1px solid rgba(255,255,255,.10);
-            border-radius:14px;
-            background:rgba(255,255,255,.04);
-          ">
+          <div
+            class="faltas-row-toggle"
+            data-student="${studentSafe}"
+            style="
+              padding:12px;
+              border:1px solid rgba(255,255,255,.10);
+              border-radius:14px;
+              background:rgba(255,255,255,.04);
+              cursor:pointer;
+            "
+          >
             <div style="display:flex; align-items:center; justify-content:space-between; gap:10px;">
               <div style="font-weight:700; flex:1;">
-                ${escapeHtml(x.student || "")}
+                ${escapeHtml(studentName)}
               </div>
 
               <div style="display:flex; align-items:center; gap:8px;">
                 <span class="badge badge-neutral">
                   ${totalFaltas} falta${totalFaltas === 1 ? "" : "s"}
                 </span>
+
+                <i class="fa-solid fa-chevron-up small muted"></i>
 
                 <i class="fa-solid fa-trash disc-trash"
                   title="Eliminar falta"
