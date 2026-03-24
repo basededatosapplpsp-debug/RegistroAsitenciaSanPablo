@@ -12553,11 +12553,7 @@ async function scanQrValidated_() {
 
 
 // ======= Registrar =======
-// ======= Registrar =======
 async function register(type) {
-
-  const configOk = await loadRuntimeConfig_();
-  if (!configOk) return;
 
   if (type === "SALIDA" && !hasEntradaToday) {
     setStatus(
@@ -12605,7 +12601,9 @@ async function register(type) {
     return;
   }
 
-  // qrText ya viene validado
+  // ===== 1.5) Actualizar parámetros después de leer el QR =====
+  const configOk = await loadRuntimeConfig_();
+  if (!configOk) return;
 
   // ===== 2) Verificar ubicación =====
   let geo;
