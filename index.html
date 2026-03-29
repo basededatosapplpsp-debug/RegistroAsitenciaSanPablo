@@ -6380,10 +6380,18 @@ async function ubicateOpen_() {
     const firstLoad = !__ubicateTeachersLoaded || !__ubicateTeachers.length;
 
     if (firstLoad) {
-      setLoading(true, "Cargando…", "Consultando docentes.");
+      setLoading(true, "Cargando…", "Consultando docentes y precargando horarios.");
     }
 
-    await ubicateLoadTeachers_();
+    const teachers = await ubicateLoadTeachers_();
+
+    // ✅ precarga todos los horarios y los deja guardados en cache
+    if (Array.isArray(teachers) && teachers.length) {
+      if (firstLoad && ubicateResult) {
+        ubicateResult.innerHTML = `<div class="muted small">Precargando horarios de todos los docentes…</div>`;
+      }
+      await ubicateWarmSchedules_(teachers);
+    }
 
     const teacher = String(ubicateTeacherSelect?.value || "").trim();
 
@@ -6394,15 +6402,7 @@ async function ubicateOpen_() {
       return;
     }
 
-    const cacheKey = teacher.toLowerCase();
-    const alreadyCached = Array.isArray(__ubicateScheduleCacheByTeacher[cacheKey]);
-
-    if (!alreadyCached) {
-      if (ubicateResult) {
-        ubicateResult.innerHTML = `<div class="muted small">Cargando clase actual del docente.</div>`;
-      }
-    }
-
+    // ✅ aquí ya debería salir inmediato porque quedó precargado
     await ubicateConsultarAhora_();
 
   } catch (e) {
