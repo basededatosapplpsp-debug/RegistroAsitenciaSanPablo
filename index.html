@@ -3197,11 +3197,7 @@ function comprasRenderSchedule_(day, items) {
 }
 
 async function comprasOpen_() {
-  try {
-    setMenuOpen(false);
-  } catch (e) {
-    if (userMenu) userMenu.hidden = true;
-  }
+  // ✅ no cerrar menú ni submenú Horarios al abrir Ubícate
 
   comprasSetHint_("");
   comprasLoadPersistentCache_();
@@ -4337,10 +4333,12 @@ if (btnHorariosMenu) {
   });
 }
 
-// click dentro => cierra submenú
+// click dentro del submenú Horarios => NO cerrar,
+// para que al abrir/cerrar Ubícate, Pisos, Parque o Compras
+// el menú y submenú sigan visibles
 if (horariosSubMenu) {
-  horariosSubMenu.addEventListener("click", () => {
-    closeHorariosSubMenu_();
+  horariosSubMenu.addEventListener("click", (e) => {
+    e.stopPropagation();
   });
 }
 
@@ -6119,11 +6117,7 @@ async function parqueLoadSchedule_(day, forceRefresh = false) {
 }
 
 async function parqueOpen_() {
-  try {
-    setMenuOpen(false);
-  } catch (e) {
-    if (userMenu) userMenu.hidden = true;
-  }
+   // ✅ no cerrar menú ni submenú Horarios al abrir Ubícate
 
   parqueSetHint_("");
   if (parqueModal) parqueModal.hidden = false;
@@ -6213,12 +6207,7 @@ async function pisosLoadSchedule_(day, forceRefresh = false) {
 }
 
 async function pisosOpen_() {
-  try {
-    setMenuOpen(false);
-  } catch (e) {
-    if (userMenu) userMenu.hidden = true;
-  }
-
+   // ✅ no cerrar menú ni submenú Horarios al abrir Ubícate
   pisosSetHint_("");
   if (pisosModal) pisosModal.hidden = false;
 
@@ -6365,11 +6354,7 @@ async function ubicateOpen_() {
   __ubicateScheduleCache = [];
   __ubicateNextIndex = -1;
 
-  try {
-    setMenuOpen(false);
-  } catch (e) {
-    if (userMenu) userMenu.hidden = true;
-  }
+  // ✅ no cerrar menú ni submenú Horarios al abrir Ubícate
 
   __ubicateLastMode = "now";
 
