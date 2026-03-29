@@ -4348,20 +4348,18 @@ document.addEventListener("click", (e) => {
   if (!horariosSubMenu || !btnHorariosMenu) return;
 
   const t = e.target;
+  if (!t) return;
 
   const inside =
-    !!t && (
-      btnHorariosMenu.contains(t) ||
-      horariosSubMenu.contains(t) ||
-      (ubicateModal && !ubicateModal.hidden && ubicateModal.contains(t)) ||
-      (pisosModal && !pisosModal.hidden && pisosModal.contains(t)) ||
-      (parqueModal && !parqueModal.hidden && parqueModal.contains(t)) ||
-      (comprasModal && !comprasModal.hidden && comprasModal.contains(t))
-    );
+    btnHorariosMenu.contains(t) ||
+    horariosSubMenu.contains(t) ||
+    (ubicateModal && ubicateModal.contains(t)) ||
+    (pisosModal && pisosModal.contains(t)) ||
+    (parqueModal && parqueModal.contains(t)) ||
+    (comprasModal && comprasModal.contains(t));
 
   if (!inside) closeHorariosSubMenu_();
 });
-
 
 // ===== Submenú Faltas =====
 const btnFaltasMenu = document.getElementById("btnFaltasMenu");
