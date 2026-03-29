@@ -2560,6 +2560,11 @@ input[list]::-moz-list-dropdown {
       <option value="">Selecciona un docente</option>
     </select>
 
+    <label class="modal-label" for="ubicateCourseSelect">Grado</label>
+<select id="ubicateCourseSelect" class="modal-input" style="max-width:220px;">
+  <option value="">Selecciona un grado</option>
+</select>
+
     <div id="ubicateResultBox" class="disc-reported" style="margin-top:16px;">
       <div id="ubicateResult" class="disc-reported-list">
         <div class="muted small">Selecciona un docente para consultar.</div>
@@ -2879,6 +2884,7 @@ let __reportesLastItems = [];
 const btnUbicateMenu = $("btnUbicateMenu");
 const ubicateModal = $("ubicateModal");
 const ubicateTeacherSelect = $("ubicateTeacherSelect");
+const ubicateCourseSelect = $("ubicateCourseSelect");
 const ubicateResult = $("ubicateResult");
 const ubicateHint = $("ubicateHint");
 const btnUbicateClose = $("btnUbicateClose");
@@ -5745,7 +5751,12 @@ async function ubicateConsultarTodo_() {
     __ubicateNextIndex = -1;
     __ubicateSelectedDayKey = "";
 
-    await ubicateLoadTeachers_(true);
+     await ubicateLoadTeachers_(true);
+
+    if (Array.isArray(__ubicateTeachers) && __ubicateTeachers.length) {
+      await ubicateWarmSchedules_(__ubicateTeachers);
+    }
+    ubicateRenderCourses_();
 
     if (!teacher) {
       if (ubicateResult) {
@@ -6289,6 +6300,164 @@ function ubicateRenderTeachers_(teachers) {
   }
 }
 
+
+function ubicateNormalizeCourse_(s) {
+  return String(s || "")
+    .trim()
+    .replace(/\s+/g, " ")
+    .toUpperCase();
+}
+
+function ubicateGetAllCoursesFromCache_() {
+  const map = new Map();
+
+  Object.values(__ubicateScheduleCacheByTeacher || {}).forEach(items => {
+    (Array.isArray(items) ? items : []).forEach(it => {
+      const raw = String(it?.course || "").trim();
+      const key = ubicateNormalizeCourse_(raw);
+      if (!key) return;
+      if (!map.has(key)) map.set(key, raw || key);
+    });
+  });
+
+  return Array.from(map.values()).sort((a, b) =>
+    ubicateNormalizeCourse_(a).localeCompare(ubicateNormalizeCourse_(b), "es")
+  );
+}
+
+function ubicateRenderCourses_() {
+  if (!ubicateCourseSelect) return;
+
+  const prev = String(ubicateCourseSelect.value || "").trim();
+  const courses = ubicateGetAllCoursesFromCache_();
+
+  ubicateCourseSelect.innerHTML = "";
+
+  const opt0 = document.createElement("option");
+  opt0.value = "";
+  opt0.textContent = "Selecciona un grado";
+  ubicateCourseSelect.appendChild(opt0);
+
+  courses.forEach(course => {
+    const opt = document.createElement("option");
+    opt.value = String(course || "");
+    opt.textContent = String(course || "");
+    ubicateCourseSelect.appendChild(opt);
+  });
+
+  if (prev && courses.includes(prev)) {
+    ubicateCourseSelect.value = prev;
+  }
+}
+
+function ubicateBuildNowByCourseFromCache_(course) {
+  const targetCourse = ubicateNormalizeCourse_(course);
+  const { todayName, todayIndexCandidates, nowMinutes } = ubicateGetTodayInfo_();
+
+  const matches = [];
+
+  Object.entries(__ubicateScheduleCacheByTeacher || {}).forEach(([teacherKey, items]) => {
+    (Array.isArray(items) ? items : []).forEach(it => {
+      const di = Number(it?.day_index ?? -1);
+      const dl = ubicateNormalizeDay_(it?.day_label || "");
+      const sameDay = todayIndexCandidates.includes(di) || dl === todayName;
+      if (!sameDay) return;
+
+      const sameCourse = ubicateNormalizeCourse_(it?.course || "") === targetCourse;
+      if (!sameCourse) return;
+
+      const ini = ubicateToMinutes_(it?.start_time);
+      const fin = ubicateToMinutes_(it?.end_time);
+
+      if (nowMinutes >= ini && nowMinutes < fin) {
+        matches.push({
+          teacher: String(it?.teacher || teacherKey || "").trim(),
+          salon: it?.salon || "",
+          subject: it?.subject || "",
+          course: it?.course || "",
+          start_time: it?.start_time || "",
+          end_time: it?.end_time || "",
+          day_label: it?.day_label || todayName || ""
+        });
+      }
+    });
+  });
+
+  const hh = String(Math.floor(nowMinutes / 60)).padStart(2, "0");
+  const mm = String(nowMinutes % 60).padStart(2, "0");
+
+  return {
+    course: course || "",
+    found_now: matches.length > 0,
+    day_label: todayName || "-",
+    time_now: `${hh}:${mm}`,
+    items: matches.sort((a, b) => String(a.teacher).localeCompare(String(b.teacher), "es"))
+  };
+}
+
+function ubicateRenderCourseResult_(data) {
+  if (!ubicateResult) return;
+
+  if (!data || !data.course) {
+    ubicateResult.innerHTML = `<div class="muted small">Selecciona un grado para consultar.</div>`;
+    return;
+  }
+
+  if (!data.found_now || !Array.isArray(data.items) || !data.items.length) {
+    ubicateResult.innerHTML = `
+      <div class="ubicate-card">
+        <div class="ubicate-title">${escapeHtml(data.course)}</div>
+        <div class="ubicate-line">No encontré un docente en ese grado en este momento.</div>
+        <div class="ubicate-line muted small"><strong>Día:</strong> ${escapeHtml(data.day_label || "-")}</div>
+        <div class="ubicate-line muted small"><strong>Hora actual:</strong> ${escapeHtml(data.time_now || "-")}</div>
+      </div>
+    `;
+    return;
+  }
+
+  ubicateResult.innerHTML = `
+    ${data.items.map(it => `
+      <div class="ubicate-card" style="margin-bottom:10px;">
+        <div class="ubicate-title">${escapeHtml(it.teacher || "Docente")}</div>
+        <div class="ubicate-line"><strong>Grado:</strong> ${escapeHtml(it.course || data.course || "-")}</div>
+        <div class="ubicate-line"><strong>Salón:</strong> ${escapeHtml(it.salon || "Sin salón")}</div>
+        <div class="ubicate-line"><strong>Materia:</strong> ${escapeHtml(it.subject || "-")}</div>
+        <div class="ubicate-line"><strong>Bloque:</strong> ${escapeHtml(it.start_time || "-")} - ${escapeHtml(it.end_time || "-")}</div>
+        <div class="ubicate-line muted small"><strong>Día:</strong> ${escapeHtml(it.day_label || data.day_label || "-")}</div>
+      </div>
+    `).join("")}
+  `;
+}
+
+async function ubicateConsultarCursoAhora_() {
+  const course = String(ubicateCourseSelect?.value || "").trim();
+
+  if (!course) {
+    if (ubicateResult) {
+      ubicateResult.innerHTML = `<div class="muted small">Selecciona un grado para consultar.</div>`;
+    }
+    ubicateSetHint_("");
+    return;
+  }
+
+  try {
+    __ubicateLastMode = "now";
+    ubicateSetHint_("");
+    setLoading(true, "Consultando…", "Buscando docente actual del grado.");
+
+    const data = ubicateBuildNowByCourseFromCache_(course);
+    ubicateRenderCourseResult_(data);
+  } catch (e) {
+    ubicateSetHint_(String(e && e.message ? e.message : e));
+    if (ubicateResult) {
+      ubicateResult.innerHTML = `<div class="ubicate-empty">No pude consultar el grado.</div>`;
+    }
+  } finally {
+    setLoading(false);
+  }
+}
+
+
 function ubicateRenderResult_(data) {
   if (!ubicateResult) return;
 
@@ -6388,6 +6557,9 @@ async function ubicateOpen_() {
       }
       await ubicateWarmSchedules_(teachers);
     }
+
+    // ✅ cargar combo de grados desde el mismo cache
+    ubicateRenderCourses_();
 
     const teacher = String(ubicateTeacherSelect?.value || "").trim();
 
@@ -8219,6 +8391,8 @@ ubicateTeacherSelect?.addEventListener("change", async () => {
     __ubicateNextIndex = -1;
     __ubicateSelectedDayKey = "";
 
+    if (ubicateCourseSelect) ubicateCourseSelect.value = "";
+
     if (ubicateResult) {
       ubicateResult.innerHTML = `<div class="muted small">Selecciona un docente para consultar.</div>`;
     }
@@ -8229,6 +8403,7 @@ ubicateTeacherSelect?.addEventListener("change", async () => {
   __ubicateScheduleCache = [];
   __ubicateNextIndex = -1;
   __ubicateSelectedDayKey = "";
+    if (ubicateCourseSelect) ubicateCourseSelect.value = "";
 
   try {
     ubicateSetHint_("");
@@ -8279,6 +8454,28 @@ ubicateTeacherSelect?.addEventListener("change", async () => {
     setLoading(false);
   }
 });
+
+
+ubicateCourseSelect?.addEventListener("change", async () => {
+  const course = String(ubicateCourseSelect.value || "").trim();
+
+  if (ubicateTeacherSelect) ubicateTeacherSelect.value = "";
+
+  __ubicateScheduleCache = [];
+  __ubicateNextIndex = -1;
+  __ubicateSelectedDayKey = "";
+
+  if (!course) {
+    if (ubicateResult) {
+      ubicateResult.innerHTML = `<div class="muted small">Selecciona un grado para consultar.</div>`;
+    }
+    ubicateSetHint_("");
+    return;
+  }
+
+  await ubicateConsultarCursoAhora_();
+});
+
 
 if (btnGuardarReportePendiente) {
   btnGuardarReportePendiente.addEventListener("click", async () => {
