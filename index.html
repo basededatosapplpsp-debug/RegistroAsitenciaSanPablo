@@ -8071,13 +8071,7 @@ parqueDaySelect?.addEventListener("change", async () => {
   }
 });
 
-btnParqueMenu?.addEventListener("click", () => {
-  try {
-    setMenuOpen(false);
-  } catch (e) {
-    if (userMenu) userMenu.hidden = true;
-  }
-});
+
 
 
 
@@ -8438,6 +8432,29 @@ function setMenuOpen(open) {
   btnUserMenu.setAttribute("aria-expanded", String(open));
 }
 
+function isHorariosModalTarget_(target) {
+  if (!target) return false;
+
+  return (
+    (ubicateModal && ubicateModal.contains(target)) ||
+    (pisosModal && pisosModal.contains(target)) ||
+    (parqueModal && parqueModal.contains(target)) ||
+    (comprasModal && comprasModal.contains(target))
+  );
+}
+
+function shouldKeepMenuOpenForTarget_(target) {
+  if (!target) return false;
+
+  return (
+    (userMenu && userMenu.contains(target)) ||
+    (btnUserMenu && btnUserMenu.contains(target)) ||
+    (horariosSubMenu && horariosSubMenu.contains(target)) ||
+    (btnHorariosMenu && btnHorariosMenu.contains(target)) ||
+    isHorariosModalTarget_(target)
+  );
+}
+
 function updateUserInitials(profile) {
   if (!userInitialsEl) return;
   if (profile && profile.name) userInitialsEl.textContent = getInitials(profile.name);
@@ -8636,14 +8653,31 @@ if (btnUserMenu) {
   });
 }
 
-// Cerrar menú al tocar fuera
-document.addEventListener("click", () => setMenuOpen(false));
+// Cerrar menú solo si el click fue realmente fuera
+document.addEventListener("click", (e) => {
+  const target = e.target;
 
-// Cerrar menú al tocar una opción
+  if (shouldKeepMenuOpenForTarget_(target)) {
+    return;
+  }
+
+  setMenuOpen(false);
+});
+
+// Cerrar menú al tocar una opción normal,
+// PERO mantenerlo abierto en Horarios y en sus modales
 if (userMenu) {
-  userMenu.addEventListener("click", () => setMenuOpen(false));
-}
+  userMenu.addEventListener("click", (e) => {
+    const target = e.target;
 
+    if (shouldKeepMenuOpenForTarget_(target)) {
+      e.stopPropagation();
+      return;
+    }
+
+    setMenuOpen(false);
+  });
+}
 
 
 btnLoginSave.addEventListener("click", async () => {
