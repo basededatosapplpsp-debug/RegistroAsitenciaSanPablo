@@ -4342,10 +4342,23 @@ if (horariosSubMenu) {
   });
 }
 
-// click fuera => cierra submenú
+// click fuera => cierra submenú,
+// PERO no lo cierres si el click fue en Horarios o en sus modales
 document.addEventListener("click", (e) => {
   if (!horariosSubMenu || !btnHorariosMenu) return;
-  const inside = (e.target && (horariosSubMenu.contains(e.target) || btnHorariosMenu.contains(e.target)));
+
+  const t = e.target;
+
+  const inside =
+    !!t && (
+      btnHorariosMenu.contains(t) ||
+      horariosSubMenu.contains(t) ||
+      (ubicateModal && !ubicateModal.hidden && ubicateModal.contains(t)) ||
+      (pisosModal && !pisosModal.hidden && pisosModal.contains(t)) ||
+      (parqueModal && !parqueModal.hidden && parqueModal.contains(t)) ||
+      (comprasModal && !comprasModal.hidden && comprasModal.contains(t))
+    );
+
   if (!inside) closeHorariosSubMenu_();
 });
 
