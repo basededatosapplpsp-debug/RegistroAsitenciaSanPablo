@@ -1546,6 +1546,7 @@ input[list]::-moz-list-dropdown {
   <button id="btnAdminManual" class="menu-item" type="button" role="menuitem" hidden>Registro manual</button>
 
   <button id="btnAdminConfig" class="menu-item" type="button" role="menuitem" hidden>Configuración</button>
+  <button id="btnAdminChangePin" class="menu-item" type="button" role="menuitem" hidden>Cambiar PIN</button>
 
   <button id="btnAdminApproveDevices" class="menu-item" type="button" role="menuitem" hidden>Aprobar dispositivos</button>
 
@@ -2810,6 +2811,8 @@ const adminLateCountEl = $("adminLateCount");
 const adminEarlyExitCountEl = $("adminEarlyExitCount");
 const btnAdminAssistClose = $("btnAdminAssistClose");
 const adminMonthSelect = $("adminMonthSelect");
+
+const btnAdminChangePin = $("btnAdminChangePin");
 
 const btnAdminManual = $("btnAdminManual");
 const adminManualModal = $("adminManualModal");
@@ -4232,10 +4235,9 @@ function setAdminMode(on) {
 
   if (btnAdminViewAssist) btnAdminViewAssist.hidden = !on;
   if (btnAdminConfig) btnAdminConfig.hidden = !on;
+  if (btnAdminChangePin) btnAdminChangePin.hidden = !on;
 
   if (btnAdminManual) btnAdminManual.hidden = !on;
-
-
 
   if (btnAdminApproveDevices) btnAdminApproveDevices.hidden = !on;
 
@@ -8575,6 +8577,7 @@ if (btnAdminViewAssist) btnAdminViewAssist.hidden = !isAdminMode();
 
 if (btnAdminApproveDevices) btnAdminApproveDevices.hidden = !isAdminMode();
 if (btnAdminConfig) btnAdminConfig.hidden = !isAdminMode();
+if (btnAdminChangePin) btnAdminChangePin.hidden = !isAdminMode();
 if (btnAdminManual) btnAdminManual.hidden = !isAdminMode();
 
 
@@ -8789,6 +8792,18 @@ if (btnAdminConfig) {
     } catch (e) {
       cfgHint.textContent = String(e && e.message ? e.message : e);
     }
+  });
+}
+
+if (btnAdminChangePin) {
+  btnAdminChangePin.addEventListener("click", () => {
+    if (!isAdminMode()) {
+      setStatus("warn", "Requiere admin", "Ingresa como administrador primero.");
+      openAdminModal();
+      return;
+    }
+
+    openAdminChangePinModal();
   });
 }
 
@@ -9009,6 +9024,31 @@ function openAdminModal() {
   adminHint.textContent = "";
   adminPinEl.value = "";
   adminNewPinEl.value = "";
+
+  if (btnAdminEnter) {
+    btnAdminEnter.textContent = "Entrar";
+    delete btnAdminEnter.dataset.mode;
+    delete btnAdminEnter.dataset.oldpin;
+  }
+
+  adminPinEl.focus();
+}
+
+function openAdminChangePinModal() {
+  if (!adminModal) return;
+  adminModal.hidden = false;
+  adminChangeBlock.hidden = false;
+  adminSub.textContent = "Escribe tu PIN actual y luego el nuevo PIN.";
+  adminHint.textContent = "";
+  adminPinEl.value = "";
+  adminNewPinEl.value = "";
+
+  if (btnAdminEnter) {
+    btnAdminEnter.textContent = "Cambiar PIN";
+    btnAdminEnter.dataset.mode = "change_direct";
+    delete btnAdminEnter.dataset.oldpin;
+  }
+
   adminPinEl.focus();
 }
 
@@ -9019,6 +9059,7 @@ function closeAdminModal() {
 
   // ✅ reset modo del botón
   if (btnAdminEnter) {
+    btnAdminEnter.textContent = "Entrar";
     delete btnAdminEnter.dataset.mode;
     delete btnAdminEnter.dataset.oldpin;
   }
@@ -9082,19 +9123,45 @@ async function adminChangePinFlow(oldPin) {
     setLoading(true, "Actualizando…", "Guardando nuevo PIN de administrador.");
     await gsAdminChangePin(oldPin, newPin);
 
-// ✅ sesión admin principal
-setAdminMode(true);
+    // ✅ sesión admin principal
+    setAdminMode(true);
 
-closeAdminModal();
-loginModal.hidden = true;
+    closeAdminModal();
+    if (loginModal) loginModal.hidden = true;
 
-setStatus("", "Administrador", "PIN actualizado ✅ Sesión iniciada como administrador.");
-
+    setStatus("", "Administrador", "PIN actualizado ✅ Sesión iniciada como administrador.");
 
     // limpiar estado del botón
     delete btnAdminEnter.dataset.mode;
     delete btnAdminEnter.dataset.oldpin;
 
+  } catch (e) {
+    adminHint.textContent = String(e && e.message ? e.message : e);
+  } finally {
+    setLoading(false);
+  }
+}
+
+async function adminChangePinDirectFlow() {
+  const oldPin = String(adminPinEl.value || "").trim();
+  const newPin = String(adminNewPinEl.value || "").trim();
+
+  if (!oldPin) {
+    adminHint.textContent = "Escribe el PIN actual.";
+    return;
+  }
+
+  if (!/^\d{4,8}$/.test(newPin)) {
+    adminHint.textContent = "El nuevo PIN debe tener 4 a 8 dígitos.";
+    return;
+  }
+
+  try {
+    setLoading(true, "Actualizando…", "Validando PIN actual y guardando el nuevo PIN.");
+    await gsAdminChangePin(oldPin, newPin);
+
+    closeAdminModal();
+    setStatus("", "Administrador", "PIN cambiado correctamente ✅");
   } catch (e) {
     adminHint.textContent = String(e && e.message ? e.message : e);
   } finally {
@@ -9108,15 +9175,21 @@ if (btnAdminClose) btnAdminClose.addEventListener("click", closeAdminModal);
 if (btnAdminEnter) {
   btnAdminEnter.addEventListener("click", async () => {
     const mode = btnAdminEnter.dataset.mode || "enter";
+
     if (mode === "change") {
       const oldPin = btnAdminEnter.dataset.oldpin || "";
       await adminChangePinFlow(oldPin);
-    } else {
-      await adminEnterFlow();
+      return;
     }
+
+    if (mode === "change_direct") {
+      await adminChangePinDirectFlow();
+      return;
+    }
+
+    await adminEnterFlow();
   });
 }
-
 
 function openAdminAssistModal() {
   if (!adminAssistModal) return;
