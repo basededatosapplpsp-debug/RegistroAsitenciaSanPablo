@@ -12912,9 +12912,7 @@ async function register(type) {
     return;
   }
 
-  // ===== 1.5) Actualizar parámetros después de leer el QR =====
-  const configOk = await loadRuntimeConfig_();
-  if (!configOk) return;
+   // ===== 1.5) Configuración ya cargada al abrir la app =====
 
   // ===== 2) Verificar ubicación =====
   let geo;
