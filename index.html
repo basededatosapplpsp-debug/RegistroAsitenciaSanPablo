@@ -4007,6 +4007,16 @@ function setLoading(isLoading, title = "Procesando…", msg = "Por favor espera�
 }
 
 
+function resetLoadingNow_() {
+  __loadingCount = 0;
+
+  if (appLoader) {
+    appLoader.hidden = true;
+  }
+
+  document.body.classList.remove("is-loading");
+}
+
 function refreshHomeStatus_() {
   const hasGeo =
     typeof currentGeo !== "undefined" &&
@@ -4092,6 +4102,7 @@ function closeAdminConfigModal() {
   if (!adminConfigModal) return;
   adminConfigModal.hidden = true;
   cfgHint.textContent = "";
+  resetLoadingNow_();
 }
 
 async function loadAdminConfigIntoUI() {
@@ -4232,8 +4243,6 @@ function setAdminMode(on) {
   // Si entro como admin: cerrar login modal y bloquear “docente”
   if (on) {
     loginModal.hidden = true;
-    // ✅ cargar cursos/estudiantes para los 3 modales
-initAllModalCourses_();
 
     teacherNameEl.value = "ADMINISTRADOR";
     teacherNameEl.disabled = true;
@@ -4242,8 +4251,13 @@ initAllModalCourses_();
     if (btnUserMenu) btnUserMenu.hidden = false;
     setMenuOpen(false);
 
-initAdminRecordsPanelUI();
-refreshFromSheet();
+    initAdminRecordsPanelUI();
+
+    // ✅ cargar en segundo plano, después de que la UI ya abrió
+    setTimeout(() => {
+      try { initAllModalCourses_(); } catch (e) {}
+      try { refreshFromSheet(); } catch (e) {}
+    }, 0);
 
 
   } else {
@@ -8767,14 +8781,13 @@ if (btnAdminConfig) {
       openAdminModal();
       return;
     }
+
     try {
       openAdminConfigModal();
-      setLoading(true, "Cargando…", "Leyendo CONFIG.");
+      cfgHint.textContent = "Cargando…";
       await loadAdminConfigIntoUI();
     } catch (e) {
       cfgHint.textContent = String(e && e.message ? e.message : e);
-    } finally {
-      setLoading(false);
     }
   });
 }
@@ -9009,6 +9022,9 @@ function closeAdminModal() {
     delete btnAdminEnter.dataset.mode;
     delete btnAdminEnter.dataset.oldpin;
   }
+
+  // ✅ por seguridad visual
+  resetLoadingNow_();
 }
 
 async function adminEnterFlow() {
