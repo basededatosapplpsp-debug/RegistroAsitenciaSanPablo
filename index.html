@@ -9269,14 +9269,14 @@ if (btnAdminManual) {
       openAdminModal();
       return;
     }
+
     try {
       openAdminManualModal();
-      setLoading(true, "Cargando…", "Leyendo docentes del mes actual.");
+      adminManualHint.textContent = "Cargando docentes...";
       await adminLoadTeachersForManual();
+      adminManualHint.textContent = "";
     } catch (e) {
       adminManualHint.textContent = String(e && e.message ? e.message : e);
-    } finally {
-      setLoading(false);
     }
   });
 }
@@ -9293,25 +9293,21 @@ if (btnAdminViewAssist) {
       openAdminModal();
       return;
     }
+
     try {
-    openAdminAssistModal();
-setLoading(true, "Cargando…", "Leyendo docentes del mes seleccionado.");
+      openAdminAssistModal();
+      adminAssistList.innerHTML = `<div class="muted small">Cargando asistencias...</div>`;
 
-// ✅ AQUI VA ESTO:
-if (adminMonthSelect) {
-  const months = await gsAdminListMonths();
-  adminMonthSelect.innerHTML = (months.length ? months : [{key:"",label:"(Sin meses)"}])
-    .map(m => `<option value="${escapeHtml(m.key)}">${escapeHtml(m.label)}</option>`)
-    .join("");
-}
+      if (adminMonthSelect) {
+        const months = await gsAdminListMonths();
+        adminMonthSelect.innerHTML = (months.length ? months : [{ key: "", label: "(Sin meses)" }])
+          .map(m => `<option value="${escapeHtml(m.key)}">${escapeHtml(m.label)}</option>`)
+          .join("");
+      }
 
-// y después:
-await adminLoadTeachersAndBind();
-
+      await adminLoadTeachersAndBind();
     } catch (e) {
       adminAssistList.innerHTML = `<div class="muted small">${escapeHtml(String(e && e.message ? e.message : e))}</div>`;
-    } finally {
-      setLoading(false);
     }
   });
 }
