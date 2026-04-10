@@ -1523,6 +1523,103 @@ input[list]::-moz-list-dropdown {
   min-width: 0 !important;
 }
 
+
+/* ===== Admin dispositivos ===== */
+.admin-device-card{
+  margin-bottom:10px;
+  border:1px solid rgba(255,255,255,.10);
+  border-radius:14px;
+  padding:12px;
+  background: rgba(255,255,255,.04);
+}
+
+.admin-device-card.pending{
+  border-color: rgba(239,68,68,.45);
+  background: rgba(239,68,68,.10);
+  box-shadow: inset 0 0 0 1px rgba(239,68,68,.10);
+}
+
+.admin-device-card.approved{
+  border-color: rgba(34,197,94,.28);
+  background: rgba(34,197,94,.06);
+}
+
+.admin-device-status{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  font-size:12px;
+  font-weight:900;
+  padding:5px 10px;
+  border-radius:999px;
+  border:1px solid var(--line);
+}
+
+.admin-device-status.si{
+  color:#22c55e;
+  background: rgba(34,197,94,.14);
+  border-color: rgba(34,197,94,.35);
+}
+
+.admin-device-status.no{
+  color:#ef4444;
+  background: rgba(239,68,68,.14);
+  border-color: rgba(239,68,68,.35);
+}
+
+.admin-device-actions{
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+  justify-content:flex-end;
+  margin-top:12px;
+}
+
+.admin-icon-btn{
+  width:42px;
+  height:42px;
+  border-radius:12px;
+  border:1px solid rgba(255,255,255,.12);
+  background: rgba(255,255,255,.06);
+  color: var(--text);
+  display:grid;
+  place-items:center;
+  cursor:pointer;
+  transition: transform .15s ease, filter .15s ease, background .15s ease, border-color .15s ease;
+}
+
+.admin-icon-btn:hover{
+  filter: brightness(1.06);
+}
+
+.admin-icon-btn:active{
+  transform: translateY(1px) scale(.98);
+}
+
+.admin-icon-btn.ok{
+  color:#22c55e;
+  border-color: rgba(34,197,94,.25);
+  background: rgba(34,197,94,.10);
+}
+
+.admin-icon-btn.no{
+  color:#ef4444;
+  border-color: rgba(239,68,68,.25);
+  background: rgba(239,68,68,.10);
+}
+
+.admin-icon-btn.delete{
+  color:#ffb4b4;
+  border-color: rgba(239,68,68,.25);
+  background: rgba(239,68,68,.08);
+}
+
+.admin-device-grid{
+  display:grid;
+  gap:10px;
+}
+
+
 </style>
 </head>
 
@@ -1869,20 +1966,30 @@ input[list]::-moz-list-dropdown {
 
 <!-- ======= MODAL APROBAR DISPOSITIVOS (ADMIN) ======= -->
 <div id="adminDevicesModal" class="modal-backdrop" hidden>
-  <div class="modal-card" style="width:min(820px,100%);">
+  <div class="modal-card" style="width:min(920px,100%); max-height:calc(100dvh - 24px); display:flex; flex-direction:column; overflow:hidden;">
     <h2 class="modal-title">Aprobar dispositivos</h2>
-    <p class="modal-sub">Aprueba o rechaza solicitudes pendientes en la hoja <b>DISPOSITIVOS</b>.</p>
+    <p class="modal-sub">Administra dispositivos aprobados y no aprobados en <b>DISPOSITIVOS</b>.</p>
 
-    <div class="row row-between" style="margin-top:10px;">
-      <div class="muted small" id="adminDevicesCount">Pendientes: 0</div>
-      <div style="display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end;">
-        <button id="btnAdminDevicesReload" type="button" class="btn btn-ghost small">Recargar</button>
+    <div class="row row-between" style="margin-top:10px; gap:10px;">
+      <div id="adminDevicesCount" class="muted small">Aprobados: 0 · No aprobados: 0</div>
+
+      <div style="display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end; align-items:center;">
+        <select id="adminDevicesFilter" class="input" style="width:auto; min-width:180px; padding:10px 12px;">
+          <option value="ALL">Todos</option>
+          <option value="NO">No aprobados</option>
+          <option value="SI">Aprobados</option>
+        </select>
+
+        <button id="btnAdminDevicesReload" type="button" class="btn btn-ghost small">
+          <i class="fa-solid fa-rotate-right"></i>
+        </button>
       </div>
     </div>
 
     <div id="adminDevicesList" style="
       margin-top:12px;
-      max-height: min(62vh, 560px);
+      flex:1 1 auto;
+      min-height:160px;
       overflow:auto;
       -webkit-overflow-scrolling:touch;
       border:1px solid var(--line);
@@ -1997,10 +2104,7 @@ input[list]::-moz-list-dropdown {
       <button type="button" class="disc-level danger" data-level="4">4 • Grave</button>
     </div>
 
-    <div class="disc-who">
-      <div class="muted small" style="margin-bottom:6px;">Docentes que han marcado niveles</div>
-      <div id="discWhoList" class="disc-who-list">—</div>
-    </div>
+
 
     <div class="disc-reported">
       <div class="row row-between" style="margin-top:12px;">
@@ -2064,12 +2168,7 @@ input[list]::-moz-list-dropdown {
       <button type="button" class="disc-level danger" data-level="4">4 • Grave</button>
     </div>
 
-    <div class="disc-who">
-      <div class="muted small" style="margin-bottom:6px;">
-        Docentes que han marcado niveles
-      </div>
-      <div id="piercWhoList" class="disc-who-list">—</div>
-    </div>
+  
 
     <div class="disc-reported">
       <div class="row row-between" style="margin-top:12px;">
@@ -2132,12 +2231,7 @@ input[list]::-moz-list-dropdown {
       <button type="button" class="disc-level danger" data-level="4">4 • Grave</button>
     </div>
 
-    <div class="disc-who">
-      <div class="muted small" style="margin-bottom:6px;">
-        Docentes que han marcado niveles
-      </div>
-      <div id="uniWhoList" class="disc-who-list">—</div>
-    </div>
+ 
 
     <div class="disc-reported">
       <div class="row row-between" style="margin-top:12px;">
@@ -2661,9 +2755,9 @@ let __faltasLastUpdate = null;
 let __faltasExpandedStudent = "";
 
 
-// ======= GOOGLE SHEETS (CAMBIA ESTO) =======
-const GS_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbzqLGNfjp0CJi51woGWje8EmKT8rk7uBFhtCHCS-H_R9x4H5NICgYA-S9yu1K6mR7kc/exec"; // ej: https://script.google.com/macros/s/XXXX/exec
-const GS_API_KEY = "deimerDh2191docentesRegistros2026appandoidios";        // igual que en Code.gs
+// ======= BACKEND SUPABASE (CAMBIA ESTO) =======
+const GS_WEBAPP_URL = "https://dprxxhhkppqvvfrdnfgb.supabase.co/functions/v1/app-api";
+const GS_API_KEY = "deimerDh2191docentesRegistros2026appandoidios";
 
 // ======= UI =======
 const $ = (id) => document.getElementById(id);
@@ -2829,6 +2923,7 @@ const btnAdminApproveDevices = $("btnAdminApproveDevices");
 const adminDevicesModal = $("adminDevicesModal");
 const adminDevicesList = $("adminDevicesList");
 const adminDevicesCount = $("adminDevicesCount");
+const adminDevicesFilter = $("adminDevicesFilter");
 const btnAdminDevicesClose = $("btnAdminDevicesClose");
 const btnAdminDevicesReload = $("btnAdminDevicesReload");
 
@@ -3741,12 +3836,42 @@ function isNTCRecord(r) {
 
 // ======= Admin API =======
 async function gsAdminCheckPin(pin) {
-  const res = await fetch(GS_WEBAPP_URL, {
-    method: "POST",
-    body: JSON.stringify({ action: "admin_check_pin", pin, key: GS_API_KEY })
-  });
-  const data = await res.json();
-  if (!data.ok) throw new Error(data.msg || data.error || "admin_check_failed");
+  let res, text, data;
+
+  try {
+    console.log("ADMIN DEBUG", { GS_WEBAPP_URL, GS_API_KEY });
+
+    res = await fetch(GS_WEBAPP_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        action: "admin_check_pin",
+        pin,
+        key: GS_API_KEY
+      })
+    });
+  } catch (err) {
+    throw new Error("No se pudo conectar con el backend.");
+  }
+
+  text = await res.text();
+
+  try {
+    data = text ? JSON.parse(text) : {};
+  } catch (err) {
+    throw new Error(`Respuesta no válida del servidor (${res.status}): ${text || "vacía"}`);
+  }
+
+  if (!res.ok) {
+    throw new Error(data.msg || data.error || `HTTP ${res.status}`);
+  }
+
+  if (!data.ok) {
+    throw new Error(data.msg || data.error || "admin_check_failed");
+  }
+
   return data;
 }
 
@@ -3766,9 +3891,30 @@ async function gsAdminListMonths() {
     method: "POST",
     body: JSON.stringify({ action: "admin_list_months", key: GS_API_KEY })
   });
+
   const data = await res.json();
   if (!data.ok) throw new Error(data.msg || data.error || "admin_list_months_failed");
-  return data.months || []; // [{key:"YYYY-MM", label:"enero 2026"}, ...]
+
+  let months = Array.isArray(data.months) ? data.months : [];
+
+  // ✅ limpiar y normalizar
+  months = months
+    .map(m => ({
+      key: String(m && m.key || "").trim(),
+      label: String(m && m.label || "").trim()
+    }))
+    .filter(m => /^\d{4}-\d{2}$/.test(m.key));
+
+  // ✅ si backend no devuelve nada útil, crear fallback local
+  if (!months.length) {
+    const fallback = buildMonthOptions(12);
+    return fallback.map(m => ({
+      key: String(m.key || "").trim(),
+      label: formatMonthLabel(m.key)
+    }));
+  }
+
+  return months;
 }
 
 
@@ -3832,21 +3978,35 @@ async function gsAdminListDeviceRequests() {
   });
   const data = await res.json();
   if (!data.ok) throw new Error(data.msg || data.error || "admin_list_device_requests_failed");
-  return data.requests || [];
+  return data;
 }
 
-async function gsAdminSetDeviceAuth(row, authorized) {
+async function gsAdminSetDeviceAuth(id, authorized) {
   const res = await fetch(GS_WEBAPP_URL, {
     method: "POST",
     body: JSON.stringify({
       action: "admin_set_device_auth",
-      row,
+      id,
       authorized: authorized ? "SI" : "NO",
       key: GS_API_KEY
     })
   });
   const data = await res.json();
   if (!data.ok) throw new Error(data.msg || data.error || "admin_set_device_auth_failed");
+  return data;
+}
+
+async function gsAdminDeleteDevice(id) {
+  const res = await fetch(GS_WEBAPP_URL, {
+    method: "POST",
+    body: JSON.stringify({
+      action: "admin_delete_device",
+      id,
+      key: GS_API_KEY
+    })
+  });
+  const data = await res.json();
+  if (!data.ok) throw new Error(data.msg || data.error || "admin_delete_device_failed");
   return data;
 }
 
@@ -4253,13 +4413,15 @@ function setAdminMode(on) {
     if (btnUserMenu) btnUserMenu.hidden = false;
     setMenuOpen(false);
 
-    initAdminRecordsPanelUI();
-
-    // ✅ cargar en segundo plano, después de que la UI ya abrió
-    setTimeout(() => {
-      try { initAllModalCourses_(); } catch (e) {}
-      try { refreshFromSheet(); } catch (e) {}
-    }, 0);
+    Promise.resolve(initAdminRecordsPanelUI())
+      .catch(() => {})
+      .finally(() => {
+        // ✅ cargar en segundo plano, después de que la UI ya abrió
+        setTimeout(() => {
+          try { initAllModalCourses_(); } catch (e) {}
+          try { refreshFromSheet(); } catch (e) {}
+        }, 0);
+      });
 
 
   } else {
@@ -4274,17 +4436,31 @@ function setAdminMode(on) {
     }
   }
 
-  initAdminRecordsPanelUI(); // ✅ fuerza ocultar/mostrar SIEMPRE
+   Promise.resolve(initAdminRecordsPanelUI()).catch(() => {}); // ✅ fuerza ocultar/mostrar SIEMPRE
 
 }
 
-function initAdminRecordsPanelUI() {
+function formatMonthLabel(key) {
+  if (!key) return "";
+
+  const [year, month] = String(key).split("-");
+  const monthNames = [
+    "enero", "febrero", "marzo", "abril", "mayo", "junio",
+    "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"
+  ];
+
+  const monthIndex = Number(month) - 1;
+  const monthLabel = monthNames[monthIndex] || month || "";
+
+  return `${monthLabel} de ${year}`;
+}
+
+async function initAdminRecordsPanelUI() {
   if (!adminRecordsFilters || !recordsMonthSelect || !recordsTeacherSelect) return;
 
   const on = isAdminMode();
 
-if (btnExportXlsx) btnExportXlsx.hidden = !on;
-
+  if (btnExportXlsx) btnExportXlsx.hidden = !on;
 
   // ✅ SOLO ADMIN ve filtros
   adminRecordsFilters.hidden = !on;
@@ -4297,14 +4473,47 @@ if (btnExportXlsx) btnExportXlsx.hidden = !on;
   // Si NO es admin, no llenar combos (y listo)
   if (!on) return;
 
-  // llenar meses (últimos 12)
-  const months = buildMonthOptions(12);
-  recordsMonthSelect.innerHTML = months
-    .map(m => `<option value="${m.key}">${escapeHtml(m.label)}</option>`)
-    .join("");
+  const currentMonth = monthKeyFromDate(new Date());
 
-  // mes actual por defecto
-  recordsMonthSelect.value = monthKeyFromDate(new Date());
+  let months = [];
+  try {
+    // ✅ usar meses reales del backend
+    months = await gsAdminListMonths();
+  } catch (e) {
+    // fallback por si falla el backend
+    months = [];
+  }
+
+  // ✅ asegurar que el mes actual SIEMPRE exista en el combo,
+  // aunque todavía no venga en la lista del backend
+  const hasCurrent = (months || []).some(m => String(m && m.key || "").trim() === currentMonth);
+  if (!hasCurrent) {
+    months = [{ key: currentMonth, label: formatMonthLabel(currentMonth) }].concat(months || []);
+  }
+
+  // ✅ quitar duplicados por key
+  const seen = new Set();
+  months = (months || []).filter(m => {
+    const k = String(m && m.key || "").trim();
+    if (!k || seen.has(k)) return false;
+    seen.add(k);
+    return true;
+  });
+
+  // ✅ ordenar de más reciente a más antiguo
+  months.sort((a, b) => String(b.key || "").localeCompare(String(a.key || "")));
+
+ recordsMonthSelect.innerHTML = months.length
+  ? months.map(m => `<option value="${escapeHtml(m.key)}">${escapeHtml(formatMonthLabel(m.key))}</option>`).join("")
+  : `<option value="${escapeHtml(currentMonth)}">${escapeHtml(formatMonthLabel(currentMonth))}</option>`;
+
+// ✅ si por cualquier razón quedó vacío, forzar mes actual
+if (!recordsMonthSelect.innerHTML.trim()) {
+  recordsMonthSelect.innerHTML = `<option value="${escapeHtml(currentMonth)}">${escapeHtml(formatMonthLabel(currentMonth))}</option>`;
+}
+
+  // ✅ mes actual por defecto
+ adminMonthSelect.value = currentMonth;
 
   // docente inicia en Todos
   recordsTeacherSelect.innerHTML = `<option value="__ALL__">Todos</option>`;
@@ -8713,7 +8922,10 @@ function applySessionUI(profile) {
 }
 
 
-function logout() {
+function logout(reason = "") {
+  // detener verificación automática
+  stopDeviceAuthWatcher_();
+
   // borrar perfil docente
   localStorage.removeItem(LS_PROFILE_KEY);
 
@@ -8726,9 +8938,20 @@ function logout() {
   // abrir modal login
   loginModal.hidden = false;
   updateDeviceIdUI();
-  loginHint.textContent = "Sesión cerrada. Inicia sesión para continuar.";
 
-  setStatus("warn", "Sesión cerrada", "Vuelve a iniciar sesión para registrar.");
+  const msgLogin = String(reason || "").trim()
+    ? reason
+    : "Sesión cerrada. Inicia sesión para continuar.";
+
+  loginHint.textContent = msgLogin;
+
+  setStatus(
+    "warn",
+    "Sesión cerrada",
+    String(reason || "").trim()
+      ? reason
+      : "Vuelve a iniciar sesión para registrar."
+  );
 }
 
 
@@ -8739,7 +8962,13 @@ function requireLogin() {
   }
 
   const p = loadProfile();
-  if (p && p.name && p.email && p.course) return p;
+
+  if (p && p.name && p.email && p.course) {
+    startDeviceAuthWatcher_();
+    return p;
+  }
+
+  stopDeviceAuthWatcher_();
 
   // Mostrar modal y bloquear uso hasta guardar
   loginModal.hidden = false;
@@ -9317,15 +9546,42 @@ async function adminDoManual(type) {
     // usa la hora actual (igual que si lo hiciera el docente)
     const iso = new Date().toISOString();
 
-    await gsAdminManualRegister(teacher, type, iso);
+    const resp = await gsAdminManualRegister(teacher, type, iso);
+
+    // ✅ mostrar casi inmediato en la lista local
+    if (resp && resp.record) {
+       const newRecord = {
+        ...resp.record,
+        iso: resp.record.iso || iso
+      };
+
+      const alreadyExists = Array.isArray(cachedRecords) && cachedRecords.some(r =>
+        String(r.teacher || "").trim().toLowerCase() === String(newRecord.teacher || "").trim().toLowerCase() &&
+        String(r.type || "").trim().toUpperCase() === String(newRecord.type || "").trim().toUpperCase() &&
+        String(r.date || "").trim() === String(newRecord.date || "").trim() &&
+        String(r.time || "").trim() === String(newRecord.time || "").trim()
+      );
+
+      if (!alreadyExists) {
+        cachedRecords = [newRecord].concat(Array.isArray(cachedRecords) ? cachedRecords : []);
+      }
+
+      try {
+        const cacheKey = cacheKeyForCurrentView_();
+        saveRecordsCache_(cacheKey, cachedRecords);
+      } catch (e) {}
+
+      render(cachedRecords);
+    }
 
     adminManualHint.textContent = `✅ ${type} guardada (NTC) para ${teacher}.`;
 
-    // refrescar listas/contadores
-refreshFromSheet(); // ✅ sin await
+    // ✅ sincroniza después sin bloquear la UI
+    refreshFromSheet({ silent: true, useCache: false }).catch(() => {});
 
-    // si está abierto el modal de asistencias admin, recarga si coincide el docente
-    // (opcional, no rompe nada)
+    // si la tarjeta de registros está cerrada, la abre para que se vea
+    setRecordsOpen(true);
+
   } catch (e) {
     adminManualHint.textContent = String(e && e.message ? e.message : e);
   } finally {
@@ -9373,9 +9629,24 @@ setLoading(true, "Cargando…", "Leyendo docentes del mes seleccionado.");
 // ✅ AQUI VA ESTO:
 if (adminMonthSelect) {
   const months = await gsAdminListMonths();
-  adminMonthSelect.innerHTML = (months.length ? months : [{key:"",label:"(Sin meses)"}])
-    .map(m => `<option value="${escapeHtml(m.key)}">${escapeHtml(m.label)}</option>`)
-    .join("");
+
+adminMonthSelect.innerHTML = (months.length ? months : [{ key: "", label: "(Sin meses)" }])
+  .map(m => {
+    const year = String(m.key || "").split("-")[0] || "";
+    const label = year ? `${formatMonthLabel(m.key)}` : String(m.label || "");
+    return `<option value="${escapeHtml(m.key)}">${escapeHtml(label)}</option>`;
+  })
+  .join("");
+
+// ✅ por defecto: mes actual
+const currentMonth = monthKeyFromDate(new Date());
+const hasCurrentMonth = (months || []).some(m => String(m.key || "").trim() === currentMonth);
+
+if (hasCurrentMonth) {
+  adminMonthSelect.value = currentMonth;
+} else if ((months || []).length) {
+  adminMonthSelect.value = String(months[0].key || "").trim();
+}
 }
 
 // y después:
@@ -9452,11 +9723,24 @@ const recs = await gsAdminGetTeacherRecords(t, month);
 
 if (btnAdminAssistClose) btnAdminAssistClose.addEventListener("click", closeAdminAssistModal);
 
+if (adminDevicesFilter) {
+  adminDevicesFilter.addEventListener("change", () => {
+    renderAdminDeviceRequests({
+      requests: __adminDevicesCache,
+      approved_count: __adminDevicesCache.filter(x => !!x.authorized).length,
+      pending_count: __adminDevicesCache.filter(x => !x.authorized).length
+    });
+  });
+}
+
+let __adminDevicesCache = [];
+
 function openAdminDevicesModal() {
   if (!adminDevicesModal) return;
   adminDevicesModal.hidden = false;
   if (adminDevicesList) adminDevicesList.innerHTML = `<div class="muted small">Cargando…</div>`;
-  if (adminDevicesCount) adminDevicesCount.textContent = "Pendientes: —";
+  if (adminDevicesCount) adminDevicesCount.textContent = "Aprobados: — · No aprobados: —";
+  if (adminDevicesFilter) adminDevicesFilter.value = "ALL";
 }
 
 function closeAdminDevicesModal() {
@@ -9464,73 +9748,143 @@ function closeAdminDevicesModal() {
   adminDevicesModal.hidden = true;
 }
 
-function renderAdminDeviceRequests(requests) {
-  const list = (requests || []);
-  if (adminDevicesCount) adminDevicesCount.textContent = `Pendientes: ${list.length}`;
+function adminDeviceFilterValue_() {
+  return String(adminDevicesFilter && adminDevicesFilter.value ? adminDevicesFilter.value : "ALL").toUpperCase();
+}
+
+function renderAdminDeviceRequests(payload) {
+  const requests = Array.isArray(payload && payload.requests) ? payload.requests : [];
+  const approvedCount = Number(payload && payload.approved_count || 0);
+  const pendingCount = Number(payload && payload.pending_count || 0);
+
+  __adminDevicesCache = requests;
+
+  if (adminDevicesCount) {
+    adminDevicesCount.textContent = `Aprobados: ${approvedCount} · No aprobados: ${pendingCount}`;
+  }
+
+  const filter = adminDeviceFilterValue_();
+  let list = requests.slice();
+
+  if (filter === "SI") list = list.filter(x => !!x.authorized);
+  else if (filter === "NO") list = list.filter(x => !x.authorized);
 
   if (!list.length) {
-    adminDevicesList.innerHTML = `<div class="muted small">No hay solicitudes pendientes ✅</div>`;
+    adminDevicesList.innerHTML = `<div class="muted small">No hay dispositivos para mostrar ✅</div>`;
     return;
   }
 
-  adminDevicesList.innerHTML = list.map(r => {
-    const email = escapeHtml(r.email || "");
-    const device = escapeHtml(r.device_id || "");
-    const notes = escapeHtml(r.notes || "");
-    const row = Number(r.row || 0);
+  adminDevicesList.innerHTML = `
+    <div class="admin-device-grid">
+      ${list.map(r => {
+        const id = escapeHtml(String(r.id || ""));
+        const email = escapeHtml(String(r.email || ""));
+        const device = escapeHtml(String(r.device_id || ""));
+        const notes = escapeHtml(String(r.notes || ""));
+        const row = Number(r.row || 0);
+        const authorized = !!r.authorized;
 
-    return `
-      <div class="record-card" style="margin-bottom:10px;">
-        <div class="top">
-          <span class="teacher">${email}</span>
-          <span class="badge badge-neutral">Fila: ${row}</span>
-        </div>
+        return `
+          <div class="admin-device-card ${authorized ? "approved" : "pending"}">
+            <div class="top">
+              <span class="teacher">${email}</span>
+              <span class="admin-device-status ${authorized ? "si" : "no"}">
+                <i class="fa-solid ${authorized ? "fa-circle-check" : "fa-circle-xmark"}"></i>
+                ${authorized ? "SI" : "NO"}
+              </span>
+            </div>
 
-        <div class="meta" style="margin-top:8px;">
-          <div class="muted small">DEVICE_ID:</div>
-          <div class="device-id" style="margin-top:4px;">${device}</div>
-        </div>
+            <div class="meta" style="margin-top:8px;">
+              <div class="muted small">Fila:</div>
+              <div class="muted small" style="margin-top:4px;">${row}</div>
+            </div>
 
-        <div class="meta" style="margin-top:10px;">
-          <div class="muted small">Notas:</div>
-          <div class="muted small" style="margin-top:4px; white-space:pre-wrap;">${notes || "—"}</div>
-        </div>
+            <div class="meta" style="margin-top:8px;">
+              <div class="muted small">DEVICE_ID:</div>
+              <div class="device-id" style="margin-top:4px;">${device}</div>
+            </div>
 
-        <div class="row" style="margin-top:12px;">
-          <button class="btn btn-primary" data-approve="${row}">Aprobar ✅</button>
-          <button class="btn btn-danger" data-reject="${row}">Rechazar ❌</button>
-        </div>
-      </div>
-    `;
-  }).join("");
+            <div class="meta" style="margin-top:10px;">
+              <div class="muted small">Notas:</div>
+              <div class="muted small" style="margin-top:4px; white-space:pre-wrap;">${notes || "—"}</div>
+            </div>
 
-  // bind botones (delegación)
-  adminDevicesList.querySelectorAll("[data-approve]").forEach(btn => {
+            <div class="admin-device-actions">
+              ${
+                authorized
+                  ? `
+                    <button class="admin-icon-btn no" type="button" data-set-no="${id}" title="Desaprobar">
+                      <i class="fa-solid fa-xmark"></i>
+                    </button>
+                    <button class="admin-icon-btn delete" type="button" data-delete="${id}" title="Eliminar">
+                      <i class="fa-solid fa-trash"></i>
+                    </button>
+                  `
+                  : `
+                    <button class="admin-icon-btn ok" type="button" data-set-si="${id}" title="Aprobar">
+                      <i class="fa-solid fa-check"></i>
+                    </button>
+                    <button class="admin-icon-btn delete" type="button" data-delete="${id}" title="Eliminar">
+                      <i class="fa-solid fa-trash"></i>
+                    </button>
+                  `
+              }
+            </div>
+          </div>
+        `;
+      }).join("")}
+    </div>
+  `;
+
+  adminDevicesList.querySelectorAll("[data-set-si]").forEach(btn => {
     btn.addEventListener("click", async () => {
-      const row = Number(btn.getAttribute("data-approve"));
-      await adminSetDeviceRow(row, true);
+      const id = String(btn.getAttribute("data-set-si") || "").trim();
+      await adminSetDeviceById(id, true);
     });
   });
 
-  adminDevicesList.querySelectorAll("[data-reject]").forEach(btn => {
+  adminDevicesList.querySelectorAll("[data-set-no]").forEach(btn => {
     btn.addEventListener("click", async () => {
-      const row = Number(btn.getAttribute("data-reject"));
-      await adminSetDeviceRow(row, false);
+      const id = String(btn.getAttribute("data-set-no") || "").trim();
+      await adminSetDeviceById(id, false);
+    });
+  });
+
+  adminDevicesList.querySelectorAll("[data-delete]").forEach(btn => {
+    btn.addEventListener("click", async () => {
+      const id = String(btn.getAttribute("data-delete") || "").trim();
+      await adminDeleteDeviceById(id);
     });
   });
 }
 
 async function adminLoadDeviceRequests() {
-  const reqs = await gsAdminListDeviceRequests();
-  renderAdminDeviceRequests(reqs);
+  const data = await gsAdminListDeviceRequests();
+  renderAdminDeviceRequests(data);
 }
 
-async function adminSetDeviceRow(row, approve) {
+async function adminSetDeviceById(id, approve) {
   try {
-    setLoading(true, approve ? "Aprobando…" : "Rechazando…", "Actualizando hoja DISPOSITIVOS.");
-    await gsAdminSetDeviceAuth(row, approve);
+    setLoading(true, approve ? "Aprobando…" : "Desaprobando…", "Actualizando estado del dispositivo.");
+    await gsAdminSetDeviceAuth(id, approve);
     await adminLoadDeviceRequests();
-    setStatus("", "Listo", approve ? "Dispositivo aprobado ✅" : "Dispositivo rechazado ❌");
+    setStatus("", "Listo", approve ? "Dispositivo aprobado ✅" : "Dispositivo desaprobado ❌");
+  } catch (e) {
+    setStatus("bad", "Error", String(e && e.message ? e.message : e));
+  } finally {
+    setLoading(false);
+  }
+}
+
+async function adminDeleteDeviceById(id) {
+  const ok = window.confirm("¿Seguro que deseas eliminar este dispositivo?");
+  if (!ok) return;
+
+  try {
+    setLoading(true, "Eliminando…", "Borrando dispositivo de la tabla.");
+    await gsAdminDeleteDevice(id);
+    await adminLoadDeviceRequests();
+    setStatus("", "Listo", "Dispositivo eliminado 🗑️");
   } catch (e) {
     setStatus("bad", "Error", String(e && e.message ? e.message : e));
   } finally {
@@ -9560,11 +9914,15 @@ if (!btnRequestAuth) {
       setLoading(true, "Enviando solicitud…", "Registrando este teléfono para aprobación.");
       loginHint.textContent = "Enviando solicitud…";
 
+      const whatsappTo = (loginPhoneEl && loginPhoneEl.value)
+        ? loginPhoneEl.value.trim()
+        : "";
       const resp = await gsRequestDeviceAuth({
         action: "request_device_auth",
         name,
         email,
         course,
+        whatsapp_to: whatsappTo,
         device_id: getDeviceId()
       });
 
@@ -9860,19 +10218,47 @@ function discBackToList_(){
   const total = item ? Number(item.totalMarks || 0) : 0;
   const teachersCount = item ? Number(item.teachersCount || 0) : 0;
 
- discReportedList.innerHTML = `
-  <div class="record-card" style="margin-bottom:10px;">
-    <div class="top">
-      <span class="teacher">${escapeHtml(s || "—")}</span>
-      <span class="badge badge-neutral">${maxLevel ? `Nivel ${maxLevel}` : "Sin nivel"}</span>
-    </div>
-    <div class="meta">
-      Llamados: <b>${total}</b> • Docentes: <b>${teachersCount}</b>
+  const docentesHtml = (item && Array.isArray(item.who) && item.who.length)
+    ? `
+      <div style="margin-top:10px;">
+        <div class="muted small" style="margin-bottom:6px;">Docentes que han reportado</div>
+        <div style="display:grid; gap:8px;">
+  ${item.who.map(x => `
+  <div style="
+    border:1px solid rgba(255,255,255,.10);
+    border-radius:12px;
+    padding:10px;
+    background:rgba(255,255,255,.04);
+  ">
+    <div style="font-weight:800;">${escapeHtml(x.teacher || "—")}</div>
+    <div class="muted small" style="margin-top:4px;">
+      Nivel ${Number(x.level || 0)}
+      ${x.dt ? ` • ${escapeHtml(x.dt)}` : ""}
     </div>
   </div>
+`).join("")}
+        </div>
+      </div>
+    `
+    : `
+      <div class="muted small" style="margin-top:10px;">Aún no hay docentes reportados.</div>
+    `;
 
-  <div class="muted small" style="margin-bottom:6px;">(Usa los botones de nivel arriba para registrar)</div>
-`;
+  discReportedList.innerHTML = `
+    <div class="record-card" style="margin-bottom:10px;">
+      <div class="top">
+        <span class="teacher">${escapeHtml(s || "—")}</span>
+        <span class="badge badge-neutral">${maxLevel ? `Nivel ${maxLevel}` : "Sin nivel"}</span>
+      </div>
+      <div class="meta">
+        Llamados: <b>${total}</b> • Docentes: <b>${teachersCount}</b>
+      </div>
+      ${docentesHtml}
+    </div>
+    <div class="muted small" style="margin-bottom:6px;">(Usa los botones de nivel arriba para registrar)</div>
+  `;
+
+  discApplyLevelUI_(maxLevel);
 
 
 
@@ -10634,7 +11020,7 @@ function discStartPolling_() {
     } catch {
       // silencioso
     }
-  }, 15000);
+  }, 4000);
 }
 
 
@@ -10950,6 +11336,31 @@ function piercRenderDetailView_(){
   const maxLevel = item ? Number(item.maxLevel || 0) : 0;
   const total = item ? Number(item.totalMarks || 0) : 0;
   const teachersCount = item ? Number(item.teachersCount || 0) : 0;
+  const docentesHtml = (item && Array.isArray(item.who) && item.who.length)
+    ? `
+      <div style="margin-top:10px;">
+        <div class="muted small" style="margin-bottom:6px;">Docentes que han reportado</div>
+        <div style="display:grid; gap:8px;">
+     ${item.who.map(x => `
+  <div style="
+    border:1px solid rgba(255,255,255,.10);
+    border-radius:12px;
+    padding:10px;
+    background:rgba(255,255,255,.04);
+  ">
+    <div style="font-weight:800;">${escapeHtml(x.teacher || "—")}</div>
+    <div class="muted small" style="margin-top:4px;">
+      Nivel ${Number(x.level || 0)}
+      ${x.dt ? ` • ${escapeHtml(x.dt)}` : ""}
+    </div>
+  </div>
+`).join("")}
+        </div>
+      </div>
+    `
+    : `
+      <div class="muted small" style="margin-top:10px;">Aún no hay docentes reportados.</div>
+    `;
 
   piercReportedList.innerHTML = `
     <div class="record-card" style="margin-bottom:10px;">
@@ -10960,13 +11371,12 @@ function piercRenderDetailView_(){
       <div class="meta">
         Llamados: <b>${total}</b> • Docentes: <b>${teachersCount}</b>
       </div>
+      ${docentesHtml}
     </div>
     <div class="muted small" style="margin-bottom:6px;">(Usa los botones de nivel arriba para registrar)</div>
   `;
 
   piercApplyLevelUI_(maxLevel);
-  if (item && Array.isArray(item.who) && item.who.length) piercRenderWho_(item.who);
-  else if (piercWhoList) piercWhoList.textContent = "—";
 }
 
 function piercOpenDetail_(studentName){
@@ -11177,7 +11587,7 @@ function piercStartPolling_() {
 
       piercRenderReportedList_(items);
     } catch {}
-  }, 15000);
+  }, 4000);
 }
 
 function openPiercingModal() {
@@ -11681,6 +12091,32 @@ function uniRenderDetailView_(){
   const total = item ? Number(item.totalMarks || 0) : 0;
   const teachersCount = item ? Number(item.teachersCount || 0) : 0;
 
+  const docentesHtml = (item && Array.isArray(item.who) && item.who.length)
+    ? `
+      <div style="margin-top:10px;">
+        <div class="muted small" style="margin-bottom:6px;">Docentes que han reportado</div>
+        <div style="display:grid; gap:8px;">
+${item.who.map(x => `
+  <div style="
+    border:1px solid rgba(255,255,255,.10);
+    border-radius:12px;
+    padding:10px;
+    background:rgba(255,255,255,.04);
+  ">
+    <div style="font-weight:800;">${escapeHtml(x.teacher || "—")}</div>
+    <div class="muted small" style="margin-top:4px;">
+      Nivel ${Number(x.level || 0)}
+      ${x.dt ? ` • ${escapeHtml(x.dt)}` : ""}
+    </div>
+  </div>
+`).join("")}
+        </div>
+      </div>
+    `
+    : `
+      <div class="muted small" style="margin-top:10px;">Aún no hay docentes reportados.</div>
+    `;
+
   uniReportedList.innerHTML = `
     <div class="record-card" style="margin-bottom:10px;">
       <div class="top">
@@ -11690,13 +12126,12 @@ function uniRenderDetailView_(){
       <div class="meta">
         Llamados: <b>${total}</b> • Docentes: <b>${teachersCount}</b>
       </div>
+      ${docentesHtml}
     </div>
     <div class="muted small" style="margin-bottom:6px;">(Usa los botones de nivel arriba para registrar)</div>
   `;
 
   uniApplyLevelUI_(maxLevel);
-  if (item && Array.isArray(item.who) && item.who.length) uniRenderWho_(item.who);
-  else if (uniWhoList) uniWhoList.textContent = "—";
 }
 
 /* ======= actions ======= */
@@ -11942,7 +12377,7 @@ function uniStartPolling_() {
     } catch {
       // silencioso
     }
-  }, 15000);
+  }, 4000);
 }
 
 
@@ -12094,6 +12529,69 @@ async function gsCheckDeviceAuth(payload) {
   return data;
 }
 
+
+let __deviceAuthWatcherTimer = null;
+let __deviceAuthWatcherBusy = false;
+
+async function validateCurrentDeviceSession_(options = {}) {
+  const { silent = true } = options || {};
+
+  if (__deviceAuthWatcherBusy) return true;
+
+  const profile = loadProfile();
+  if (!profile || !profile.email) return true;
+
+  // En modo admin no forzamos este control
+  if (isAdminMode()) return true;
+
+  const deviceId = getDeviceId();
+  if (!deviceId) return true;
+
+  __deviceAuthWatcherBusy = true;
+
+  try {
+    const resp = await gsCheckDeviceAuth({
+      action: "check_device_auth",
+      email: String(profile.email || "").trim().toLowerCase(),
+      device_id: deviceId
+    });
+
+    if (resp && resp.authorized === true) {
+      return true;
+    }
+
+    const serverMsg = String(resp && resp.msg ? resp.msg : "").trim();
+
+    logout(
+      serverMsg ||
+      "Este dispositivo fue desautorizado o eliminado por el administrador."
+    );
+
+    return false;
+  } catch (e) {
+    // Si falla internet, no cerramos sesión por error de red
+    if (!silent) {
+      console.warn("No se pudo validar autorización del dispositivo:", e);
+    }
+    return true;
+  } finally {
+    __deviceAuthWatcherBusy = false;
+  }
+}
+
+function startDeviceAuthWatcher_() {
+  if (__deviceAuthWatcherTimer) return;
+
+  __deviceAuthWatcherTimer = setInterval(() => {
+    validateCurrentDeviceSession_({ silent: true });
+  }, 5000); // cada 5 segundos
+}
+
+function stopDeviceAuthWatcher_() {
+  if (!__deviceAuthWatcherTimer) return;
+  clearInterval(__deviceAuthWatcherTimer);
+  __deviceAuthWatcherTimer = null;
+}
 
 async function gsClearCurrentMonth() {
   const d = new Date();
@@ -12478,24 +12976,37 @@ function render(records) {
       const acc = ntc
         ? "NTC"
         : (r.accuracy_m ?? r.acc ?? r.accuracy ?? "—");
+const ntcTxt = ntc ? " • NTC" : "";
 
-      const typeLabel = ntc ? `${type} • NTC` : type;
+const typeHtml = (type === "ENTRADA")
+  ? (r.late
+      ? `<span class="badge badge-late">ENTRADA • TARDE${ntcTxt}</span>`
+      : `<span class="badge badge-ontime">ENTRADA • A TIEMPO${ntcTxt}</span>`
+    )
+  : (type === "SALIDA")
+      ? (isEarlyExitRecord(r)
+          ? `<span class="badge badge-late">SALIDA • ANTES${ntcTxt}</span>`
+          : `<span class="badge badge-ontime">SALIDA • OK${ntcTxt}</span>`
+        )
+      : `<span class="badge badge-neutral">${type}${ntcTxt}</span>`;
 
-      const rowCls =
-        (type === "ENTRADA")
-          ? (r.late ? "late" : "ontime")
-          : "";
+const rowCls =
+  (type === "ENTRADA")
+    ? (r.late ? "late" : "ontime")
+    : (type === "SALIDA")
+        ? (isEarlyExitRecord(r) ? "late" : "ontime")
+        : "";
 
-      return `
-        <tr class="${rowCls}">
-          <td>${escapeHtml(r.date)}</td>
-          <td>${escapeHtml(r.time)}</td>
-          <td>${escapeHtml(r.teacher)}</td>
-          <td>${escapeHtml(typeLabel)}</td>
-          <td>${escapeHtml(dist)}</td>
-          <td>${escapeHtml(acc)}</td>
-        </tr>
-      `;
+return `
+  <tr class="${rowCls}">
+    <td>${escapeHtml(r.date)}</td>
+    <td>${escapeHtml(r.time)}</td>
+    <td>${escapeHtml(r.teacher)}</td>
+    <td>${typeHtml}</td>
+    <td>${escapeHtml(dist)}</td>
+    <td>${escapeHtml(acc)}</td>
+  </tr>
+`;
     }).join("");
 
     // ======= CARDS (mobile) =======
@@ -12569,23 +13080,37 @@ function render(records) {
       ? "NTC"
       : (r.accuracy_m ?? r.acc ?? r.accuracy ?? "—");
 
-    const typeLabel = ntc ? `${type} • NTC` : type;
+ const ntcTxt = ntc ? " • NTC" : "";
 
-    const rowCls =
-      (type === "ENTRADA")
-        ? (r.late ? "late" : "ontime")
-        : "";
+const typeHtml = (type === "ENTRADA")
+  ? (r.late
+      ? `<span class="badge badge-late">ENTRADA • TARDE${ntcTxt}</span>`
+      : `<span class="badge badge-ontime">ENTRADA • A TIEMPO${ntcTxt}</span>`
+    )
+  : (type === "SALIDA")
+      ? (isEarlyExitRecord(r)
+          ? `<span class="badge badge-late">SALIDA • ANTES${ntcTxt}</span>`
+          : `<span class="badge badge-ontime">SALIDA • OK${ntcTxt}</span>`
+        )
+      : `<span class="badge badge-neutral">${type}${ntcTxt}</span>`;
 
-    return `
-      <tr class="${rowCls}">
-        <td>${escapeHtml(r.date)}</td>
-        <td>${escapeHtml(r.time)}</td>
-        <td>${escapeHtml(r.teacher)}</td>
-        <td>${escapeHtml(typeLabel)}</td>
-        <td>${escapeHtml(dist)}</td>
-        <td>${escapeHtml(acc)}</td>
-      </tr>
-    `;
+const rowCls =
+(type === "ENTRADA")
+  ? (r.late ? "late" : "ontime")
+  : (type === "SALIDA")
+      ? (isEarlyExitRecord(r) ? "late" : "ontime")
+      : "";
+
+return `
+  <tr class="${rowCls}">
+    <td>${escapeHtml(r.date)}</td>
+    <td>${escapeHtml(r.time)}</td>
+    <td>${escapeHtml(r.teacher)}</td>
+    <td>${typeHtml}</td>
+    <td>${escapeHtml(dist)}</td>
+    <td>${escapeHtml(acc)}</td>
+  </tr>
+`;
   }).join("");
 
   // ======= CARDS (mobile) =======
@@ -12600,17 +13125,25 @@ updateDailyButtonsState(filtered);
     const ntc = isNTCRecord(r);
     const ntcTxt = ntc ? " • NTC" : "";
 
-    const badgeClass = (type === "ENTRADA")
-      ? (r.late ? "badge badge-late" : "badge badge-ontime")
-      : "badge badge-neutral";
+const badgeClass =
+  (type === "ENTRADA")
+    ? (r.late ? "badge badge-late" : "badge badge-ontime")
+    : (type === "SALIDA")
+        ? (isEarlyExitRecord(r) ? "badge badge-late" : "badge badge-ontime")
+        : "badge badge-neutral";
 
-    const rowClass = (type === "ENTRADA")
-      ? (r.late ? "record-card late" : "record-card ontime")
-      : "record-card";
+const rowClass =
+  (type === "ENTRADA")
+    ? (r.late ? "record-card late" : "record-card ontime")
+    : (type === "SALIDA")
+        ? (isEarlyExitRecord(r) ? "record-card late" : "record-card ontime")
+        : "record-card";
 
-    const badgeText =
-      (type === "ENTRADA")
-        ? `${type}${r.late ? " • TARDE" : " • A TIEMPO"}${ntcTxt}`
+const badgeText =
+  (type === "ENTRADA")
+    ? `${type}${r.late ? " • TARDE" : " • A TIEMPO"}${ntcTxt}`
+    : (type === "SALIDA")
+        ? `${type}${isEarlyExitRecord(r) ? " • ANTES" : " • A TIEMPO"}${ntcTxt}`
         : `${type}${ntcTxt}`;
 
     return `
@@ -12955,11 +13488,29 @@ async function scanQrValidated_() {
 // ======= Registrar =======
 async function register(type) {
 
+  if (type === "ENTRADA" && hasEntradaToday) {
+    setStatus(
+      "warn",
+      "Entrada ya registrada",
+      "Ya tienes una ENTRADA registrada hoy."
+    );
+    return;
+  }
+
   if (type === "SALIDA" && !hasEntradaToday) {
     setStatus(
       "warn",
       "Primero registra ENTRADA",
       "No puedes registrar la salida sin haber registrado la entrada hoy."
+    );
+    return;
+  }
+
+  if (type === "SALIDA" && hasSalidaToday) {
+    setStatus(
+      "warn",
+      "Salida ya registrada",
+      "Ya tienes una SALIDA registrada hoy."
     );
     return;
   }
@@ -13040,7 +13591,7 @@ async function register(type) {
   try {
     setLoading(true, "Guardando…", "Enviando registro (QR + ubicación).");
 
-    await gsRegister({
+     const resp = await gsRegister({
       action: "register",
       teacher,
       type,
@@ -13055,7 +13606,32 @@ async function register(type) {
       qr: qrText
     });
 
-    refreshFromSheet({ silent: true, useCache: false });
+    // ✅ pintar de inmediato el registro recién guardado
+    if (resp && resp.record) {
+      const newRecord = {
+        ...resp.record,
+        iso: resp.record.iso || t.iso
+      };
+
+      const alreadyExists = Array.isArray(cachedRecords) && cachedRecords.some(r =>
+        String(r.teacher || "").trim().toLowerCase() === String(newRecord.teacher || "").trim().toLowerCase() &&
+        String(r.type || "").trim().toUpperCase() === String(newRecord.type || "").trim().toUpperCase() &&
+        String(r.date || "").trim() === String(newRecord.date || "").trim() &&
+        String(r.time || "").trim() === String(newRecord.time || "").trim()
+      );
+
+      if (!alreadyExists) {
+        cachedRecords = [newRecord].concat(Array.isArray(cachedRecords) ? cachedRecords : []);
+      }
+
+      try {
+        const cacheKey = cacheKeyForCurrentView_();
+        saveRecordsCache_(cacheKey, cachedRecords);
+      } catch (e) {}
+
+      render(cachedRecords);
+      updateDailyButtonsState(cachedRecords);
+    }
 
     if (type === "ENTRADA") {
       hasEntradaToday = true;
@@ -13069,10 +13645,15 @@ async function register(type) {
       hasSalidaToday = true;
       btnEntrada.disabled = true;
       btnSalida.disabled = true;
+      btnSalida.classList.remove("is-inactive");
     }
 
     setRecordsOpen(true);
     setStatus("", "Guardado", `${type} registrada para ${teacher}.`);
+
+    // ✅ sincroniza después, pero sin depender de esto para pintar
+  // ✅ NO refrescar aquí: ya pintamos y bloqueamos localmente.
+// El refresco automático estaba pisando el estado recién actualizado.
 
   } catch (e) {
     const msg = String(e && e.message ? e.message : e).toLowerCase();
@@ -13317,15 +13898,35 @@ async function downloadAdminExcel() {
     if (teacher) url.searchParams.set("teacher", teacher);
 
     const res = await fetch(url.toString(), { method: "GET" });
-    const data = await res.json();
 
-    if (!data.ok || !data.url) throw new Error(data.msg || "No se pudo generar el link.");
+    if (!res.ok) {
+      let msg = "No se pudo generar el Excel.";
+      try {
+        const errData = await res.json();
+        msg = errData.msg || errData.error || msg;
+      } catch (_) {}
+      throw new Error(msg);
+    }
 
-    // ✅ Abrir directo Drive (ya no abre script.google.com)
-    const opened = window.open(data.url, "_blank");
-    if (!opened) window.location.href = data.url;
+    const blob = await res.blob();
 
-    setStatus("", "Listo", "Descarga iniciada ✅");
+    const fileTeacher =
+      teacher && teacher !== "__ALL__"
+        ? `_${teacher.replace(/\s+/g, "_")}`
+        : "";
+    const fileMonth = month ? `_${month}` : "";
+    const filename = `asistencia${fileMonth}${fileTeacher}.xlsx`;
+
+    const blobUrl = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = blobUrl;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(blobUrl);
+
+    setStatus("", "Listo", "Excel descargado ✅");
   } catch (e) {
     setStatus("bad", "Error", String(e && e.message ? e.message : e));
   } finally {
@@ -13463,7 +14064,7 @@ window.addEventListener("error", (e) => {
 document.addEventListener("DOMContentLoaded", () => {
   // precarga en segundo plano (no rompe si aún no hay login)
   prewarmCoursesAndStudents_();
-
+startDeviceAuthWatcher_();
   // si ya hay perfil guardado, deja listos los combos también
   try {
     const p = (typeof loadProfile === "function") ? loadProfile() : null;
