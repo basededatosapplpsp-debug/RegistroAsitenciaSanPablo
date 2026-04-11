@@ -8922,6 +8922,35 @@ function applySessionUI(profile) {
 }
 
 
+
+
+let __attendanceResumeSyncTimer = null;
+
+function syncAttendanceOnResume_() {
+  if (isAdminMode()) return;
+
+  const p = loadProfile();
+  if (!p || !p.name) return;
+
+  if (__attendanceResumeSyncTimer) {
+    clearTimeout(__attendanceResumeSyncTimer);
+  }
+
+  __attendanceResumeSyncTimer = setTimeout(() => {
+    refreshFromSheet({ silent: true, useCache: false }).catch(() => {});
+  }, 250);
+}
+
+window.addEventListener("focus", syncAttendanceOnResume_);
+window.addEventListener("pageshow", syncAttendanceOnResume_);
+window.addEventListener("online", syncAttendanceOnResume_);
+
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible") {
+    syncAttendanceOnResume_();
+  }
+});
+
 function logout(reason = "") {
   // detener verificación automática
   stopDeviceAuthWatcher_();
@@ -14041,14 +14070,17 @@ if (isAdminMode()) {
   initAdminRecordsPanelUI(); // ✅ fuerza ocultar combos + resumen si NO es admin
   const _p = requireLogin();
 
-  if (_p) {
-    applySessionUI(_p);
+if (_p) {
+  applySessionUI(_p);
 
-    // ✅ FIX: si ya hay sesión guardada, inicializa cursos + estudiantes
-    initAllModalCourses_();
-  } else {
-    applySessionUI(null);
-  }
+  // ✅ FIX: si ya hay sesión guardada, inicializa cursos + estudiantes
+  initAllModalCourses_();
+
+  // ✅ NUEVO: al restaurar sesión, sincroniza estado real de asistencia
+  syncAttendanceOnResume_();
+} else {
+  applySessionUI(null);
+}
 }
 
 
