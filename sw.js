@@ -1,6 +1,6 @@
 /* ===== Service Worker: cache offline + control total ===== */
 
-const CACHE_NAME = "asistencia-v2"; // ⬅️ sube versión cuando cambies algo
+const CACHE_NAME = "asistencia-v3"; // ⬅️ sube versión cuando cambies assets importantes
 const ASSETS = [
   "./",
   "./index.html",
@@ -28,13 +28,11 @@ self.addEventListener("install", (event) => {
 self.addEventListener("activate", (event) => {
   event.waitUntil(
     (async () => {
-      // 🧹 borrar TODAS las caches viejas
       const keys = await caches.keys();
       await Promise.all(
         keys.map(k => (k !== CACHE_NAME ? caches.delete(k) : null))
       );
 
-      // 🧠 tomar control inmediato de todas las pestañas
       await self.clients.claim();
     })()
   );
@@ -47,27 +45,49 @@ self.addEventListener("fetch", (event) => {
   // Solo GET
   if (req.method !== "GET") return;
 
-  // ✅ Evitar cachear esquemas raros (chrome-extension:, data:, blob:, etc.)
   const url = new URL(req.url);
+
+  // ✅ solo http/https
   if (url.protocol !== "http:" && url.protocol !== "https:") return;
 
-  // ✅ NO cachear Google Apps Script (evita errores CORS/opaque y ensuciar cache)
+  // ✅ no cachear Google Apps Script
   if (url.hostname.includes("script.google.com")) {
-    // solo pasa directo a red
     event.respondWith(fetch(req));
     return;
   }
 
+  const isSameOrigin = url.origin === self.location.origin;
+  const isHTMLNavigation =
+    req.mode === "navigate" ||
+    (req.headers.get("accept") || "").includes("text/html") ||
+    url.pathname.endsWith("/index.html") ||
+    url.pathname === "/" ||
+    url.pathname.endsWith("/");
+
+  // ✅ HTML / navegación: RED PRIMERO, cache como respaldo
+  if (isSameOrigin && isHTMLNavigation) {
+    event.respondWith(
+      fetch(req)
+        .then((res) => {
+          if (res && res.ok && res.type !== "opaque") {
+            const copy = res.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(req, copy));
+          }
+          return res;
+        })
+        .catch(() => caches.match(req).then(cached => cached || caches.match("./index.html")))
+    );
+    return;
+  }
+
+  // ✅ resto de assets: CACHE PRIMERO
   event.respondWith(
     caches.match(req).then((cached) => {
       return (
         cached ||
         fetch(req)
           .then((res) => {
-            // ✅ Solo cachear respuestas válidas y del mismo origen (más seguro)
             if (!res || !res.ok) return res;
-
-            // Si la respuesta es opaque (no-cors), mejor no cachearla
             if (res.type === "opaque") return res;
 
             const copy = res.clone();
@@ -80,19 +100,22 @@ self.addEventListener("fetch", (event) => {
   );
 });
 
-
-/* ===== KILL SWITCH (desde la app) ===== */
+/* ===== MENSAJES DESDE LA APP ===== */
 self.addEventListener("message", (event) => {
-  if (event.data === "KILL_SW") {
+  const msg = event.data;
+
+  if (msg === "KILL_SW") {
     self.registration.unregister().then(() => {
       self.clients.matchAll({ includeUncontrolled: true }).then(clients => {
         clients.forEach(client => {
-          // 🔄 fuerza recarga sin SW
           client.navigate(client.url);
         });
       });
     });
+    return;
+  }
+
+  if (msg && msg.type === "SKIP_WAITING") {
+    self.skipWaiting();
   }
 });
-
-
