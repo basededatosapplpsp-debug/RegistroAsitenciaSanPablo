@@ -13991,6 +13991,8 @@ function setRecordsOpen(open) {
 setRecordsOpen(false);
 btnToggleRecords.addEventListener("click", () => setRecordsOpen(recordsPanel.hidden));
 
+const APP_BUILD = "2026-04-10-01";
+
 // ======= Reset / Refresh Service Worker + Cache =======
 async function hardRefreshPWA() {
   try {
@@ -14026,10 +14028,70 @@ if (btnLogout) {
 }
 
 
-// ======= SW register =======
+// ======= SW register + auto refresh por build =======
 if ("serviceWorker" in navigator) {
+  let __swReloading = false;
+  let __autoBuildRefreshRunning = false;
+
+  async function checkAppBuildAndRefresh_() {
+    try {
+      const savedBuild = localStorage.getItem("APP_BUILD_INSTALLED") || "";
+
+      // primera vez: solo guardar versión actual
+      if (!savedBuild) {
+        localStorage.setItem("APP_BUILD_INSTALLED", APP_BUILD);
+        return;
+      }
+
+      // si cambió el build del HTML, hacer hard refresh una sola vez
+      if (savedBuild !== APP_BUILD) {
+        if (__autoBuildRefreshRunning) return;
+        __autoBuildRefreshRunning = true;
+
+        localStorage.setItem("APP_BUILD_INSTALLED", APP_BUILD);
+        await hardRefreshPWA();
+      }
+    } catch {}
+  }
+
+  async function registerAndUpdateSW_() {
+    try {
+      const reg = await navigator.serviceWorker.register(`./sw.js?v=${encodeURIComponent(APP_BUILD)}`);
+      try { await reg.update(); } catch {}
+
+      if (reg.waiting) {
+        reg.waiting.postMessage({ type: "SKIP_WAITING" });
+      }
+
+      reg.addEventListener("updatefound", () => {
+        const newWorker = reg.installing;
+        if (!newWorker) return;
+
+        newWorker.addEventListener("statechange", () => {
+          if (newWorker.state === "installed" && navigator.serviceWorker.controller) {
+            newWorker.postMessage({ type: "SKIP_WAITING" });
+          }
+        });
+      });
+    } catch {}
+  }
+
+  navigator.serviceWorker.addEventListener("controllerchange", () => {
+    if (__swReloading) return;
+    __swReloading = true;
+    location.reload();
+  });
+
   window.addEventListener("load", async () => {
-    try { await navigator.serviceWorker.register("./sw.js"); } catch {}
+    await registerAndUpdateSW_();
+    await checkAppBuildAndRefresh_();
+  });
+
+  document.addEventListener("visibilitychange", async () => {
+    if (document.visibilityState === "visible") {
+      await registerAndUpdateSW_();
+      await checkAppBuildAndRefresh_();
+    }
   });
 }
 
