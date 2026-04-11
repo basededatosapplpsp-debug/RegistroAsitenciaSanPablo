@@ -1825,7 +1825,7 @@ input[list]::-moz-list-dropdown {
   </main>
 
   <footer class="footer">
-    <span class="muted small">APP • Desarrollada por: Ing. Deimer Herrera • v.Beta</span>
+    <span class="muted small">APP • Desarrollada por: Deimer Herrera • v.Beta</span>
   </footer>
 
 <!-- ======= MODAL QR SCAN ======= -->
@@ -12507,27 +12507,54 @@ async function gsGetList(limit = 50, monthYYYYMM = "", teacher = "") {
   return data.records || [];
 }
 
-
+function ensureOnlineOrThrow_() {
+  if (typeof navigator !== "undefined" && navigator.onLine === false) {
+    throw new Error("NO_INTERNET");
+  }
+}
 
 
 async function gsRegister(payload) {
-  const res = await fetch(GS_WEBAPP_URL, {
-    method: "POST",
-    // NO headers: evita preflight CORS
-    body: JSON.stringify({ ...payload, key: GS_API_KEY })
-  });
+  ensureOnlineOrThrow_();
+
+  let res;
+  try {
+    res = await fetch(GS_WEBAPP_URL, {
+      method: "POST",
+      // NO headers: evita preflight CORS
+      body: JSON.stringify({ ...payload, key: GS_API_KEY })
+    });
+  } catch (e) {
+    const msg = String(e && e.message ? e.message : e).toLowerCase();
+
+    const isOffline =
+      (typeof navigator !== "undefined" && navigator.onLine === false) ||
+      msg.includes("failed to fetch") ||
+      msg.includes("networkerror") ||
+      msg.includes("load failed") ||
+      msg.includes("err_internet_disconnected") ||
+      msg.includes("err_network_changed");
+
+    if (isOffline) {
+      throw new Error("NO_INTERNET");
+    }
+
+    throw e;
+  }
 
   let data = null;
-  try { data = await res.json(); }
-  catch { throw new Error("Respuesta inválida del servidor"); }
-
-  // ✅ IMPORTANTE: si el servidor envía msg, lo usamos
-  if (!data.ok) {
-    throw new Error(data.msg || data.error || "gs_register_failed");
+  try {
+    data = await res.json();
+  } catch {
+    throw new Error("Respuesta inválida del servidor");
   }
+
+  if (!data || !data.ok) {
+    throw new Error(data?.msg || data?.error || "gs_register_failed");
+  }
+
   return data;
 }
-
 
 async function gsRequestDeviceAuth(payload) {
   const res = await fetch(GS_WEBAPP_URL, {
@@ -13544,6 +13571,15 @@ async function register(type) {
     return;
   }
 
+  if (typeof navigator !== "undefined" && navigator.onLine === false) {
+    setStatus(
+      "bad",
+      "Sin conexión",
+      "No se puede registrar sin internet. Activa datos o Wi-Fi y vuelve a intentar."
+    );
+    return;
+  }
+
   const profile = requireLogin();
   if (!profile) return;
 
@@ -13695,8 +13731,12 @@ async function register(type) {
       msg.includes("err_internet_disconnected") ||
       msg.includes("err_network_changed");
 
-    if (isOffline) {
-      setStatus("bad", "Sin conexión", "Revisa tu conexión a internet e intenta de nuevo.");
+    if (isOffline || msg.includes("no_internet")) {
+      setStatus(
+        "bad",
+        "Sin conexión",
+        "No se pudo registrar porque no hay internet. Activa datos o Wi-Fi y vuelve a intentar."
+      );
       return;
     }
 
