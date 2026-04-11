@@ -1,6 +1,6 @@
 {
-  "name": "Asistencia Docentes",
-  "short_name": "Asistencia",
+  "name": "Asistencia Docentes LPSP",
+  "short_name": "AsistenciaLPSP",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
