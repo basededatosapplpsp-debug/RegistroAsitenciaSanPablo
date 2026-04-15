@@ -3665,7 +3665,7 @@ function normalizeDateYYYYMMDD(v) {
 }
 
 function updateDailyButtonsState(records) {
-  // En admin, no se usan estos botones (y además el input dice ADMINISTRADOR)
+  // En admin no se usan estos botones
   if (isAdminMode()) {
     btnEntrada.disabled = true;
     btnSalida.disabled = true;
@@ -3673,48 +3673,84 @@ function updateDailyButtonsState(records) {
     return;
   }
 
-  
-
   const p = loadProfile();
   if (!p) return;
 
   const today = todayStr();
 
-  // ✅ OJO: "records" aquí YA viene filtrado al docente logueado (en modo normal)
+  function recordDate_(r) {
+    const raw =
+      String(
+        r?.date ??
+        r?.iso ??
+        r?.datetime ??
+        r?.created_at ??
+        r?.createdAt ??
+        r?.timestamp ??
+        ""
+      ).trim();
+
+    if (!raw) return "";
+
+    // yyyy-mm-dd
+    if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) return raw;
+
+    // dd/mm/yyyy
+    if (/^\d{2}\/\d{2}\/\d{4}$/.test(raw)) {
+      const [dd, mm, yyyy] = raw.split("/");
+      return `${yyyy}-${mm}-${dd}`;
+    }
+
+    // ISO (evita error por zona horaria)
+    if (/^\d{4}-\d{2}-\d{2}T/.test(raw)) {
+      return raw.slice(0, 10);
+    }
+
+    // fallback
+    const d = new Date(raw);
+    if (!isNaN(d.getTime())) {
+      return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+    }
+
+    return "";
+  }
+
   hasEntradaToday = (records || []).some(r =>
-    String(r.type || "").toUpperCase() === "ENTRADA" &&
-    normalizeDateYYYYMMDD(r.date) === today
+    String(r?.type || "").trim().toUpperCase() === "ENTRADA" &&
+    recordDate_(r) === today
   );
 
   hasSalidaToday = (records || []).some(r =>
-    String(r.type || "").toUpperCase() === "SALIDA" &&
-    normalizeDateYYYYMMDD(r.date) === today
+    String(r?.type || "").trim().toUpperCase() === "SALIDA" &&
+    recordDate_(r) === today
   );
 
-  // ✅ Estados:
-  // 1) Ninguno: Entrada ON, Salida OFF
-  // 2) Solo entrada: Entrada OFF, Salida ON
-  // 3) Entrada + salida: ambos OFF hasta mañana
+  // Estado 1: no hay nada hoy
   if (!hasEntradaToday && !hasSalidaToday) {
     btnEntrada.disabled = false;
-
     btnSalida.disabled = true;
     btnSalida.classList.add("is-inactive");
+
+    saveAttendanceButtonsState_(); // ✅ AÑADIDO
     return;
   }
 
+  // Estado 2: ya hay entrada, falta salida
   if (hasEntradaToday && !hasSalidaToday) {
     btnEntrada.disabled = true;
-
     btnSalida.disabled = false;
     btnSalida.classList.remove("is-inactive");
+
+    saveAttendanceButtonsState_(); // ✅ AÑADIDO
     return;
   }
 
-  // ✅ Si ya están ambas hoy:
+  // Estado 3: ya hay entrada y salida hoy
   btnEntrada.disabled = true;
   btnSalida.disabled = true;
   btnSalida.classList.remove("is-inactive");
+
+  saveAttendanceButtonsState_(); // ✅ AÑADIDO
 }
 
 
@@ -3740,6 +3776,58 @@ function escapeHtml(s){
   return String(s).replace(/[&<>"']/g, (c)=>({
     "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
   }[c]));
+}
+
+
+
+function attendanceButtonsStateKey_() {
+  const p = loadProfile();
+  const teacher = normalizeKey((p && p.name) || "anon");
+  return `attendance_buttons_state_v1|${teacher}|${todayStr()}`;
+}
+
+function saveAttendanceButtonsState_() {
+  try {
+    localStorage.setItem(attendanceButtonsStateKey_(), JSON.stringify({
+      date: todayStr(),
+      hasEntradaToday: !!hasEntradaToday,
+      hasSalidaToday: !!hasSalidaToday
+    }));
+  } catch {}
+}
+
+function restoreAttendanceButtonsState_() {
+  try {
+    const raw = localStorage.getItem(attendanceButtonsStateKey_());
+    if (!raw) return false;
+
+    const data = JSON.parse(raw);
+    if (!data || data.date !== todayStr()) return false;
+
+    hasEntradaToday = !!data.hasEntradaToday;
+    hasSalidaToday = !!data.hasSalidaToday;
+
+    if (!hasEntradaToday && !hasSalidaToday) {
+      btnEntrada.disabled = false;
+      btnSalida.disabled = true;
+      btnSalida.classList.add("is-inactive");
+      return true;
+    }
+
+    if (hasEntradaToday && !hasSalidaToday) {
+      btnEntrada.disabled = true;
+      btnSalida.disabled = false;
+      btnSalida.classList.remove("is-inactive");
+      return true;
+    }
+
+    btnEntrada.disabled = true;
+    btnSalida.disabled = true;
+    btnSalida.classList.remove("is-inactive");
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 // ======= CACHE + TIMEOUT LIST =======
@@ -8910,6 +8998,10 @@ function applySessionUI(profile) {
 
     // mostrar botón/menu solo si hay sesión
     if (btnUserMenu) btnUserMenu.hidden = false;
+
+    // ✅ RESTAURAR ESTADO VISUAL DE BOTONES
+    restoreAttendanceButtonsState_();
+
   } else {
     teacherNameEl.disabled = false;
     teacherNameEl.classList.remove("is-locked");
@@ -8920,7 +9012,6 @@ function applySessionUI(profile) {
     setMenuOpen(false);
   }
 }
-
 
 
 
