@@ -1620,6 +1620,33 @@ input[list]::-moz-list-dropdown {
 }
 
 
+.badge{
+  font-size:12px;
+  padding:4px 8px;
+  border-radius:999px;
+  border:1px solid var(--line);
+  font-weight:800;
+}
+.badge-ontime{ background: rgba(34,197,94,.15); color:#22c55e; border-color: rgba(34,197,94,.35); }
+.badge-late{ background: rgba(239,68,68,.15); color:#ef4444; border-color: rgba(239,68,68,.35); }
+.badge-neutral{ background: rgba(255,255,255,.08); color: var(--text); }
+
+/* ✅ NUEVOS */
+.badge-soft{
+  background: rgba(245,158,11,.15);
+  color: #f59e0b;
+  border-color: rgba(245,158,11,.35);
+}
+
+.badge-extra{
+  background: rgba(96,165,250,.15);
+  color: #60a5fa;
+  border-color: rgba(96,165,250,.35);
+}
+
+.table tr.soft td{ background: rgba(245,158,11,.08); }
+.table tr.extra td{ background: rgba(96,165,250,.08); }
+
 </style>
 </head>
 
@@ -4112,12 +4139,30 @@ function timeToMinutes(hhmmss) {
   return hh * 60 + mm;
 }
 
-function isEarlyExitRecord(r) {
-  if (!r || String(r.type || "").toUpperCase() !== "SALIDA") return false;
+function getExitVisualState_(r) {
+  if (!r || String(r.type || "").toUpperCase() !== "SALIDA") return "normal";
+
   const t = timeToMinutes(r.time);
-  const limit = timeToMinutes(EXIT_OK_HHMM_CLIENT);
-  if (t == null || limit == null) return false;
-  return t < limit;
+  const limit = timeToMinutes(EXIT_OK_HHMM_CLIENT); // hora configurada
+  const extraStart = timeToMinutes("16:30");        // 4:30 PM
+
+  if (t == null || limit == null) return "normal";
+
+  // antes de la hora configurada
+  if (t < limit) return "early";
+
+  // hasta 5 minutos después de la hora configurada => verde
+  if (t <= (limit + 5)) return "ontime";
+
+  // desde las 4:30 PM en adelante => azul + EXTRA
+  if (extraStart != null && t >= extraStart) return "extra";
+
+  // después de los 5 min y antes de 4:30 => naranja, sigue diciendo A TIEMPO
+  return "soft";
+}
+
+function isEarlyExitRecord(r) {
+  return getExitVisualState_(r) === "early";
 }
 
 
@@ -9555,45 +9600,60 @@ function closeAdminAssistModal() {
 }
 
 function renderAdminTeacherRecords(teacher, records) {
+  const list = Array.isArray(records) ? records : [];
+
   adminTeacherTitle.textContent = teacher || "—";
 
-  // contadores
-  const lateCount = (records || []).filter(r =>
+  const lateCount = list.filter(r =>
     String(r.type || "").toUpperCase() === "ENTRADA" && !!r.late
   ).length;
 
-  const earlyExitCount = (records || []).filter(isEarlyExitRecord).length;
+  const earlyExitCount = list.filter(isEarlyExitRecord).length;
 
   adminLateCountEl.textContent = `Entradas tardes: ${lateCount}`;
   adminEarlyExitCountEl.textContent = `Salidas antes: ${earlyExitCount}`;
 
-  if (!records || !records.length) {
+  if (!list.length) {
     adminAssistList.innerHTML = `<div class="muted small">No hay registros para este docente.</div>`;
     return;
   }
 
-  adminAssistList.innerHTML = records.map(r => {
+  adminAssistList.innerHTML = list.map(r => {
     const type = String(r.type || "").toUpperCase();
-    const isLate = (type === "ENTRADA" && !!r.late);
-    const isEarly = isEarlyExitRecord(r);
-
-    // ✅ NTC SOLO si viene explícito desde el servidor (por NOTE = "NTC")
     const ntc = isNTCRecord(r);
     const ntcTxt = ntc ? " • NTC" : "";
+    const exitState = getExitVisualState_(r);
 
     const cls = (type === "ENTRADA")
-      ? (isLate ? "record-card late" : "record-card ontime")
-      : (isEarly ? "record-card late" : "record-card ontime");
+      ? (r.late ? "record-card late" : "record-card ontime")
+      : (type === "SALIDA")
+          ? (
+              exitState === "early" ? "record-card late" :
+              exitState === "ontime" ? "record-card ontime" :
+              exitState === "soft" ? "record-card soft" :
+              exitState === "extra" ? "record-card extra" :
+              "record-card"
+            )
+          : "record-card";
 
     const badge = (type === "ENTRADA")
-      ? (isLate
+      ? (r.late
           ? `<span class="badge badge-late">ENTRADA • TARDE${ntcTxt}</span>`
           : `<span class="badge badge-ontime">ENTRADA • A TIEMPO${ntcTxt}</span>`
         )
-      : (isEarly
-          ? `<span class="badge badge-late">SALIDA • ANTES${ntcTxt}</span>`
-          : `<span class="badge badge-ontime">SALIDA • OK${ntcTxt}</span>`
-        );
+      : (type === "SALIDA")
+          ? (
+              exitState === "early"
+                ? `<span class="badge badge-late">SALIDA • ANTES${ntcTxt}</span>`
+                : exitState === "ontime"
+                  ? `<span class="badge badge-ontime">SALIDA • A TIEMPO${ntcTxt}</span>`
+                  : exitState === "soft"
+                    ? `<span class="badge badge-soft">SALIDA • A TIEMPO${ntcTxt}</span>`
+                    : exitState === "extra"
+                      ? `<span class="badge badge-extra">SALIDA • EXTRA${ntcTxt}</span>`
+                      : `<span class="badge badge-neutral">SALIDA${ntcTxt}</span>`
+            )
+          : `<span class="badge badge-neutral">${type}${ntcTxt}</span>`;
 
     return `
       <div class="${cls}" style="margin-bottom:10px;">
@@ -13115,6 +13175,7 @@ function render(records) {
     tbody.innerHTML = filtered.map(r => {
       const type = String(r.type || "").toUpperCase();
       const ntc = isNTCRecord(r);
+      const exitState = getExitVisualState_(r);
 
       const dist = ntc
         ? "NTC"
@@ -13123,62 +13184,103 @@ function render(records) {
       const acc = ntc
         ? "NTC"
         : (r.accuracy_m ?? r.acc ?? r.accuracy ?? "—");
-const ntcTxt = ntc ? " • NTC" : "";
 
-const typeHtml = (type === "ENTRADA")
-  ? (r.late
-      ? `<span class="badge badge-late">ENTRADA • TARDE${ntcTxt}</span>`
-      : `<span class="badge badge-ontime">ENTRADA • A TIEMPO${ntcTxt}</span>`
-    )
-  : (type === "SALIDA")
-      ? (isEarlyExitRecord(r)
-          ? `<span class="badge badge-late">SALIDA • ANTES${ntcTxt}</span>`
-          : `<span class="badge badge-ontime">SALIDA • OK${ntcTxt}</span>`
-        )
-      : `<span class="badge badge-neutral">${type}${ntcTxt}</span>`;
+      const ntcTxt = ntc ? " • NTC" : "";
 
-const rowCls =
-  (type === "ENTRADA")
-    ? (r.late ? "late" : "ontime")
-    : (type === "SALIDA")
-        ? (isEarlyExitRecord(r) ? "late" : "ontime")
-        : "";
+      const typeHtml = (type === "ENTRADA")
+        ? (r.late
+            ? `<span class="badge badge-late">ENTRADA • TARDE${ntcTxt}</span>`
+            : `<span class="badge badge-ontime">ENTRADA • A TIEMPO${ntcTxt}</span>`
+          )
+        : (type === "SALIDA")
+            ? (
+                exitState === "early"
+                  ? `<span class="badge badge-late">SALIDA • ANTES${ntcTxt}</span>`
+                  : exitState === "ontime"
+                    ? `<span class="badge badge-ontime">SALIDA • A TIEMPO${ntcTxt}</span>`
+                    : exitState === "soft"
+                      ? `<span class="badge badge-soft">SALIDA • A TIEMPO${ntcTxt}</span>`
+                      : exitState === "extra"
+                        ? `<span class="badge badge-extra">SALIDA • EXTRA${ntcTxt}</span>`
+                        : `<span class="badge badge-neutral">SALIDA${ntcTxt}</span>`
+              )
+            : `<span class="badge badge-neutral">${type}${ntcTxt}</span>`;
 
-return `
-  <tr class="${rowCls}">
-    <td>${escapeHtml(r.date)}</td>
-    <td>${escapeHtml(r.time)}</td>
-    <td>${escapeHtml(r.teacher)}</td>
-    <td>${typeHtml}</td>
-    <td>${escapeHtml(dist)}</td>
-    <td>${escapeHtml(acc)}</td>
-  </tr>
-`;
+      const rowCls =
+        (type === "ENTRADA")
+          ? (r.late ? "late" : "ontime")
+          : (type === "SALIDA")
+              ? (
+                  exitState === "early" ? "late" :
+                  exitState === "ontime" ? "ontime" :
+                  exitState === "soft" ? "soft" :
+                  exitState === "extra" ? "extra" :
+                  ""
+                )
+              : "";
+
+      return `
+        <tr class="${rowCls}">
+          <td>${escapeHtml(r.date)}</td>
+          <td>${escapeHtml(r.time)}</td>
+          <td>${escapeHtml(r.teacher)}</td>
+          <td>${typeHtml}</td>
+          <td>${escapeHtml(dist)}</td>
+          <td>${escapeHtml(acc)}</td>
+        </tr>
+      `;
     }).join("");
 
     // ======= CARDS (mobile) =======
     if (!filtered.length) {
       recordsList.innerHTML = `<div class="muted small">No hay registros para el filtro seleccionado.</div>`;
-      return; // ✅ en admin no tocamos updateSalidaState()
+      return;
     }
 
     recordsList.innerHTML = filtered.map(r => {
       const type = String(r.type || "").toUpperCase();
       const ntc = isNTCRecord(r);
       const ntcTxt = ntc ? " • NTC" : "";
+      const exitState = getExitVisualState_(r);
 
-      const badgeClass = (type === "ENTRADA")
-        ? (r.late ? "badge badge-late" : "badge badge-ontime")
-        : "badge badge-neutral";
+      const badgeClass =
+        (type === "ENTRADA")
+          ? (r.late ? "badge badge-late" : "badge badge-ontime")
+          : (type === "SALIDA")
+              ? (
+                  exitState === "early" ? "badge badge-late" :
+                  exitState === "ontime" ? "badge badge-ontime" :
+                  exitState === "soft" ? "badge badge-soft" :
+                  exitState === "extra" ? "badge badge-extra" :
+                  "badge badge-neutral"
+                )
+              : "badge badge-neutral";
 
-      const rowClass = (type === "ENTRADA")
-        ? (r.late ? "record-card late" : "record-card ontime")
-        : "record-card";
+      const rowClass =
+        (type === "ENTRADA")
+          ? (r.late ? "record-card late" : "record-card ontime")
+          : (type === "SALIDA")
+              ? (
+                  exitState === "early" ? "record-card late" :
+                  exitState === "ontime" ? "record-card ontime" :
+                  exitState === "soft" ? "record-card soft" :
+                  exitState === "extra" ? "record-card extra" :
+                  "record-card"
+                )
+              : "record-card";
 
       const badgeText =
         (type === "ENTRADA")
           ? `${type}${r.late ? " • TARDE" : " • A TIEMPO"}${ntcTxt}`
-          : `${type}${ntcTxt}`;
+          : (type === "SALIDA")
+              ? (
+                  exitState === "early"
+                    ? `${type} • ANTES${ntcTxt}`
+                    : exitState === "extra"
+                      ? `${type} • EXTRA${ntcTxt}`
+                      : `${type} • A TIEMPO${ntcTxt}`
+                )
+              : `${type}${ntcTxt}`;
 
       return `
         <div class="${rowClass}">
@@ -13193,10 +13295,10 @@ return `
       `;
     }).join("");
 
-    return; // ✅ admin termina aquí
+    return;
   }
 
-  // ✅ Docente: solo sus registros (como lo tenías)
+  // ✅ Docente: solo sus registros
   const myNameKey = normalizeKey(p && p.name ? p.name : "");
   const filtered = myNameKey
     ? __recordsAllRaw.filter(r => normalizeKey(r.teacher) === myNameKey)
@@ -13218,6 +13320,7 @@ return `
   tbody.innerHTML = filtered.map(r => {
     const type = String(r.type || "").toUpperCase();
     const ntc = isNTCRecord(r);
+    const exitState = getExitVisualState_(r);
 
     const dist = ntc
       ? "NTC"
@@ -13227,43 +13330,56 @@ return `
       ? "NTC"
       : (r.accuracy_m ?? r.acc ?? r.accuracy ?? "—");
 
- const ntcTxt = ntc ? " • NTC" : "";
+    const ntcTxt = ntc ? " • NTC" : "";
 
-const typeHtml = (type === "ENTRADA")
-  ? (r.late
-      ? `<span class="badge badge-late">ENTRADA • TARDE${ntcTxt}</span>`
-      : `<span class="badge badge-ontime">ENTRADA • A TIEMPO${ntcTxt}</span>`
-    )
-  : (type === "SALIDA")
-      ? (isEarlyExitRecord(r)
-          ? `<span class="badge badge-late">SALIDA • ANTES${ntcTxt}</span>`
-          : `<span class="badge badge-ontime">SALIDA • OK${ntcTxt}</span>`
+    const typeHtml = (type === "ENTRADA")
+      ? (r.late
+          ? `<span class="badge badge-late">ENTRADA • TARDE${ntcTxt}</span>`
+          : `<span class="badge badge-ontime">ENTRADA • A TIEMPO${ntcTxt}</span>`
         )
-      : `<span class="badge badge-neutral">${type}${ntcTxt}</span>`;
+      : (type === "SALIDA")
+          ? (
+              exitState === "early"
+                ? `<span class="badge badge-late">SALIDA • ANTES${ntcTxt}</span>`
+                : exitState === "ontime"
+                  ? `<span class="badge badge-ontime">SALIDA • A TIEMPO${ntcTxt}</span>`
+                  : exitState === "soft"
+                    ? `<span class="badge badge-soft">SALIDA • A TIEMPO${ntcTxt}</span>`
+                    : exitState === "extra"
+                      ? `<span class="badge badge-extra">SALIDA • EXTRA${ntcTxt}</span>`
+                      : `<span class="badge badge-neutral">SALIDA${ntcTxt}</span>`
+            )
+          : `<span class="badge badge-neutral">${type}${ntcTxt}</span>`;
 
-const rowCls =
-(type === "ENTRADA")
-  ? (r.late ? "late" : "ontime")
-  : (type === "SALIDA")
-      ? (isEarlyExitRecord(r) ? "late" : "ontime")
-      : "";
+    const rowCls =
+      (type === "ENTRADA")
+        ? (r.late ? "late" : "ontime")
+        : (type === "SALIDA")
+            ? (
+                exitState === "early" ? "late" :
+                exitState === "ontime" ? "ontime" :
+                exitState === "soft" ? "soft" :
+                exitState === "extra" ? "extra" :
+                ""
+              )
+            : "";
 
-return `
-  <tr class="${rowCls}">
-    <td>${escapeHtml(r.date)}</td>
-    <td>${escapeHtml(r.time)}</td>
-    <td>${escapeHtml(r.teacher)}</td>
-    <td>${typeHtml}</td>
-    <td>${escapeHtml(dist)}</td>
-    <td>${escapeHtml(acc)}</td>
-  </tr>
-`;
+    return `
+      <tr class="${rowCls}">
+        <td>${escapeHtml(r.date)}</td>
+        <td>${escapeHtml(r.time)}</td>
+        <td>${escapeHtml(r.teacher)}</td>
+        <td>${typeHtml}</td>
+        <td>${escapeHtml(dist)}</td>
+        <td>${escapeHtml(acc)}</td>
+      </tr>
+    `;
   }).join("");
 
   // ======= CARDS (mobile) =======
   if (!filtered.length) {
-    recordsList.innerHTML = `<div class="muted small">No hay registros para este docente.</div>`;
-updateDailyButtonsState(filtered);
+    recordsList.innerHTML = `<div class="muted small">No hay registros aún.</div>`;
+    updateDailyButtonsState(filtered);
     return;
   }
 
@@ -13271,27 +13387,46 @@ updateDailyButtonsState(filtered);
     const type = String(r.type || "").toUpperCase();
     const ntc = isNTCRecord(r);
     const ntcTxt = ntc ? " • NTC" : "";
+    const exitState = getExitVisualState_(r);
 
-const badgeClass =
-  (type === "ENTRADA")
-    ? (r.late ? "badge badge-late" : "badge badge-ontime")
-    : (type === "SALIDA")
-        ? (isEarlyExitRecord(r) ? "badge badge-late" : "badge badge-ontime")
-        : "badge badge-neutral";
+    const badgeClass =
+      (type === "ENTRADA")
+        ? (r.late ? "badge badge-late" : "badge badge-ontime")
+        : (type === "SALIDA")
+            ? (
+                exitState === "early" ? "badge badge-late" :
+                exitState === "ontime" ? "badge badge-ontime" :
+                exitState === "soft" ? "badge badge-soft" :
+                exitState === "extra" ? "badge badge-extra" :
+                "badge badge-neutral"
+              )
+            : "badge badge-neutral";
 
-const rowClass =
-  (type === "ENTRADA")
-    ? (r.late ? "record-card late" : "record-card ontime")
-    : (type === "SALIDA")
-        ? (isEarlyExitRecord(r) ? "record-card late" : "record-card ontime")
-        : "record-card";
+    const rowClass =
+      (type === "ENTRADA")
+        ? (r.late ? "record-card late" : "record-card ontime")
+        : (type === "SALIDA")
+            ? (
+                exitState === "early" ? "record-card late" :
+                exitState === "ontime" ? "record-card ontime" :
+                exitState === "soft" ? "record-card soft" :
+                exitState === "extra" ? "record-card extra" :
+                "record-card"
+              )
+            : "record-card";
 
-const badgeText =
-  (type === "ENTRADA")
-    ? `${type}${r.late ? " • TARDE" : " • A TIEMPO"}${ntcTxt}`
-    : (type === "SALIDA")
-        ? `${type}${isEarlyExitRecord(r) ? " • ANTES" : " • A TIEMPO"}${ntcTxt}`
-        : `${type}${ntcTxt}`;
+    const badgeText =
+      (type === "ENTRADA")
+        ? `${type}${r.late ? " • TARDE" : " • A TIEMPO"}${ntcTxt}`
+        : (type === "SALIDA")
+            ? (
+                exitState === "early"
+                  ? `${type} • ANTES${ntcTxt}`
+                  : exitState === "extra"
+                    ? `${type} • EXTRA${ntcTxt}`
+                    : `${type} • A TIEMPO${ntcTxt}`
+              )
+            : `${type}${ntcTxt}`;
 
     return `
       <div class="${rowClass}">
@@ -13306,7 +13441,7 @@ const badgeText =
     `;
   }).join("");
 
-updateDailyButtonsState(filtered);
+  updateDailyButtonsState(filtered);
 }
 
   function filterToMonth_(records, monthYYYYMM) {
@@ -14289,14 +14424,7 @@ window.addEventListener("error", (e) => {
 document.addEventListener("DOMContentLoaded", () => {
   // precarga en segundo plano (no rompe si aún no hay login)
   prewarmCoursesAndStudents_();
-startDeviceAuthWatcher_();
-  // si ya hay perfil guardado, deja listos los combos también
-  try {
-    const p = (typeof loadProfile === "function") ? loadProfile() : null;
-    if (p && p.course) initAllModalCourses_();
-  } catch {}
 });
-
 
 
 // 🔄 actualización automática cada 25 segundos
