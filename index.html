@@ -1796,10 +1796,10 @@ input[list]::-moz-list-dropdown {
 
     <!-- ===== Panel de registros (colapsable) ===== -->
     <section class="card collapse" id="recordsPanel" hidden>
-      <div class="row">
-        <button id="btnExport" class="btn btn-ghost">Exportar CSV</button>
-          <button id="btnExportXlsx" class="btn btn-ghost" hidden>Excel (con formato)</button>
-      </div>
+   <div class="row">
+  <button id="btnExport" class="btn btn-ghost">Excel (mi registro)</button>
+  <button id="btnExportXlsx" class="btn btn-ghost" hidden>Excel (con formato)</button>
+</div>
 
 
 
@@ -4602,6 +4602,7 @@ async function initAdminRecordsPanelUI() {
   const on = isAdminMode();
 
   if (btnExportXlsx) btnExportXlsx.hidden = !on;
+  if (btnExport) btnExport.hidden = !!on;
 
   // ✅ SOLO ADMIN ve filtros
   adminRecordsFilters.hidden = !on;
@@ -14125,62 +14126,62 @@ async function ensureWhatsAppToOnLogin_(email, deviceId) {
 }
 
 
-
-
-
-// ======= CSV (desde lo que se ve en la app) =======
-function csvCell(v){
-  if (v === null || v === undefined) return "";
-  const s = String(v);
-  if (/[",\n]/.test(s)) return `"${s.replace(/"/g,'""')}"`;
-  return s;
-}
-
-
-
-
-
-function exportCSV() {
-  // En admin, cachedRecords ya representa:
-  // - Todos (si selector = __ALL__)
-  // - Un docente (si selector = ese nombre)
-  // En modo normal, cachedRecords es el docente logueado.
-  const dataToExport = cachedRecords || [];
-
-  if (!dataToExport.length) {
-    setStatus("warn", "Sin datos", "No hay registros para exportar.");
+async function downloadUserExcel() {
+  if (isAdminMode()) {
+    setStatus("warn", "Modo administrador", "Usa el botón Excel (con formato) para exportación admin.");
     return;
   }
 
-  const header = ["teacher","type","date","time","late","iso"];
-  const lines = [header.join(",")].concat(
-    dataToExport.map(r => header.map(k => csvCell(r[k])).join(","))
-  );
+  const p = loadProfile();
+  const teacher = p && p.name ? String(p.name).trim() : "";
+  const month = monthKeyFromDate(new Date());
 
-  const blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8" });
-  const url = URL.createObjectURL(blob);
-
-  // nombre del archivo: admin incluye mes y (si aplica) docente
-  let fname = `asistencia_${new Date().toISOString().slice(0,10)}`;
-
-  if (isAdminMode()) {
-    const month = recordsMonthSelect ? String(recordsMonthSelect.value || "").trim() : "";
-    const who = recordsTeacherSelect ? String(recordsTeacherSelect.value || "__ALL__") : "__ALL__";
-    if (month) fname += `_${month}`;
-    if (who && who !== "__ALL__") fname += `_${who.replace(/\s+/g, "_")}`;
+  if (!teacher) {
+    setStatus("warn", "Sin perfil", "No encontré el nombre del docente logueado.");
+    return;
   }
 
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = `${fname}.csv`;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  URL.revokeObjectURL(url);
+  try {
+    setLoading(true, "Generando Excel…", "Preparando tu registro para descarga.");
 
-  setStatus("", "Exportado", "CSV descargado.");
+    const url = new URL(GS_WEBAPP_URL);
+    url.searchParams.set("action", "export_xlsx_link");
+    url.searchParams.set("key", GS_API_KEY);
+    url.searchParams.set("month", month);
+    url.searchParams.set("teacher", teacher);
+
+    const res = await fetch(url.toString(), { method: "GET" });
+
+    if (!res.ok) {
+      let msg = "No se pudo generar el Excel.";
+      try {
+        const errData = await res.json();
+        msg = errData.msg || errData.error || msg;
+      } catch (_) {}
+      throw new Error(msg);
+    }
+
+    const blob = await res.blob();
+
+    const safeTeacher = teacher.replace(/\s+/g, "_");
+    const filename = `asistencia_${month}_${safeTeacher}.xlsx`;
+
+    const blobUrl = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = blobUrl;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(blobUrl);
+
+    setStatus("", "Listo", "Excel descargado ✅");
+  } catch (e) {
+    setStatus("bad", "Error", String(e && e.message ? e.message : e));
+  } finally {
+    setLoading(false);
+  }
 }
-
 
 async function downloadAdminExcel() {
   if (!isAdminMode()) {
@@ -14373,7 +14374,7 @@ if ("serviceWorker" in navigator) {
 btnEntrada.addEventListener("click", () => register("ENTRADA"));
 btnSalida.addEventListener("click",  () => register("SALIDA"));
 
-btnExport.addEventListener("click", exportCSV);
+btnExport.addEventListener("click", downloadUserExcel);
 
 
 
