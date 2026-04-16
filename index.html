@@ -557,36 +557,6 @@ h2{font-size:16px; margin:0 0 12px}
 }
 
 
-/* ===== Usuario: tarjeta superior sin acciones ===== */
-.user-welcome-box{
-  margin-top: 12px;
-  padding: 14px 16px;
-  border-radius: 16px;
-  border: 1px solid rgba(255,255,255,.10);
-  background:
-    linear-gradient(180deg, rgba(11,95,255,.12), rgba(11,95,255,.06));
-  box-shadow:
-    inset 0 1px 0 rgba(255,255,255,.05),
-    0 10px 24px rgba(0,0,0,.16);
-}
-
-.user-welcome-title{
-  font-size: 16px;
-  font-weight: 900;
-  letter-spacing: .2px;
-  margin-bottom: 4px;
-}
-
-.user-welcome-sub{
-  font-size: 13px;
-  line-height: 1.35;
-}
-
-/* Oculta acciones visualmente cuando el body NO es admin */
-body:not(.is-admin) #registerActions{
-  display: none !important;
-}
-
 /* ======= LOADER GLOBAL (overlay moderno) ======= */
 .app-loader{
   position: fixed;
@@ -1685,6 +1655,36 @@ input[list]::-moz-list-dropdown {
 .table tr.soft td{ background: rgba(245,158,11,.08); }
 .table tr.extra td{ background: rgba(96,165,250,.08); }
 
+/* ===== Admin: tarjeta superior sin botones de registrar ===== */
+.admin-welcome-box{
+  margin-top: 12px;
+  padding: 14px 16px;
+  border-radius: 16px;
+  border: 1px solid rgba(255,255,255,.10);
+  background:
+    linear-gradient(180deg, rgba(59,130,246,.12), rgba(59,130,246,.06));
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.05),
+    0 10px 24px rgba(0,0,0,.16);
+}
+
+.admin-welcome-title{
+  font-size: 16px;
+  font-weight: 900;
+  letter-spacing: .2px;
+  margin-bottom: 4px;
+}
+
+.admin-welcome-sub{
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+/* Solo admin oculta botones de Entrada/Salida */
+body.is-admin #registerActions{
+  display: none !important;
+}
+
 </style>
 </head>
 
@@ -1790,15 +1790,15 @@ input[list]::-moz-list-dropdown {
       <label class="label" for="teacherName">Nombre del docente</label>
       <input id="teacherName" class="input" type="text" placeholder="Ej: Ana Pérez" autocomplete="name" />
 
-    <div id="registerActions" class="row">
+   <div id="registerActions" class="row">
   <button id="btnEntrada" class="btn btn-primary">Entrada</button>
   <button id="btnSalida" class="btn btn-secondary">Salida</button>
 </div>
 
-<div id="userWelcomeBox" class="user-welcome-box" hidden>
-  <div class="user-welcome-title">Mi jornada</div>
-  <div class="user-welcome-sub muted">
-    Consulta tu estado, ubicación y registros del mes actual.
+<div id="adminWelcomeBox" class="admin-welcome-box" hidden>
+  <div class="admin-welcome-title">Panel administrativo</div>
+  <div class="admin-welcome-sub muted">
+    Gestiona asistencias, exportaciones y configuración del sistema.
   </div>
 </div>
 
@@ -2843,10 +2843,9 @@ const distEl = $("dist");
 const accEl = $("acc");
 const coordsEl = $("coords");
 
-
 const registerCardTitle = $("registerCardTitle");
 const registerActions = $("registerActions");
-const userWelcomeBox = $("userWelcomeBox");
+const adminWelcomeBox = $("adminWelcomeBox");
 
 // ======= LOADER UI =======
 const appLoader = $("appLoader");
@@ -3743,9 +3742,16 @@ function normalizeDateYYYYMMDD(v) {
 }
 
 function updateDailyButtonsState(records) {
-  const admin = isAdminMode();
+  // En admin no se usan estos botones
+  if (isAdminMode()) {
+    btnEntrada.disabled = true;
+    btnSalida.disabled = true;
+    btnSalida.classList.remove("is-inactive");
+    return;
+  }
+
   const p = loadProfile();
-  if (!p && !admin) return;
+  if (!p) return;
 
   const today = todayStr();
 
@@ -3763,17 +3769,21 @@ function updateDailyButtonsState(records) {
 
     if (!raw) return "";
 
+    // yyyy-mm-dd
     if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) return raw;
 
+    // dd/mm/yyyy
     if (/^\d{2}\/\d{2}\/\d{4}$/.test(raw)) {
       const [dd, mm, yyyy] = raw.split("/");
       return `${yyyy}-${mm}-${dd}`;
     }
 
+    // ISO (evita error por zona horaria)
     if (/^\d{4}-\d{2}-\d{2}T/.test(raw)) {
       return raw.slice(0, 10);
     }
 
+    // fallback
     const d = new Date(raw);
     if (!isNaN(d.getTime())) {
       return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
@@ -3792,28 +3802,32 @@ function updateDailyButtonsState(records) {
     recordDate_(r) === today
   );
 
-  saveAttendanceButtonsState_();
-
-  // ✅ solo admin usa la lógica visual de botones
-  if (!admin) return;
-
+  // Estado 1: no hay nada hoy
   if (!hasEntradaToday && !hasSalidaToday) {
     btnEntrada.disabled = false;
     btnSalida.disabled = true;
     btnSalida.classList.add("is-inactive");
+
+    saveAttendanceButtonsState_(); // ✅ AÑADIDO
     return;
   }
 
+  // Estado 2: ya hay entrada, falta salida
   if (hasEntradaToday && !hasSalidaToday) {
     btnEntrada.disabled = true;
     btnSalida.disabled = false;
     btnSalida.classList.remove("is-inactive");
+
+    saveAttendanceButtonsState_(); // ✅ AÑADIDO
     return;
   }
 
+  // Estado 3: ya hay entrada y salida hoy
   btnEntrada.disabled = true;
   btnSalida.disabled = true;
   btnSalida.classList.remove("is-inactive");
+
+  saveAttendanceButtonsState_(); // ✅ AÑADIDO
 }
 
 
@@ -4301,14 +4315,13 @@ function setLoading(isLoading, title = "Procesando…", msg = "Por favor espera�
 
   // Deshabilitar botones principales para evitar dobles registros
   if (on) {
-    if (isAdminMode()) {
-      if (btnEntrada) btnEntrada.disabled = true;
-      if (btnSalida) btnSalida.disabled = true;
-    }
+    if (btnEntrada) btnEntrada.disabled = true;
+    if (btnSalida) btnSalida.disabled = true;
     if (btnExport) btnExport.disabled = true;
   } else {
     if (btnExport) btnExport.disabled = false;
 
+    // restaurar estado real de los botones del día
     try {
       updateDailyButtonsState(cachedRecords);
     } catch (e) {}
@@ -4607,7 +4620,7 @@ function setAdminMode(on) {
   }
 
    Promise.resolve(initAdminRecordsPanelUI()).catch(() => {}); // ✅ fuerza ocultar/mostrar SIEMPRE
-  try { updateRegisterCardUI_(); } catch (e) {}
+try { updateRegisterCardUI_(); } catch (e) {}
 }
 
 function updateRegisterCardUI_() {
@@ -4615,15 +4628,15 @@ function updateRegisterCardUI_() {
   const profile = loadProfile();
 
   if (registerCardTitle) {
-    registerCardTitle.textContent = admin ? "Registrar" : "Mi jornada";
+    registerCardTitle.textContent = admin ? "Panel administrativo" : "Registrar";
   }
 
   if (registerActions) {
-    registerActions.hidden = !admin;
+    registerActions.hidden = !!admin;
   }
 
-  if (userWelcomeBox) {
-    userWelcomeBox.hidden = admin;
+  if (adminWelcomeBox) {
+    adminWelcomeBox.hidden = !admin;
   }
 
   if (teacherNameEl) {
