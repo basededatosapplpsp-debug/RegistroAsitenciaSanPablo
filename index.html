@@ -3353,22 +3353,6 @@ document.addEventListener("DOMContentLoaded", async () => {
   } catch (e) {
     console.warn("No se pudo refrescar estado inicial:", e);
   }
-
-// ✅ mostrar solo el check azul después del reload
-try {
-  const showAfter = sessionStorage.getItem("showRefreshAfterReload");
-
-  if (showAfter === "1") {
-    sessionStorage.removeItem("showRefreshAfterReload");
-
-    // ✅ al volver, mostrar de una vez el check azul
-    showRefreshDone("Actualizado");
-
-    setTimeout(() => {
-      hideRefreshSpin();
-    }, 1000);
-  }
-} catch (e) {}
 });
 
 
@@ -9838,13 +9822,9 @@ function syncAttendanceOnResume_() {
     clearTimeout(__attendanceResumeSyncTimer);
   }
 
-__attendanceResumeSyncTimer = setTimeout(() => {
-  refreshFromSheet({
-    silent: true,
-    useCache: false,
-    preferRemote: true
-  }).catch(() => {});
-}, 250);
+  __attendanceResumeSyncTimer = setTimeout(() => {
+    refreshFromSheet({ silent: true, useCache: false }).catch(() => {});
+  }, 250);
 }
 
 window.addEventListener("focus", syncAttendanceOnResume_);
@@ -14279,7 +14259,7 @@ async function refreshFromSheet(options = {}) {
     useCache = true,          // renderiza caché primero
     silent = false,           // no cambia el status "Cargando."
     showLoadingAfterMs = 450, // solo mostrar "Cargando" si tarda > 450ms
-    preferRemote = false      // ✅ si true, usa SOLO backend real
+    preferRemote = false      // ✅ si true, reemplaza con backend real (sin fusionar local)
   } = options;
 
   const admin = isAdminMode();
@@ -14770,11 +14750,7 @@ async function register(type) {
 
   // ✅ sincronización automática más segura
 setTimeout(() => {
-  refreshFromSheet({
-    useCache: false,
-    silent: true,
-    preferRemote: true
-  }).catch(() => {});
+  refreshFromSheet({ useCache: false, silent: true }).catch(() => {});
 }, 5000);
 
     return;
@@ -15123,24 +15099,16 @@ async function hardRefreshPWA() {
 
 btnRefreshSW.addEventListener("click", async () => {
   try {
-    showRefreshSpin("Actualizando..."); // 🔄 gira mientras se actualiza
+    // ✅ mostrar solo loader, sin repintar UI antes del reset
+    try {
+      setLoading(true, "Actualizando…", "Reiniciando y consultando estado real.");
+    } catch (e) {}
 
-    if ('serviceWorker' in navigator) {
-      const reg = await navigator.serviceWorker.getRegistration();
-      if (reg) {
-        await reg.update();
-      }
-    }
-
-    // ✅ cuando termine la actualización, al recargar muestra el chulito azul
-    sessionStorage.setItem("showRefreshAfterReload", "1");
-
-    // 🔁 recargar app inmediatamente
-    location.reload();
-
+    // ✅ mantener el comportamiento original
+    await hardRefreshPWA();
   } catch (e) {
-    console.error(e);
-    hideRefreshSpin();
+    try { setLoading(false); } catch (e) {}
+    setStatus("bad", "No se pudo actualizar", String(e && e.message ? e.message : e));
   }
 });
 
@@ -15223,11 +15191,8 @@ btnExport.addEventListener("click", downloadUserExcel);
 
 
 
-// Inicial: solo admin refresca aquí.
-// En docente, el estado real ya se sincroniza en DOMContentLoaded con preferRemote:true
-if (isAdminMode()) {
-  refreshFromSheet({ useCache: true, silent: true });
-}
+// Inicial: rápido (cache) + refresh silencioso
+refreshFromSheet({ useCache: true, silent: true });
 setStatus("warn", "Listo", "Para registrar, activa ubicación.");
 
   // DISCIPLINA: bind + polling para sincronizar entre celulares
