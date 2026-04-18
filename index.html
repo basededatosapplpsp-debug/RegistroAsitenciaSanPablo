@@ -9811,6 +9811,7 @@ function applySessionUI(profile) {
 
 
 let __attendanceResumeSyncTimer = null;
+let __attendanceResumeSyncBusy = false;
 
 function syncAttendanceOnResume_() {
   if (isAdminMode()) return;
@@ -9822,9 +9823,22 @@ function syncAttendanceOnResume_() {
     clearTimeout(__attendanceResumeSyncTimer);
   }
 
-  __attendanceResumeSyncTimer = setTimeout(() => {
-    refreshFromSheet({ silent: true, useCache: false }).catch(() => {});
-  }, 250);
+  __attendanceResumeSyncTimer = setTimeout(async () => {
+    if (__attendanceResumeSyncBusy) return;
+    __attendanceResumeSyncBusy = true;
+
+    try {
+      await refreshFromSheet({
+        silent: true,
+        useCache: false,
+        preferRemote: true
+      });
+    } catch (e) {
+      console.warn("No se pudo sincronizar al reanudar:", e);
+    } finally {
+      __attendanceResumeSyncBusy = false;
+    }
+  }, 450);
 }
 
 window.addEventListener("focus", syncAttendanceOnResume_);
