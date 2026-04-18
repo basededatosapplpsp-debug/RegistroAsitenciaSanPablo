@@ -1975,6 +1975,7 @@ body.is-admin #registerActions{
 }
 
 .refresh-spin-wrap{
+  position: relative;
   width: min(320px, 86vw);
   min-height: 240px;
   display: flex;
@@ -1982,12 +1983,6 @@ body.is-admin #registerActions{
   align-items: center;
   justify-content: center;
   gap: 18px;
-  opacity: 1;
-  transform: scale(1);
-}
-
-.refresh-spin-wrap.is-hiding{
-  animation: refreshOverlayOut .34s cubic-bezier(.2,.8,.2,1) forwards;
 }
 
 .refresh-spin-icon{
@@ -1997,19 +1992,7 @@ body.is-admin #registerActions{
   text-shadow:
     0 0 18px rgba(96,165,250,.38),
     0 0 42px rgba(96,165,250,.22);
-  transform: scale(1);
-}
-
-.refresh-spin-icon.is-spinning{
   animation: refreshSpinRotate 1s linear infinite;
-}
-
-.refresh-spin-icon.is-done{
-  color: #60a5fa;
-  text-shadow:
-    0 0 18px rgba(96,165,250,.42),
-    0 0 42px rgba(96,165,250,.24);
-  animation: refreshDonePop .36s cubic-bezier(.2,.8,.2,1);
 }
 
 .refresh-spin-text{
@@ -2026,31 +2009,6 @@ body.is-admin #registerActions{
   to{ transform: rotate(360deg); }
 }
 
-@keyframes refreshDonePop{
-  0%{
-    transform: scale(.78);
-    opacity: .4;
-  }
-  65%{
-    transform: scale(1.08);
-    opacity: 1;
-  }
-  100%{
-    transform: scale(1);
-    opacity: 1;
-  }
-}
-
-@keyframes refreshOverlayOut{
-  from{
-    opacity: 1;
-    transform: scale(1);
-  }
-  to{
-    opacity: 0;
-    transform: scale(.92);
-  }
-}
 
 
 
@@ -2370,14 +2328,11 @@ body.is-admin #registerActions{
 
 
 <!-- ======= REFRESH SPINNER OVERLAY ======= -->
-<!-- ======= REFRESH SPINNER OVERLAY ======= -->
 <div id="refreshSpin" class="refresh-spin" hidden>
-  <div id="refreshSpinWrap" class="refresh-spin-wrap">
-
-    <div id="refreshSpinIcon" class="refresh-spin-icon is-spinning">
-      <i id="refreshSpinIconInner" class="fa-solid fa-rotate-right" aria-hidden="true"></i>
+  <div class="refresh-spin-wrap">
+    <div class="refresh-spin-icon">
+      <i class="fa-solid fa-rotate-right" aria-hidden="true"></i>
     </div>
-
     <div id="refreshSpinText" class="refresh-spin-text">Actualizando…</div>
   </div>
 </div>
@@ -3326,7 +3281,6 @@ function initQrUi_() {
 }
 
 // ✅ Ejecutar cuando el DOM ya existe
-// ✅ Ejecutar cuando el DOM ya existe
 document.addEventListener("DOMContentLoaded", async () => {
   initQrUi_();
 
@@ -3353,6 +3307,21 @@ document.addEventListener("DOMContentLoaded", async () => {
   } catch (e) {
     console.warn("No se pudo refrescar estado inicial:", e);
   }
+
+  // ✅ mostrar animación post-refresh
+try {
+  const showAfter = sessionStorage.getItem("showRefreshAfterReload");
+
+  if (showAfter === "1") {
+    sessionStorage.removeItem("showRefreshAfterReload");
+
+    showRefreshSpin("Actualizado");
+
+    setTimeout(() => {
+      hideRefreshSpin();
+    }, 1200); // ⏱️ duración después del reload
+  }
+} catch (e) {}
 });
 
 
@@ -4091,56 +4060,17 @@ function vibrateSuccess_() {
 
 function showRefreshSpin(message = "Actualizando…") {
   const box = document.getElementById("refreshSpin");
-  const wrap = document.getElementById("refreshSpinWrap");
-  const icon = document.getElementById("refreshSpinIcon");
-  const iconInner = document.getElementById("refreshSpinIconInner");
   const text = document.getElementById("refreshSpinText");
-
-  if (!box || !wrap || !icon || !iconInner || !text) return;
+  if (!box || !text) return;
 
   text.textContent = message;
-  iconInner.className = "fa-solid fa-rotate-right";
-  icon.classList.remove("is-done");
-  icon.classList.add("is-spinning");
-  wrap.classList.remove("is-hiding");
-
   box.hidden = false;
-}
-
-function showRefreshDone(message = "Actualizado") {
-  const box = document.getElementById("refreshSpin");
-  const wrap = document.getElementById("refreshSpinWrap");
-  const icon = document.getElementById("refreshSpinIcon");
-  const iconInner = document.getElementById("refreshSpinIconInner");
-  const text = document.getElementById("refreshSpinText");
-
-  if (!box || !wrap || !icon || !iconInner || !text) return;
-
-  box.hidden = false;
-  wrap.classList.remove("is-hiding");
-
-  text.textContent = message;
-  icon.classList.remove("is-spinning");
-  iconInner.className = "fa-solid fa-check";
-  icon.classList.remove("is-done");
-  void icon.offsetWidth; // reinicia animación
-  icon.classList.add("is-done");
 }
 
 function hideRefreshSpin() {
   const box = document.getElementById("refreshSpin");
-  const wrap = document.getElementById("refreshSpinWrap");
-
-  if (!box || !wrap) return;
-
-  wrap.classList.remove("is-hiding");
-  void wrap.offsetWidth;
-  wrap.classList.add("is-hiding");
-
-  setTimeout(() => {
-    box.hidden = true;
-    wrap.classList.remove("is-hiding");
-  }, 340);
+  if (!box) return;
+  box.hidden = true;
 }
 
 
@@ -14259,7 +14189,7 @@ async function refreshFromSheet(options = {}) {
     useCache = true,          // renderiza caché primero
     silent = false,           // no cambia el status "Cargando."
     showLoadingAfterMs = 450, // solo mostrar "Cargando" si tarda > 450ms
-    preferRemote = false      // ✅ si true, reemplaza con backend real (sin fusionar local)
+    preferRemote = false      // ✅ si true, usa SOLO backend real
   } = options;
 
   const admin = isAdminMode();
@@ -15099,15 +15029,20 @@ async function hardRefreshPWA() {
 
 btnRefreshSW.addEventListener("click", async () => {
   try {
-    // ✅ mostrar solo loader, sin repintar UI antes del reset
-    try {
-      setLoading(true, "Actualizando…", "Reiniciando y consultando estado real.");
-    } catch (e) {}
+    // ✅ guardar flag para mostrar animación después del reload
+    sessionStorage.setItem("showRefreshAfterReload", "1");
 
-    // ✅ mantener el comportamiento original
+    // ✅ mostrar animación actual
+    showRefreshSpin("Actualizando…");
+
+    // pequeño delay para que se vea antes del reload
+    await new Promise(r => setTimeout(r, 120));
+
+    // ✅ refrescar inmediatamente
     await hardRefreshPWA();
+
   } catch (e) {
-    try { setLoading(false); } catch (e) {}
+    hideRefreshSpin();
     setStatus("bad", "No se pudo actualizar", String(e && e.message ? e.message : e));
   }
 });
