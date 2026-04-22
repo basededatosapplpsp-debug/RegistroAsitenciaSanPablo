@@ -13,6 +13,7 @@
   <link rel="icon" sizes="16x16" href="favicon-16.png" />
   <link rel="apple-touch-icon" href="apple-touch-icon.png" />
 
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@700;800;900&display=swap" rel="stylesheet">
   <title>Asistencia Docentes</title>
  <style>
 :root{
@@ -460,44 +461,92 @@ h2{font-size:16px; margin:0 0 12px}
 .menu-item.danger:hover{ background: rgba(239,68,68,.12); border-color: rgba(239,68,68,.25); }
 
 
-/* ===== Botones ENTRADA / SALIDA PRO ===== */
 
-/* ===== Botones ENTRADA / SALIDA (pastel, premium glass, SIN flechas) ===== */
+
+/* ===== Botones ENTRADA / SALIDA (premium glass pro) ===== */
 
 #btnEntrada,
 #btnSalida{
   position: relative;
   overflow: hidden;
+  isolation: isolate;
 
-  font-size: 14.5px;
-  font-weight: 800;
-  letter-spacing: .35px;
-  padding: 14px 16px;
-  border-radius: 16px;
+  font-size: 17px;           /* 🔥 más grande */
+  font-weight: 900;          /* más fuerte (pro) */
+  letter-spacing: .5px;      /* más limpio visualmente */
+ font-family: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  padding: 15px 18px;
+  border-radius: 18px;
 
-  /* Premium feel */
-  border: 1px solid rgba(255,255,255,.14);
-  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255,255,255,.16);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
 
-  /* micro-animación elegante (easing suave) */
   transition:
     transform .18s cubic-bezier(.2,.8,.2,1),
-    box-shadow .20s cubic-bezier(.2,.8,.2,1),
-    filter .20s cubic-bezier(.2,.8,.2,1);
+    box-shadow .22s cubic-bezier(.2,.8,.2,1),
+    filter .22s cubic-bezier(.2,.8,.2,1),
+    opacity .22s ease,
+    border-color .22s ease;
 }
 
-/* Hover / active premium (sutil) */
+/* brillo superior suave */
+#btnEntrada::before,
+#btnSalida::before{
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(
+    180deg,
+    rgba(255,255,255,.34) 0%,
+    rgba(255,255,255,.16) 34%,
+    rgba(255,255,255,0) 62%
+  );
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* línea de luz diagonal premium */
+#btnEntrada::after,
+#btnSalida::after{
+  content: "";
+  position: absolute;
+  top: -30%;
+  left: -42%;
+  width: 42%;
+  height: 170%;
+  background: linear-gradient(
+    90deg,
+    rgba(255,255,255,0),
+    rgba(255,255,255,.22),
+    rgba(255,255,255,0)
+  );
+  transform: rotate(18deg);
+  pointer-events: none;
+  z-index: 1;
+  transition: left .6s ease;
+}
+
+/* Hover / active premium */
 #btnEntrada:hover,
 #btnSalida:hover{
-  filter: brightness(1.03);
+  transform: translateY(-1px);
+  filter: brightness(1.035);
   box-shadow:
-    0 10px 24px rgba(0,0,0,.22),
-    inset 0 1px 0 rgba(255,255,255,.55);
+    0 14px 28px rgba(0,0,0,.22),
+    0 4px 10px rgba(0,0,0,.10),
+    inset 0 1px 0 rgba(255,255,255,.58);
+}
+
+#btnEntrada:hover::after,
+#btnSalida:hover::after{
+  left: 118%;
 }
 
 #btnEntrada:active,
 #btnSalida:active{
-  transform: translateY(1px) scale(0.99);
+  transform: translateY(1px) scale(.992);
   filter: brightness(1.01);
   box-shadow:
     0 7px 16px rgba(0,0,0,.18),
@@ -506,51 +555,55 @@ h2{font-size:16px; margin:0 0 12px}
 
 /* ================= ENTRADA ================= */
 #btnEntrada{
-  background: linear-gradient(
-    180deg,
-    rgba(209,250,229,.95),  /* verde pastel */
-    rgba(236,253,245,.88)
-  );
-  color: rgba(6,95,70,.95);
-  border-color: rgba(6,95,70,.22);
-
-  /* sombra ultra suave + highlight interno */
+  background:
+    radial-gradient(circle at top left, rgba(255,255,255,.28), transparent 42%),
+    linear-gradient(
+      180deg,
+      rgba(209,250,229,.98),
+      rgba(187,247,208,.94)
+    );
+  color: #065f46;
+  border-color: rgba(6,95,70,.20);
   box-shadow:
-    0 8px 18px rgba(6,95,70,.12),
+    0 10px 22px rgba(16,185,129,.16),
+    0 3px 8px rgba(6,95,70,.08),
     inset 0 1px 0 rgba(255,255,255,.65);
 }
 
 /* ================= SALIDA ================= */
 #btnSalida{
-  background: linear-gradient(
-    180deg,
-    rgba(237,233,254,.95), /* violeta pastel */
-    rgba(245,243,255,.88)
-  );
-  color: rgba(76,29,149,.95);
-  border-color: rgba(76,29,149,.22);
-
+  background:
+    radial-gradient(circle at top left, rgba(255,255,255,.28), transparent 42%),
+    linear-gradient(
+      180deg,
+      rgba(237,233,254,.98),
+      rgba(221,214,254,.94)
+    );
+  color: #4c1d95;
+  border-color: rgba(76,29,149,.20);
   box-shadow:
-    0 8px 18px rgba(76,29,149,.12),
+    0 10px 22px rgba(124,58,237,.16),
+    0 3px 8px rgba(76,29,149,.08),
     inset 0 1px 0 rgba(255,255,255,.65);
 }
 
 /* ================= Disabled ================= */
 #btnEntrada:disabled,
 #btnSalida:disabled{
-  opacity: .6;
+  opacity: .62;
   box-shadow: none;
-  filter: grayscale(.25);
+  filter: grayscale(.20);
+  transform: none;
 }
 
 /* ===== SALIDA inactiva hasta ENTRADA ===== */
 #btnSalida.is-inactive{
   background: linear-gradient(
     180deg,
-    rgba(241,245,249,.95),
-    rgba(229,231,235,.90)
+    rgba(241,245,249,.96),
+    rgba(226,232,240,.92)
   );
-  color: #9ca3af;
+  color: #94a3b8;
   border-color: rgba(255,255,255,.10);
   box-shadow: none;
   cursor: not-allowed;
@@ -1118,7 +1171,7 @@ input[list]::-moz-list-dropdown {
 }
 
 #appConfirm {
-  z-index: 10000 !important;
+  z-index: 100001 !important;
 }
 
 
@@ -1685,6 +1738,506 @@ body.is-admin #registerActions{
   display: none !important;
 }
 
+
+
+/* ===== Un solo botón visual, pero en flujo normal (NO flotante) ===== */
+.single-action-wrap{
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: 14px;
+  min-height: 60px;
+}
+
+.single-action-wrap .action-pill{
+  width: min(100%, 280px);
+  min-height: 56px;
+  border-radius: 18px;
+  padding: 14px 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+ font-size: 18px;           /* 🔥 más protagonista */
+  font-weight: 900;
+  letter-spacing: .6px;
+ font-family: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+/* ocultar completamente el botón inactivo */
+.single-action-wrap #btnEntrada:disabled,
+.single-action-wrap #btnSalida:disabled{
+  display: none !important;
+}
+
+/* cuando ambos quedan disabled, mostrar mensaje final */
+.single-action-wrap.done #btnEntrada{
+  display: none !important;
+}
+
+.single-action-wrap.done #btnSalida{
+  display: inline-flex !important;
+  opacity: 1 !important;
+  pointer-events: none !important;
+  filter: none;
+  background:
+    linear-gradient(
+      180deg,
+      rgba(226,232,240,.98),
+      rgba(203,213,225,.94)
+    ) !important;
+  color: #334155 !important;
+  border-color: rgba(255,255,255,.14) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.55) !important;
+}
+
+/* ======= SUCCESS CHECK PRO ======= */
+.success-check{
+  position: fixed;
+  inset: 0;
+  z-index: 100002;
+  display: grid;
+  place-items: center;
+  background: rgba(0,0,0,.35);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+
+.success-check[hidden]{
+  display: none !important;
+}
+
+.success-check-wrap{
+  position: relative;
+  width: min(320px, 86vw);
+  min-height: 260px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+}
+
+/* ===== CÍRCULO GIRANDO ===== */
+.success-ring{
+  position: absolute;
+  width: 180px;
+  height: 180px;
+  border-radius: 50%;
+  border: 6px solid transparent;
+  background:
+    conic-gradient(
+      #22c55e 0deg,
+      #22c55e 48deg,
+      rgba(34,197,94,.15) 72deg,
+      rgba(34,197,94,0) 360deg
+    );
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 6px), #000 0);
+  mask: radial-gradient(farthest-side, transparent calc(100% - 6px), #000 0);
+
+  box-shadow:
+    0 0 30px rgba(34,197,94,.14),
+    0 0 60px rgba(34,197,94,.08);
+
+  animation: ringSpin .9s cubic-bezier(.2,.8,.2,1) forwards;
+}
+
+/* ===== CHECK ===== */
+.success-check-icon{
+  position: relative;
+  z-index: 2;
+  font-size: 120px;
+  line-height: 1;
+  font-weight: 900;
+  color: #22c55e;
+  opacity: 0;
+  transform: scale(.58);
+
+  text-shadow:
+    0 0 18px rgba(34,197,94,.38),
+    0 0 42px rgba(34,197,94,.22);
+
+  animation: checkPop .42s ease-out .45s forwards;
+}
+
+/* ===== TEXTO ===== */
+.success-check-text{
+  position: relative;
+  z-index: 2;
+  font-size: 20px;
+  font-weight: 900;
+  letter-spacing: .2px;
+  color: #e9eefc;
+  text-align: center;
+  opacity: 0;
+  transform: translateY(10px);
+
+  animation: textFade .36s ease-out .72s forwards;
+}
+
+/* ===== PARTÍCULAS ===== */
+.success-spark{
+  position: absolute;
+  z-index: 1;
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: #4ade80;
+  box-shadow:
+    0 0 10px rgba(74,222,128,.65),
+    0 0 20px rgba(74,222,128,.35);
+  opacity: 0;
+}
+
+.success-spark.s1{ top: 28px; left: 58px; animation: spark1 .9s ease-out .35s forwards; }
+.success-spark.s2{ top: 54px; right: 52px; animation: spark2 1s ease-out .38s forwards; }
+.success-spark.s3{ top: 94px; left: 16px; animation: spark3 .95s ease-out .42s forwards; }
+.success-spark.s4{ top: 106px; right: 14px; animation: spark4 .95s ease-out .44s forwards; }
+.success-spark.s5{ bottom: 70px; left: 48px; animation: spark5 1s ease-out .46s forwards; }
+.success-spark.s6{ bottom: 82px; right: 44px; animation: spark6 .92s ease-out .48s forwards; }
+
+/* ===== ANIMACIONES ===== */
+@keyframes ringSpin{
+  from{
+    transform: rotate(-220deg) scale(.72);
+    opacity: 0;
+  }
+  to{
+    transform: rotate(0deg) scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes checkPop{
+  0%{
+    opacity: 0;
+    transform: scale(.58);
+  }
+  60%{
+    opacity: 1;
+    transform: scale(1.08);
+  }
+  100%{
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes textFade{
+  to{
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes spark1{
+  from{ opacity:0; transform: translate(0,0) scale(.4); }
+  to{ opacity:0; transform: translate(-18px,-18px) scale(1.15); }
+}
+@keyframes spark2{
+  from{ opacity:0; transform: translate(0,0) scale(.4); }
+  to{ opacity:0; transform: translate(22px,-16px) scale(1.2); }
+}
+@keyframes spark3{
+  from{ opacity:0; transform: translate(0,0) scale(.4); }
+  to{ opacity:0; transform: translate(-26px,4px) scale(1.1); }
+}
+@keyframes spark4{
+  from{ opacity:0; transform: translate(0,0) scale(.4); }
+  to{ opacity:0; transform: translate(24px,2px) scale(1.1); }
+}
+@keyframes spark5{
+  from{ opacity:0; transform: translate(0,0) scale(.4); }
+  to{ opacity:0; transform: translate(-14px,18px) scale(1.1); }
+}
+@keyframes spark6{
+  from{ opacity:0; transform: translate(0,0) scale(.4); }
+  to{ opacity:0; transform: translate(16px,20px) scale(1.15); }
+}
+
+
+
+/* ======= REFRESH SPINNER OVERLAY ======= */
+.refresh-spin{
+  position: fixed;
+  inset: 0;
+  z-index: 100002;
+  display: grid;
+  place-items: center;
+  background: rgba(0,0,0,.35);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+
+.refresh-spin[hidden]{
+  display: none !important;
+}
+
+.refresh-spin-wrap{
+  width: min(320px, 86vw);
+  min-height: 240px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  opacity: 1;
+  transform: scale(1);
+}
+
+.refresh-spin-wrap.is-hiding{
+  animation: refreshOverlayOut .34s cubic-bezier(.2,.8,.2,1) forwards;
+}
+
+.refresh-spin-icon{
+  font-size: 120px;
+  line-height: 1;
+  color: #60a5fa;
+  text-shadow:
+    0 0 18px rgba(96,165,250,.38),
+    0 0 42px rgba(96,165,250,.22);
+  transform: scale(1);
+}
+
+.refresh-spin-icon.is-spinning{
+  animation: refreshSpinRotate 1s linear infinite;
+}
+
+.refresh-spin-icon.is-done{
+  color: #60a5fa;
+  text-shadow:
+    0 0 18px rgba(96,165,250,.42),
+    0 0 42px rgba(96,165,250,.24);
+  animation: refreshDonePop .36s cubic-bezier(.2,.8,.2,1);
+}
+
+.refresh-spin-text{
+  font-size: 20px;
+  font-weight: 900;
+  letter-spacing: .2px;
+  color: #e9eefc;
+  text-align: center;
+  opacity: .96;
+}
+
+@keyframes refreshSpinRotate{
+  from{ transform: rotate(0deg); }
+  to{ transform: rotate(360deg); }
+}
+
+@keyframes refreshDonePop{
+  0%{
+    transform: scale(.78);
+    opacity: .4;
+  }
+  65%{
+    transform: scale(1.08);
+    opacity: 1;
+  }
+  100%{
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes refreshOverlayOut{
+  from{
+    opacity: 1;
+    transform: scale(1);
+  }
+  to{
+    opacity: 0;
+    transform: scale(.92);
+  }
+}
+
+
+/* ================================
+   FIX MODAL CONFIG ADMIN RESPONSIVE
+================================ */
+
+/* En móvil: que el modal no quede cortado */
+#adminConfigModal{
+  padding: max(12px, env(safe-area-inset-top)) 12px max(12px, env(safe-area-inset-bottom));
+  align-items: flex-start;   /* en vez de centrar verticalmente */
+  overflow-y: auto;          /* si hace falta, scrollea el backdrop */
+  -webkit-overflow-scrolling: touch;
+}
+
+/* La tarjeta hace scroll interno y nunca se sale de la pantalla */
+#adminConfigModal .modal-card{
+  width: min(520px, 100%);
+  max-height: calc(100dvh - 24px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  margin: 0 auto;
+}
+
+/* Botones inferiores siempre visibles y mejor acomodados */
+#adminConfigModal .modal-actions{
+  position: sticky;
+  bottom: 0;
+  background: #0b1220;
+  padding-top: 12px;
+  margin-top: 14px;
+  border-top: 1px solid rgba(255,255,255,.08);
+}
+
+/* En escritorio sí puede verse centrado */
+@media (min-width: 700px){
+  #adminConfigModal{
+    align-items: center;
+  }
+
+  #adminConfigModal .modal-card{
+    max-height: calc(100dvh - 40px);
+  }
+}
+
+
+@media (max-width: 699px){
+  #adminConfigModal .row{
+    flex-direction: column;
+  }
+
+  #adminConfigModal .row .btn{
+    width: 100%;
+  }
+
+  #adminConfigModal .modal-actions{
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+}
+
+
+
+
+/* =======================================
+   CONFIG: excepciones desplegable + lista
+======================================= */
+
+.cfg-exceptions-details{
+  margin-top: 6px;
+  border: 1px solid rgba(255,255,255,.10);
+  border-radius: 16px;
+  background: rgba(255,255,255,.03);
+  overflow: hidden;
+}
+
+.cfg-exceptions-summary{
+  list-style: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 14px 14px;
+  font-weight: 900;
+  user-select: none;
+}
+
+.cfg-exceptions-summary::-webkit-details-marker{
+  display: none;
+}
+
+.cfg-exceptions-summary::after{
+  content: "▾";
+  font-size: 18px;
+  opacity: .85;
+  transition: transform .18s ease;
+}
+
+.cfg-exceptions-details[open] .cfg-exceptions-summary::after{
+  transform: rotate(180deg);
+}
+
+.cfg-exceptions-body{
+  padding: 0 14px 14px;
+  border-top: 1px solid rgba(255,255,255,.08);
+}
+
+.cfg-exceptions-list{
+  display: grid;
+  gap: 10px;
+}
+
+.cfg-exception-item{
+  border: 1px solid rgba(255,255,255,.12);
+  border-radius: 14px;
+  padding: 12px;
+  background: rgba(255,255,255,.05);
+}
+
+.cfg-exception-top{
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+}
+
+.cfg-exception-name{
+  font-weight: 900;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cfg-exception-times{
+  margin-top: 8px;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.cfg-exception-actions{
+  margin-top: 10px;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.cfg-mini-btn{
+  border: 1px solid rgba(255,255,255,.12);
+  background: rgba(255,255,255,.05);
+  color: var(--text);
+  border-radius: 12px;
+  padding: 8px 10px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.cfg-mini-btn:hover{
+  background: rgba(255,255,255,.08);
+}
+
+.cfg-mini-btn.danger{
+  color: #ffb4b4;
+  border-color: rgba(239,68,68,.22);
+  background: rgba(239,68,68,.08);
+}
+
+@media (max-width: 699px){
+  .cfg-exception-top{
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .cfg-exception-actions{
+    flex-direction: column;
+  }
+
+  .cfg-exception-actions .cfg-mini-btn{
+    width: 100%;
+  }
+}
+
+
+
 </style>
 </head>
 
@@ -1790,9 +2343,9 @@ body.is-admin #registerActions{
       <label class="label" for="teacherName">Nombre del docente</label>
       <input id="teacherName" class="input" type="text" placeholder="Ej: Ana Pérez" autocomplete="name" />
 
-   <div id="registerActions" class="row">
-  <button id="btnEntrada" class="btn btn-primary">Entrada</button>
-  <button id="btnSalida" class="btn btn-secondary">Salida</button>
+  <div id="registerActions" class="single-action-wrap">
+  <button id="btnEntrada" class="btn btn-primary action-pill">Entrada</button>
+  <button id="btnSalida" class="btn btn-secondary action-pill">Salida</button>
 </div>
 
 <div id="adminWelcomeBox" class="admin-welcome-box" hidden>
@@ -1973,6 +2526,46 @@ body.is-admin #registerActions{
 </div>
 
 
+<!-- ======= SUCCESS CHECK PRO ======= -->
+<div id="successCheck" class="success-check" hidden>
+  <div class="success-check-wrap">
+
+    <!-- partículas -->
+    <span class="success-spark s1"></span>
+    <span class="success-spark s2"></span>
+    <span class="success-spark s3"></span>
+    <span class="success-spark s4"></span>
+    <span class="success-spark s5"></span>
+    <span class="success-spark s6"></span>
+
+    <!-- círculo animado -->
+    <div class="success-ring"></div>
+
+    <!-- check -->
+    <div class="success-check-icon">✓</div>
+
+    <!-- texto -->
+    <div id="successCheckText" class="success-check-text">
+      ¡Registro guardado!
+    </div>
+
+  </div>
+</div>
+
+
+<!-- ======= REFRESH SPINNER OVERLAY ======= -->
+<!-- ======= REFRESH SPINNER OVERLAY ======= -->
+<div id="refreshSpin" class="refresh-spin" hidden>
+  <div id="refreshSpinWrap" class="refresh-spin-wrap">
+
+    <div id="refreshSpinIcon" class="refresh-spin-icon is-spinning">
+      <i id="refreshSpinIconInner" class="fa-solid fa-rotate-right" aria-hidden="true"></i>
+    </div>
+
+    <div id="refreshSpinText" class="refresh-spin-text">Actualizando…</div>
+  </div>
+</div>
+
 <!-- ======= MODAL ADMIN (PIN / CAMBIO / ASISTENCIAS) ======= -->
 <div id="adminModal" class="modal-backdrop" hidden>
   <div class="modal-card">
@@ -1998,7 +2591,7 @@ body.is-admin #registerActions{
 
 <!-- ======= MODAL VER ASISTENCIAS (ADMIN) ======= -->
 <div id="adminAssistModal" class="modal-backdrop" hidden>
-<div class="modal-card">
+  <div class="modal-card" style="width:min(920px,100%); max-height:calc(100dvh - 24px - env(safe-area-inset-top) - env(safe-area-inset-bottom)); display:flex; flex-direction:column; overflow:hidden;">
     <h2 class="modal-title">Ver asistencias</h2>
     <p class="modal-sub">Selecciona un docente para ver sus registros del mes seleccionado.</p>
 
@@ -2018,9 +2611,10 @@ body.is-admin #registerActions{
       </div>
     </div>
 
-    <div id="adminAssistList" style="
+   <div id="adminAssistList" style="
       margin-top:12px;
-      max-height: min(60vh, 520px);
+      flex:1 1 auto;
+      min-height:160px;
       overflow:auto;
       -webkit-overflow-scrolling:touch;
       border:1px solid var(--line);
@@ -2081,17 +2675,50 @@ body.is-admin #registerActions{
   <div class="modal-card" style="width:min(520px,100%);">
     <h2 class="modal-title">Configuración</h2>
     <p class="modal-sub">Ajustes del sistema. Se guardan en la hoja CONFIG.</p>
+<label class="modal-label">Hora límite ENTRADA general (HH:MM)</label>
+<input id="cfgOnTime" class="modal-input" type="text" placeholder="06:30" />
 
-    <label class="modal-label">Hora límite ENTRADA (HH:MM)</label>
-    <input id="cfgOnTime" class="modal-input" type="text" placeholder="06:30" />
+<label class="modal-label">Hora mínima SALIDA OK general (HH:MM)</label>
+<input id="cfgExitOk" class="modal-input" type="text" placeholder="14:00" />
 
-    <label class="modal-label">Hora mínima SALIDA OK (HH:MM)</label>
-    <input id="cfgExitOk" class="modal-input" type="text" placeholder="14:00" />
+<hr style="border:none;border-top:1px solid rgba(255,255,255,.10);margin:14px 0;">
 
-    <label class="modal-label">Radio del colegio (m)</label>
-    <input id="cfgRadius" class="modal-input" type="number" min="1" placeholder="120" />
+<details id="cfgExceptionsSection" class="cfg-exceptions-details">
+  <summary class="cfg-exceptions-summary">
+    <span>Excepciones por docente</span>
+    <span id="cfgExceptionsCount" class="badge badge-neutral">0</span>
+  </summary>
 
-  <label class="modal-label">Precisión requerida (m)</label>
+  <div class="cfg-exceptions-body">
+    <label class="modal-label">Selecciona docente</label>
+    <select id="cfgTeacherSelect" class="modal-input">
+      <option value="">Selecciona un docente</option>
+    </select>
+
+    <label class="modal-label">Hora límite ENTRADA excepción (HH:MM)</label>
+    <input id="cfgTeacherOnTime" class="modal-input" type="text" placeholder="Ej: 07:00" />
+
+    <label class="modal-label">Hora mínima SALIDA OK excepción (HH:MM)</label>
+    <input id="cfgTeacherExitOk" class="modal-input" type="text" placeholder="Ej: 13:00" />
+
+    <div class="row" style="margin-top:10px;">
+      <button id="btnCfgTeacherSaveException" type="button" class="btn btn-ghost">Guardar / actualizar</button>
+      <button id="btnCfgTeacherClearException" type="button" class="btn btn-ghost">Quitar seleccionada</button>
+    </div>
+
+    <div style="margin-top:14px;">
+      <div class="muted small" style="margin-bottom:8px;">Docentes con excepción</div>
+      <div id="cfgExceptionsList" class="cfg-exceptions-list">
+        <div class="muted small">No hay excepciones guardadas.</div>
+      </div>
+    </div>
+  </div>
+</details>
+
+<label class="modal-label">Radio del colegio (m)</label>
+<input id="cfgRadius" class="modal-input" type="number" min="1" placeholder="120" />
+
+<label class="modal-label">Precisión requerida (m)</label>
 <input id="cfgAccuracy" class="modal-input" type="number" min="1" placeholder="50" />
 
 <label class="modal-label">Latitud del colegio</label>
@@ -2875,6 +3502,17 @@ const btnAdminConfig = $("btnAdminConfig");
 const adminConfigModal = $("adminConfigModal");
 const cfgOnTime = $("cfgOnTime");
 const cfgExitOk = $("cfgExitOk");
+const cfgTeacherSelect = $("cfgTeacherSelect");
+const cfgTeacherOnTime = $("cfgTeacherOnTime");
+const cfgTeacherExitOk = $("cfgTeacherExitOk");
+const btnCfgTeacherSaveException = $("btnCfgTeacherSaveException");
+const btnCfgTeacherClearException = $("btnCfgTeacherClearException");
+
+
+const cfgExceptionsSection = $("cfgExceptionsSection");
+const cfgExceptionsCount = $("cfgExceptionsCount");
+const cfgExceptionsList = $("cfgExceptionsList");
+
 const cfgRadius = $("cfgRadius");
 const cfgAccuracy = $("cfgAccuracy");
 const cfgLat = $("cfgLat");
@@ -2916,12 +3554,48 @@ function initQrUi_() {
 }
 
 // ✅ Ejecutar cuando el DOM ya existe
+// ✅ Ejecutar cuando el DOM ya existe
 document.addEventListener("DOMContentLoaded", async () => {
   initQrUi_();
-  try { updateRegisterCardUI_(); } catch (e) {}
-  loadRuntimeConfig_({ silent: true });
-});
 
+  // ✅ mostrar el check azul INMEDIATAMENTE al volver del reload
+  try {
+    const showAfter = sessionStorage.getItem("showRefreshAfterReload");
+
+    if (showAfter === "1") {
+      sessionStorage.removeItem("showRefreshAfterReload");
+      showRefreshDone("Actualizado");
+
+      setTimeout(() => {
+        hideRefreshSpin();
+      }, 1000);
+    }
+  } catch (e) {}
+
+  // ✅ pinta rápido el estado local
+  try { restoreAttendanceButtonsState_(); } catch (e) {}
+  try { syncSingleActionUI_(); } catch (e) {}
+  try { updateRegisterCardUI_(); } catch (e) {}
+
+  // ✅ primero carga configuración real
+  await loadRuntimeConfig_({ silent: true });
+
+  // ✅ luego consulta backend real si hay docente logueado
+  try {
+    const profile = loadProfile();
+    const admin = isAdminMode();
+
+    if (profile && profile.name && !admin) {
+      await refreshFromSheet({
+        useCache: true,
+        silent: true,
+        preferRemote: true
+      });
+    }
+  } catch (e) {
+    console.warn("No se pudo refrescar estado inicial:", e);
+  }
+});
 
 
 
@@ -3608,6 +4282,138 @@ function syncReportesViewerList(items){
 }
 
 
+
+let __successCheckTimer = null;
+let __successAudioCtx = null;
+
+function playSuccessTone_() {
+  try {
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    if (!AudioCtx) return;
+
+    if (!__successAudioCtx) {
+      __successAudioCtx = new AudioCtx();
+    }
+
+    const ctx = __successAudioCtx;
+
+    if (ctx.state === "suspended") {
+      ctx.resume().catch(() => {});
+    }
+
+    const now = ctx.currentTime;
+
+    const osc1 = ctx.createOscillator();
+    const gain1 = ctx.createGain();
+
+    osc1.type = "sine";
+    osc1.frequency.setValueAtTime(740, now);
+    osc1.frequency.exponentialRampToValueAtTime(980, now + 0.16);
+
+    gain1.gain.setValueAtTime(0.0001, now);
+    gain1.gain.exponentialRampToValueAtTime(0.08, now + 0.02);
+    gain1.gain.exponentialRampToValueAtTime(0.0001, now + 0.20);
+
+    osc1.connect(gain1);
+    gain1.connect(ctx.destination);
+
+    osc1.start(now);
+    osc1.stop(now + 0.22);
+  } catch (e) {}
+}
+
+function vibrateSuccess_() {
+  try {
+    if (navigator && typeof navigator.vibrate === "function") {
+      navigator.vibrate([70, 30, 110]);
+    }
+  } catch (e) {}
+}
+
+
+function showRefreshSpin(message = "Actualizando…") {
+  const box = document.getElementById("refreshSpin");
+  const wrap = document.getElementById("refreshSpinWrap");
+  const icon = document.getElementById("refreshSpinIcon");
+  const iconInner = document.getElementById("refreshSpinIconInner");
+  const text = document.getElementById("refreshSpinText");
+
+  if (!box || !wrap || !icon || !iconInner || !text) return;
+
+  text.textContent = message;
+  iconInner.className = "fa-solid fa-rotate-right";
+  icon.classList.remove("is-done");
+  icon.classList.add("is-spinning");
+  wrap.classList.remove("is-hiding");
+
+  box.hidden = false;
+}
+
+function showRefreshDone(message = "Actualizado") {
+  const box = document.getElementById("refreshSpin");
+  const wrap = document.getElementById("refreshSpinWrap");
+  const icon = document.getElementById("refreshSpinIcon");
+  const iconInner = document.getElementById("refreshSpinIconInner");
+  const text = document.getElementById("refreshSpinText");
+
+  if (!box || !wrap || !icon || !iconInner || !text) return;
+
+  box.hidden = false;
+  wrap.classList.remove("is-hiding");
+
+  text.textContent = message;
+  icon.classList.remove("is-spinning");
+  iconInner.className = "fa-solid fa-check";
+  icon.classList.remove("is-done");
+  void icon.offsetWidth; // reinicia animación
+  icon.classList.add("is-done");
+}
+
+function hideRefreshSpin() {
+  const box = document.getElementById("refreshSpin");
+  const wrap = document.getElementById("refreshSpinWrap");
+
+  if (!box || !wrap) return;
+
+  wrap.classList.remove("is-hiding");
+  void wrap.offsetWidth;
+  wrap.classList.add("is-hiding");
+
+  setTimeout(() => {
+    box.hidden = true;
+    wrap.classList.remove("is-hiding");
+  }, 340);
+}
+
+
+
+function showSuccessCheck(message = "¡Registro guardado!", ms = 3200) {
+  const box = document.getElementById("successCheck");
+  const text = document.getElementById("successCheckText");
+
+  if (!box || !text) return;
+
+  text.textContent = message;
+
+  if (__successCheckTimer) {
+    clearTimeout(__successCheckTimer);
+    __successCheckTimer = null;
+  }
+
+  // reiniciar animaciones
+  box.hidden = true;
+  void box.offsetWidth;
+  box.hidden = false;
+
+  vibrateSuccess_();
+  playSuccessTone_();
+
+  __successCheckTimer = setTimeout(() => {
+    box.hidden = true;
+    __successCheckTimer = null;
+  }, ms);
+}
+
 /**
  * Alert moderno tipo modal (Promise-based)
  * Uso: await alertPro({title, msg, okText, danger})
@@ -3642,27 +4448,34 @@ function alertPro({
 
     btnOk.textContent = okText;
 
-    // ocultar botón cancelar en modo alert
+    // ocultar cancelar en modo alert
     btnNo.hidden = true;
 
-    // estilos
     btnOk.classList.toggle("btn-danger", !!danger);
     btnOk.classList.toggle("btn-primary", !danger);
 
-    // abrir modal + bloquear fondo (igual que loader)
+    // ✅ por seguridad, si quedó loader prendido lo apagamos
+    try {
+      if (typeof __loadingCount !== "undefined") {
+        __loadingCount = 0;
+      }
+      if (typeof appLoader !== "undefined" && appLoader) {
+        appLoader.hidden = true;
+      }
+    } catch (e) {}
+
     modal.hidden = false;
     document.body.classList.add("is-loading");
 
     const cleanup = () => {
       btnOk.onclick = null;
-      // restaurar botón cancelar para futuras confirmaciones
       btnNo.hidden = false;
+      modal.hidden = true;
+      document.body.classList.remove("is-loading");
     };
 
     btnOk.onclick = () => {
       cleanup();
-      modal.hidden = true;
-      document.body.classList.remove("is-loading");
       resolve(true);
     };
   });
@@ -3747,6 +4560,7 @@ function updateDailyButtonsState(records) {
     btnEntrada.disabled = true;
     btnSalida.disabled = true;
     btnSalida.classList.remove("is-inactive");
+    syncSingleActionUI_();
     return;
   }
 
@@ -3769,21 +4583,17 @@ function updateDailyButtonsState(records) {
 
     if (!raw) return "";
 
-    // yyyy-mm-dd
     if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) return raw;
 
-    // dd/mm/yyyy
     if (/^\d{2}\/\d{2}\/\d{4}$/.test(raw)) {
       const [dd, mm, yyyy] = raw.split("/");
       return `${yyyy}-${mm}-${dd}`;
     }
 
-    // ISO (evita error por zona horaria)
     if (/^\d{4}-\d{2}-\d{2}T/.test(raw)) {
       return raw.slice(0, 10);
     }
 
-    // fallback
     const d = new Date(raw);
     if (!isNaN(d.getTime())) {
       return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
@@ -3807,8 +4617,8 @@ function updateDailyButtonsState(records) {
     btnEntrada.disabled = false;
     btnSalida.disabled = true;
     btnSalida.classList.add("is-inactive");
-
-    saveAttendanceButtonsState_(); // ✅ AÑADIDO
+    saveAttendanceButtonsState_();
+    syncSingleActionUI_();
     return;
   }
 
@@ -3817,8 +4627,8 @@ function updateDailyButtonsState(records) {
     btnEntrada.disabled = true;
     btnSalida.disabled = false;
     btnSalida.classList.remove("is-inactive");
-
-    saveAttendanceButtonsState_(); // ✅ AÑADIDO
+    saveAttendanceButtonsState_();
+    syncSingleActionUI_();
     return;
   }
 
@@ -3826,12 +4636,32 @@ function updateDailyButtonsState(records) {
   btnEntrada.disabled = true;
   btnSalida.disabled = true;
   btnSalida.classList.remove("is-inactive");
-
-  saveAttendanceButtonsState_(); // ✅ AÑADIDO
+  saveAttendanceButtonsState_();
+  syncSingleActionUI_();
 }
 
+function syncSingleActionUI_() {
+  const wrap = $("registerActions");
+  if (!wrap || !btnEntrada || !btnSalida) return;
 
+  const entradaDisabled = !!btnEntrada.disabled;
+  const salidaDisabled = !!btnSalida.disabled;
+  const isDone = entradaDisabled && salidaDisabled;
 
+  wrap.classList.toggle("done", isDone);
+
+  if (isDone) {
+    btnSalida.textContent = "Registro completo hoy";
+    btnSalida.setAttribute("aria-label", "Registro completo hoy");
+    return;
+  }
+
+  btnEntrada.textContent = "Entrada";
+  btnEntrada.setAttribute("aria-label", "Entrada");
+
+  btnSalida.textContent = "Salida";
+  btnSalida.setAttribute("aria-label", "Salida");
+}
 
 // ======= Helpers =======
 
@@ -3888,6 +4718,7 @@ function restoreAttendanceButtonsState_() {
       btnEntrada.disabled = false;
       btnSalida.disabled = true;
       btnSalida.classList.add("is-inactive");
+      syncSingleActionUI_();
       return true;
     }
 
@@ -3895,15 +4726,119 @@ function restoreAttendanceButtonsState_() {
       btnEntrada.disabled = true;
       btnSalida.disabled = false;
       btnSalida.classList.remove("is-inactive");
+      syncSingleActionUI_();
       return true;
     }
 
     btnEntrada.disabled = true;
     btnSalida.disabled = true;
     btnSalida.classList.remove("is-inactive");
+    syncSingleActionUI_();
     return true;
   } catch {
     return false;
+  }
+}
+
+
+function applyAttendanceState_(type, recordData = {}) {
+  const t = nowParts();
+
+  if (type === "ENTRADA") {
+    hasEntradaToday = true;
+    hasSalidaToday = false;
+  } else if (type === "SALIDA") {
+    hasEntradaToday = true;
+    hasSalidaToday = true;
+  }
+
+  // ✅ persistir flags del día
+  saveAttendanceButtonsState_();
+
+  const profile = loadProfile() || {};
+  const localType = String(type || "").trim().toUpperCase();
+  const localDate = recordData.date || t.date;
+  const localTime = recordData.time || t.time;
+  const localTeacher = String(
+    recordData.teacher || profile.name || teacherNameEl.value || ""
+  ).trim();
+
+  // ✅ calcular TARDE para ENTRADA desde el primer render
+  const hhmmFromTime = (value) => String(value || "").trim().slice(0, 5);
+
+  const toMinutes = (hhmm) => {
+    const s = String(hhmm || "").trim();
+    const m = s.match(/^(\d{2}):(\d{2})$/);
+    if (!m) return null;
+    return Number(m[1]) * 60 + Number(m[2]);
+  };
+
+ const entryMinutes = toMinutes(hhmmFromTime(localTime));
+const teacherSchedule = getEffectiveScheduleForTeacher_(localTeacher);
+const onTimeMinutes = toMinutes(teacherSchedule.onTime);
+
+const localLate =
+  localType === "ENTRADA" &&
+  entryMinutes != null &&
+  onTimeMinutes != null
+    ? entryMinutes > onTimeMinutes
+    : !!recordData.late;
+
+  const localRecord = {
+    teacher: localTeacher,
+    type: localType,
+    date: localDate,
+    time: localTime,
+    iso: recordData.iso || t.iso,
+    distance_m: recordData.distance_m ?? recordData.dist ?? "—",
+    accuracy_m: recordData.accuracy_m ?? recordData.acc ?? "—",
+    late: localLate
+  };
+
+  if (!Array.isArray(cachedRecords)) {
+    cachedRecords = [];
+  }
+
+  // ✅ CLAVE:
+  // si ya existe un registro del mismo docente + tipo + fecha,
+  // lo reemplazamos por el nuevo en vez de dejar el viejo
+  const sameDailyIndex = cachedRecords.findIndex(r =>
+    String(r.teacher || "").trim().toLowerCase() === String(localRecord.teacher || "").trim().toLowerCase() &&
+    String(r.type || "").trim().toUpperCase() === String(localRecord.type || "").trim().toUpperCase() &&
+    String(r.date || "").trim() === String(localRecord.date || "").trim()
+  );
+
+  if (sameDailyIndex >= 0) {
+    cachedRecords[sameDailyIndex] = localRecord;
+  } else {
+    cachedRecords = [localRecord, ...(cachedRecords || [])];
+  }
+
+  // ✅ ordenar más nuevo primero
+  cachedRecords.sort((a, b) => {
+    const aIso = String(a && (a.iso || `${a.date || ""}T${a.time || ""}`) || "");
+    const bIso = String(b && (b.iso || `${b.date || ""}T${b.time || ""}`) || "");
+    return bIso.localeCompare(aIso);
+  });
+
+  try {
+    const cacheKey = cacheKeyForCurrentView_();
+    saveRecordsCache_(cacheKey, cachedRecords);
+  } catch (e) {}
+
+  try {
+    updateDailyButtonsState(cachedRecords);
+  } catch (e) {
+    if (type === "ENTRADA") {
+      btnEntrada.disabled = true;
+      btnSalida.disabled = false;
+      btnSalida.classList.remove("is-inactive");
+    } else {
+      btnEntrada.disabled = true;
+      btnSalida.disabled = true;
+      btnSalida.classList.remove("is-inactive");
+    }
+    try { syncSingleActionUI_(); } catch (_) {}
   }
 }
 
@@ -4180,6 +5115,186 @@ async function gsAdminDeleteDevice(id) {
 let EXIT_OK_HHMM_CLIENT = "14:00";
 let ON_TIME_HHMM_CLIENT = "06:30";
 
+let TEACHER_EXCEPTIONS_MAP = {};
+
+function getTeacherExceptionKey_(teacher) {
+  return normalizeKey(teacher || "");
+}
+
+function parseTeacherExceptions_(raw) {
+  if (!raw) return {};
+  if (typeof raw === "object") return raw;
+
+  try {
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === "object" ? parsed : {};
+  } catch {
+    return {};
+  }
+}
+
+function getEffectiveScheduleForTeacher_(teacher) {
+  const key = getTeacherExceptionKey_(teacher);
+  const ex = TEACHER_EXCEPTIONS_MAP[key] || null;
+
+  return {
+    onTime: String(ex && ex.onTime ? ex.onTime : ON_TIME_HHMM_CLIENT || "06:30").trim(),
+    exitOk: String(ex && ex.exitOk ? ex.exitOk : EXIT_OK_HHMM_CLIENT || "14:00").trim()
+  };
+}
+
+function fillTeacherExceptionsUI_(teacher) {
+  const key = getTeacherExceptionKey_(teacher);
+  const ex = TEACHER_EXCEPTIONS_MAP[key] || null;
+
+  cfgTeacherOnTime.value = ex && ex.onTime ? ex.onTime : "";
+  cfgTeacherExitOk.value = ex && ex.exitOk ? ex.exitOk : "";
+}
+
+async function loadTeachersIntoConfigSelect_() {
+  const teachers = await gsAdminListTeachers();
+
+  cfgTeacherSelect.innerHTML =
+    `<option value="">Selecciona un docente</option>` +
+    (teachers || []).map(t => `<option value="${escapeHtml(t)}">${escapeHtml(t)}</option>`).join("");
+}
+
+function saveTeacherExceptionInMemory_() {
+  const teacher = String(cfgTeacherSelect.value || "").trim();
+  if (!teacher) {
+    cfgHint.textContent = "Selecciona un docente.";
+    return false;
+  }
+
+  let onTime = String(cfgTeacherOnTime.value || "").trim();
+  let exitOk = String(cfgTeacherExitOk.value || "").trim();
+
+  // ✅ Si deja una vacía, toma la general
+  if (!onTime) onTime = String(cfgOnTime.value || ON_TIME_HHMM_CLIENT || "06:30").trim();
+  if (!exitOk) exitOk = String(cfgExitOk.value || EXIT_OK_HHMM_CLIENT || "14:00").trim();
+
+  if (!isValidHHMM(onTime) || !isValidHHMM(exitOk)) {
+    cfgHint.textContent = "Horas de excepción inválidas. Usa HH:MM.";
+    return false;
+  }
+
+  const key = getTeacherExceptionKey_(teacher);
+  TEACHER_EXCEPTIONS_MAP[key] = {
+    teacher,
+    onTime,
+    exitOk
+  };
+
+  // opcional: reflejar en los inputs el valor final guardado
+  cfgTeacherOnTime.value = onTime;
+  cfgTeacherExitOk.value = exitOk;
+
+  renderTeacherExceptionsList_();
+  cfgHint.textContent = `Excepción preparada para ${teacher}. Ahora pulsa "Guardar".`;
+  return true;
+}
+
+function clearTeacherExceptionInMemory_() {
+  const teacher = String(cfgTeacherSelect.value || "").trim();
+  if (!teacher) {
+    cfgHint.textContent = "Selecciona un docente.";
+    return false;
+  }
+
+  const key = getTeacherExceptionKey_(teacher);
+  delete TEACHER_EXCEPTIONS_MAP[key];
+  cfgTeacherOnTime.value = "";
+  cfgTeacherExitOk.value = "";
+
+  renderTeacherExceptionsList_();
+  cfgHint.textContent = `Excepción eliminada para ${teacher}. Ahora pulsa "Guardar".`;
+  return true;
+}
+
+function getTeacherExceptionsEntries_() {
+  return Object.values(TEACHER_EXCEPTIONS_MAP || {})
+    .filter(x => x && x.teacher)
+    .sort((a, b) => String(a.teacher || "").localeCompare(String(b.teacher || ""), "es"));
+}
+
+function renderTeacherExceptionsList_() {
+  const items = getTeacherExceptionsEntries_();
+
+  if (cfgExceptionsCount) {
+    cfgExceptionsCount.textContent = String(items.length);
+  }
+
+  if (!cfgExceptionsList) return;
+
+  if (!items.length) {
+    cfgExceptionsList.innerHTML = `<div class="muted small">No hay excepciones guardadas.</div>`;
+    return;
+  }
+
+  cfgExceptionsList.innerHTML = items.map(item => {
+    const teacher = String(item.teacher || "").trim();
+    const onTime = String(item.onTime || "").trim();
+    const exitOk = String(item.exitOk || "").trim();
+
+    return `
+      <div class="cfg-exception-item" data-teacher="${escapeHtml(teacher)}">
+        <div class="cfg-exception-top">
+          <div class="cfg-exception-name">${escapeHtml(teacher)}</div>
+          <span class="badge badge-neutral">Excepción</span>
+        </div>
+
+        <div class="cfg-exception-times">
+          <span class="badge badge-neutral">Entrada: ${escapeHtml(onTime || "-")}</span>
+          <span class="badge badge-neutral">Salida: ${escapeHtml(exitOk || "-")}</span>
+        </div>
+
+        <div class="cfg-exception-actions">
+          <button type="button" class="cfg-mini-btn" data-action="edit" data-teacher="${escapeHtml(teacher)}">
+            Editar
+          </button>
+          <button type="button" class="cfg-mini-btn danger" data-action="delete" data-teacher="${escapeHtml(teacher)}">
+            Quitar
+          </button>
+        </div>
+      </div>
+    `;
+  }).join("");
+}
+
+function loadTeacherExceptionIntoForm_(teacher) {
+  const teacherName = String(teacher || "").trim();
+  if (!teacherName) return;
+
+  if (cfgTeacherSelect) {
+    cfgTeacherSelect.value = teacherName;
+  }
+
+  fillTeacherExceptionsUI_(teacherName);
+
+  if (cfgExceptionsSection && !cfgExceptionsSection.open) {
+    cfgExceptionsSection.open = true;
+  }
+}
+
+function deleteTeacherExceptionByName_(teacher) {
+  const teacherName = String(teacher || "").trim();
+  if (!teacherName) return false;
+
+  const key = getTeacherExceptionKey_(teacherName);
+  if (!TEACHER_EXCEPTIONS_MAP[key]) return false;
+
+  delete TEACHER_EXCEPTIONS_MAP[key];
+
+  if (cfgTeacherSelect && cfgTeacherSelect.value === teacherName) {
+    cfgTeacherOnTime.value = "";
+    cfgTeacherExitOk.value = "";
+  }
+
+  renderTeacherExceptionsList_();
+  cfgHint.textContent = `Excepción eliminada para ${teacherName}. Ahora pulsa "Guardar".`;
+  return true;
+}
+
 function timeToMinutes(hhmmss) {
   const s = String(hhmmss || "").trim();
   const m = s.match(/^(\d{2}):(\d{2})(?::(\d{2}))?$/);
@@ -4193,21 +5308,16 @@ function getExitVisualState_(r) {
   if (!r || String(r.type || "").toUpperCase() !== "SALIDA") return "normal";
 
   const t = timeToMinutes(r.time);
-  const limit = timeToMinutes(EXIT_OK_HHMM_CLIENT); // hora configurada
-  const extraStart = timeToMinutes("16:30");        // 4:30 PM
+  const schedule = getEffectiveScheduleForTeacher_(r.teacher);
+  const limit = timeToMinutes(schedule.exitOk);
+  const extraStart = timeToMinutes("16:30");
 
   if (t == null || limit == null) return "normal";
 
-  // antes de la hora configurada
   if (t < limit) return "early";
-
-  // hasta 5 minutos después de la hora configurada => verde
   if (t <= (limit + 5)) return "ontime";
-
-  // desde las 4:30 PM en adelante => azul + EXTRA
   if (extraStart != null && t >= extraStart) return "extra";
 
-  // después de los 5 min y antes de 4:30 => naranja, sigue diciendo A TIEMPO
   return "soft";
 }
 
@@ -4321,9 +5431,24 @@ function setLoading(isLoading, title = "Procesando…", msg = "Por favor espera�
   } else {
     if (btnExport) btnExport.disabled = false;
 
-    // restaurar estado real de los botones del día
+    // ✅ PRIMERO intenta restaurar desde localStorage del día
+    let restored = false;
     try {
-      updateDailyButtonsState(cachedRecords);
+      restored = restoreAttendanceButtonsState_();
+    } catch (e) {
+      restored = false;
+    }
+
+    // ✅ Si no había estado local, usa caché de registros
+    if (!restored) {
+      try {
+        updateDailyButtonsState(cachedRecords || []);
+      } catch (e) {}
+    }
+
+    // ✅ Refuerza la UI visual del botón único
+    try {
+      syncSingleActionUI_();
     } catch (e) {}
   }
 
@@ -4343,11 +5468,10 @@ function setLoading(isLoading, title = "Procesando…", msg = "Por favor espera�
     return;
   }
 
-  // ✅ Cuando termina, recalcular el estado real del bloque Registrar
+  // Cuando termina, recalcular estado general
   try {
     refreshHomeStatus_();
   } catch (e) {
-    // fallback seguro por si todavía no existe geo o algo no cargó
     setStatus("warn", "Listo", "Activa ubicación para registrar en el colegio.");
   }
 }
@@ -4454,7 +5578,6 @@ function closeAdminConfigModal() {
 async function loadAdminConfigIntoUI() {
   const cfg = await gsAdminGetConfig();
 
-  // set inputs
   cfgOnTime.value = cfg.ON_TIME_HHMM || "06:30";
   cfgExitOk.value = cfg.EXIT_OK_HHMM || "14:00";
   cfgRadius.value = String(cfg.SCHOOL_RADIUS_METERS ?? 120);
@@ -4462,7 +5585,17 @@ async function loadAdminConfigIntoUI() {
   cfgLat.value = String(cfg.SCHOOL_LAT ?? SCHOOL_LAT ?? 4.55445);
   cfgLng.value = String(cfg.SCHOOL_LNG ?? SCHOOL_LNG ?? -74.11165);
 
-  // aplicar en runtime (impacta ubicación + contadores)
+  TEACHER_EXCEPTIONS_MAP = parseTeacherExceptions_(cfg.TEACHER_EXCEPTIONS_JSON);
+
+  await loadTeachersIntoConfigSelect_();
+
+  if (cfgTeacherSelect) cfgTeacherSelect.value = "";
+  if (cfgTeacherOnTime) cfgTeacherOnTime.value = "";
+  if (cfgTeacherExitOk) cfgTeacherExitOk.value = "";
+
+  renderTeacherExceptionsList_();
+  if (cfgExceptionsSection) cfgExceptionsSection.open = false;
+
   ON_TIME_HHMM_CLIENT = cfgOnTime.value;
   EXIT_OK_HHMM_CLIENT = cfgExitOk.value;
   SCHOOL_RADIUS_METERS = Number(cfgRadius.value) || 120;
@@ -4485,33 +5618,35 @@ async function loadRuntimeConfig_({ silent = false } = {}) {
 
     const cfg = await gsAdminGetConfig();
 
-     if (cfg && typeof cfg === "object") {
-      const radius = Number(cfg.SCHOOL_RADIUS_METERS);
-      const acc = Number(cfg.REQUIRED_ACCURACY_METERS);
-      const lat = Number(cfg.SCHOOL_LAT);
-      const lng = Number(cfg.SCHOOL_LNG);
-      const onTime = String(cfg.ON_TIME_HHMM || "").trim();
-      const exitOk = String(cfg.EXIT_OK_HHMM || "").trim();
+   if (cfg && typeof cfg === "object") {
+  const radius = Number(cfg.SCHOOL_RADIUS_METERS);
+  const acc = Number(cfg.REQUIRED_ACCURACY_METERS);
+  const lat = Number(cfg.SCHOOL_LAT);
+  const lng = Number(cfg.SCHOOL_LNG);
+  const onTime = String(cfg.ON_TIME_HHMM || "").trim();
+  const exitOk = String(cfg.EXIT_OK_HHMM || "").trim();
 
-      if (Number.isFinite(radius) && radius > 0) {
-        SCHOOL_RADIUS_METERS = radius;
-      }
+  TEACHER_EXCEPTIONS_MAP = parseTeacherExceptions_(cfg.TEACHER_EXCEPTIONS_JSON);
 
-      if (Number.isFinite(acc) && acc > 0) {
-        REQUIRED_ACCURACY_METERS = acc;
-      }
+  if (Number.isFinite(radius) && radius > 0) {
+    SCHOOL_RADIUS_METERS = radius;
+  }
 
-      if (Number.isFinite(lat)) {
-        SCHOOL_LAT = lat;
-      }
+  if (Number.isFinite(acc) && acc > 0) {
+    REQUIRED_ACCURACY_METERS = acc;
+  }
 
-      if (Number.isFinite(lng)) {
-        SCHOOL_LNG = lng;
-      }
+  if (Number.isFinite(lat)) {
+    SCHOOL_LAT = lat;
+  }
 
-      if (onTime) ON_TIME_HHMM_CLIENT = onTime;
-      if (exitOk) EXIT_OK_HHMM_CLIENT = exitOk;
-    }
+  if (Number.isFinite(lng)) {
+    SCHOOL_LNG = lng;
+  }
+
+  if (onTime) ON_TIME_HHMM_CLIENT = onTime;
+  if (exitOk) EXIT_OK_HHMM_CLIENT = exitOk;
+}
 
     return true;
   } catch (e) {
@@ -9291,7 +10426,47 @@ if (btnCfgUseCurrentLocation) {
   });
 }
 
+if (cfgTeacherSelect) {
+  cfgTeacherSelect.addEventListener("change", () => {
+    fillTeacherExceptionsUI_(cfgTeacherSelect.value);
+  });
+}
 
+if (btnCfgTeacherSaveException) {
+  btnCfgTeacherSaveException.addEventListener("click", () => {
+    saveTeacherExceptionInMemory_();
+  });
+}
+
+if (btnCfgTeacherClearException) {
+  btnCfgTeacherClearException.addEventListener("click", () => {
+    clearTeacherExceptionInMemory_();
+  });
+}
+
+
+if (cfgExceptionsList) {
+  cfgExceptionsList.addEventListener("click", (e) => {
+    const btn = e.target.closest("button[data-action]");
+    if (!btn) return;
+
+    const action = String(btn.getAttribute("data-action") || "").trim();
+    const teacher = String(btn.getAttribute("data-teacher") || "").trim();
+
+    if (!teacher) return;
+
+    if (action === "edit") {
+      loadTeacherExceptionIntoForm_(teacher);
+      cfgHint.textContent = `Editando excepción de ${teacher}.`;
+      return;
+    }
+
+    if (action === "delete") {
+      deleteTeacherExceptionByName_(teacher);
+      return;
+    }
+  });
+}
 
 if (btnCfgSave) {
   btnCfgSave.addEventListener("click", async () => {
@@ -9328,14 +10503,15 @@ if (btnCfgSave) {
    try {
   setLoading(true, "Guardando…", "Actualizando CONFIG.");
 
-  const resp = await gsAdminSetConfig({
-    ON_TIME_HHMM: onTime,
-    EXIT_OK_HHMM: exitOk,
-    SCHOOL_RADIUS_METERS: r,
-    REQUIRED_ACCURACY_METERS: a,
-    SCHOOL_LAT: lat,
-    SCHOOL_LNG: lng
-  });
+const resp = await gsAdminSetConfig({
+  ON_TIME_HHMM: onTime,
+  EXIT_OK_HHMM: exitOk,
+  TEACHER_EXCEPTIONS_JSON: JSON.stringify(TEACHER_EXCEPTIONS_MAP || {}),
+  SCHOOL_RADIUS_METERS: r,
+  REQUIRED_ACCURACY_METERS: a,
+  SCHOOL_LAT: lat,
+  SCHOOL_LNG: lng
+});
 
   // aplicar runtime
   ON_TIME_HHMM_CLIENT = onTime;
@@ -9490,7 +10666,19 @@ btnLoginSave.addEventListener("click", async () => {
   }
 });
 
+function isLateEntryByConfig_(r) {
+  if (!r || String(r.type || "").toUpperCase() !== "ENTRADA") return false;
 
+  const schedule = getEffectiveScheduleForTeacher_(r.teacher);
+  const entryMinutes = timeToMinutes(r.time);
+  const limit = timeToMinutes(schedule.onTime);
+
+  if (entryMinutes == null || limit == null) {
+    return !!r.late;
+  }
+
+  return entryMinutes > limit;
+}
 
 function openAdminModal() {
   if (!adminModal) return;
@@ -9687,7 +10875,7 @@ function renderAdminTeacherRecords(teacher, records) {
   adminTeacherTitle.textContent = teacher || "—";
 
   const lateCount = list.filter(r =>
-    String(r.type || "").toUpperCase() === "ENTRADA" && !!r.late
+String(r.type || "").toUpperCase() === "ENTRADA" && isLateEntryByConfig_(r)
   ).length;
 
   const earlyExitCount = list.filter(isEarlyExitRecord).length;
@@ -9707,7 +10895,7 @@ function renderAdminTeacherRecords(teacher, records) {
     const exitState = getExitVisualState_(r);
 
     const cls = (type === "ENTRADA")
-      ? (r.late ? "record-card late" : "record-card ontime")
+      ? (isLateEntryByConfig_(r) ? "record-card late" : "record-card ontime")
       : (type === "SALIDA")
           ? (
               exitState === "early" ? "record-card late" :
@@ -13245,7 +14433,7 @@ function render(records) {
 
     // ======= CONTADORES =======
     const lateCount = filtered.filter(r =>
-      String(r.type || "").toUpperCase() === "ENTRADA" && !!r.late
+     String(r.type || "").toUpperCase() === "ENTRADA" && isLateEntryByConfig_(r)
     ).length;
 
     const earlyExitCount = filtered.filter(isEarlyExitRecord).length;
@@ -13340,7 +14528,7 @@ function render(records) {
 
       const rowClass =
         (type === "ENTRADA")
-          ? (r.late ? "record-card late" : "record-card ontime")
+          ? (isLateEntryByConfig_(r) ? "record-card late" : "record-card ontime")
           : (type === "SALIDA")
               ? (
                   exitState === "early" ? "record-card late" :
@@ -13353,7 +14541,7 @@ function render(records) {
 
       const badgeText =
         (type === "ENTRADA")
-          ? `${type}${r.late ? " • TARDE" : " • A TIEMPO"}${ntcTxt}`
+          ? `${type}${isLateEntryByConfig_(r) ? " • TARDE" : " • A TIEMPO"}${ntcTxt}`
           : (type === "SALIDA")
               ? (
                   exitState === "early"
@@ -13390,7 +14578,7 @@ function render(records) {
 
   // ======= CONTADORES =======
   const lateCount = filtered.filter(r =>
-    String(r.type || "").toUpperCase() === "ENTRADA" && !!r.late
+   String(r.type || "").toUpperCase() === "ENTRADA" && isLateEntryByConfig_(r)
   ).length;
 
   const earlyExitCount = filtered.filter(isEarlyExitRecord).length;
@@ -13486,7 +14674,7 @@ function render(records) {
 
     const rowClass =
       (type === "ENTRADA")
-        ? (r.late ? "record-card late" : "record-card ontime")
+        ? (isLateEntryByConfig_(r) ? "record-card late" : "record-card ontime")
         : (type === "SALIDA")
             ? (
                 exitState === "early" ? "record-card late" :
@@ -13499,7 +14687,7 @@ function render(records) {
 
     const badgeText =
       (type === "ENTRADA")
-        ? `${type}${r.late ? " • TARDE" : " • A TIEMPO"}${ntcTxt}`
+        ? `${type}${isLateEntryByConfig_(r) ? " • TARDE" : " • A TIEMPO"}${ntcTxt}`
         : (type === "SALIDA")
             ? (
                 exitState === "early"
@@ -13532,14 +14720,66 @@ function render(records) {
   return (records || []).filter(r => String(r.date || "").startsWith(m + "-"));
 }
 
+function sameRecordKey_(r) {
+  return [
+    normalizeKey(r && r.teacher),
+    String((r && r.type) || "").trim().toUpperCase(),
+    String((r && r.date) || "").trim(),
+    String((r && r.time) || "").trim()
+  ].join("|");
+}
 
+function mergeRecordsPreferLocal_(remoteRecords, localRecords) {
+  const out = [];
+  const seen = new Set();
+
+  // 1) primero los locales: si ya los pintaste al registrar, no los pierdas
+  (localRecords || []).forEach(r => {
+    const key = sameRecordKey_(r);
+    if (seen.has(key)) return;
+    seen.add(key);
+    out.push(r);
+  });
+
+  // 2) luego lo remoto que no exista todavía
+  (remoteRecords || []).forEach(r => {
+    const key = sameRecordKey_(r);
+    if (seen.has(key)) return;
+    seen.add(key);
+    out.push(r);
+  });
+
+  // 3) ordenar más nuevo primero
+  out.sort((a, b) => {
+    const aIso = String(a && (a.iso || `${a.date || ""}T${a.time || ""}`) || "");
+    const bIso = String(b && (b.iso || `${b.date || ""}T${b.time || ""}`) || "");
+    return bIso.localeCompare(aIso);
+  });
+
+  return out;
+}
+
+function currentLocalViewRecords_() {
+  try {
+    const cacheKey = cacheKeyForCurrentView_();
+    const saved = loadRecordsCache_(cacheKey);
+    if (Array.isArray(saved) && saved.length) return saved;
+  } catch (e) {}
+
+  if (Array.isArray(cachedRecords) && cachedRecords.length) {
+    return cachedRecords;
+  }
+
+  return [];
+}
   
 
 async function refreshFromSheet(options = {}) {
   const {
-    useCache = true,         // renderiza caché primero
-    silent = false,          // no cambia el status "Cargando..."
-    showLoadingAfterMs = 450 // solo mostrar "Cargando" si tarda > 450ms
+    useCache = true,          // renderiza caché primero
+    silent = false,           // no cambia el status "Cargando."
+    showLoadingAfterMs = 450, // solo mostrar "Cargando" si tarda > 450ms
+    preferRemote = false      // ✅ si true, usa SOLO backend real
   } = options;
 
   const admin = isAdminMode();
@@ -13603,11 +14843,24 @@ async function refreshFromSheet(options = {}) {
       recordsTeacherSelect.value = exists ? current : "__ALL__";
     }
 
-    // Render final
-    render(records);
+    let finalRecords;
 
-    // Guardar caché (ya filtrado)
-    saveRecordsCache_(cacheKey, records);
+    if (preferRemote) {
+      // ✅ usar SOLO lo que viene del backend real
+      finalRecords = Array.isArray(records) ? records : [];
+    } else {
+      // ✅ proteger contra respuesta vieja del backend:
+      // mezclar lo remoto con lo local ya pintado, prefiriendo lo local
+      const localViewRecords = currentLocalViewRecords_();
+      finalRecords = mergeRecordsPreferLocal_(records, localViewRecords);
+    }
+
+    // Render final
+    cachedRecords = finalRecords;
+    render(finalRecords);
+
+    // Guardar caché final
+    saveRecordsCache_(cacheKey, finalRecords);
 
     if (!silent) setStatus("", "Listo", "Datos de asistencia sincronizados.");
   } catch (e) {
@@ -13979,54 +15232,48 @@ async function register(type) {
       qr: qrText
     });
 
-    // ✅ pintar de inmediato el registro recién guardado
-    if (resp && resp.record) {
-      const newRecord = {
-        ...resp.record,
-        iso: resp.record.iso || t.iso
-      };
+    // ✅ Aplicar SIEMPRE estado local inmediato
+    applyAttendanceState_(
+      type,
+      resp && resp.record
+        ? {
+            ...resp.record,
+            iso: resp.record.iso || t.iso,
+            teacher: resp.record.teacher || teacher,
+            date: resp.record.date || t.date,
+            time: resp.record.time || t.time,
+            distance_m: resp.record.distance_m ?? Math.round(geo.dist),
+            accuracy_m: resp.record.accuracy_m ?? Math.round(geo.accuracy)
+          }
+        : {
+            teacher,
+            date: t.date,
+            time: t.time,
+            iso: t.iso,
+            distance_m: Math.round(geo.dist),
+            accuracy_m: Math.round(geo.accuracy)
+          }
+    );
 
-      const alreadyExists = Array.isArray(cachedRecords) && cachedRecords.some(r =>
-        String(r.teacher || "").trim().toLowerCase() === String(newRecord.teacher || "").trim().toLowerCase() &&
-        String(r.type || "").trim().toUpperCase() === String(newRecord.type || "").trim().toUpperCase() &&
-        String(r.date || "").trim() === String(newRecord.date || "").trim() &&
-        String(r.time || "").trim() === String(newRecord.time || "").trim()
-      );
-
-      if (!alreadyExists) {
-        cachedRecords = [newRecord].concat(Array.isArray(cachedRecords) ? cachedRecords : []);
-      }
-
-      try {
-        const cacheKey = cacheKeyForCurrentView_();
-        saveRecordsCache_(cacheKey, cachedRecords);
-      } catch (e) {}
-
-      render(cachedRecords);
-      updateDailyButtonsState(cachedRecords);
-    }
-
-    if (type === "ENTRADA") {
-      hasEntradaToday = true;
-      btnEntrada.disabled = true;
-
-      btnSalida.disabled = false;
-      btnSalida.classList.remove("is-inactive");
-    }
-
-    if (type === "SALIDA") {
-      hasSalidaToday = true;
-      btnEntrada.disabled = true;
-      btnSalida.disabled = true;
-      btnSalida.classList.remove("is-inactive");
-    }
+    try {
+      render(cachedRecords || []);
+    } catch (e) {}
 
     setRecordsOpen(true);
     setStatus("", "Guardado", `${type} registrada para ${teacher}.`);
 
-    // ✅ sincroniza después, pero sin depender de esto para pintar
-  // ✅ NO refrescar aquí: ya pintamos y bloqueamos localmente.
-// El refresco automático estaba pisando el estado recién actualizado.
+    // ✅ apagar loader antes del chulito
+    try { setLoading(false); } catch (e) {}
+
+    // ✅ mostrar chulito grande automático
+    showSuccessCheck(`${type} registrada correctamente`, 3200);
+
+  // ✅ sincronización automática más segura
+setTimeout(() => {
+  refreshFromSheet({ useCache: false, silent: true }).catch(() => {});
+}, 5000);
+
+    return;
 
   } catch (e) {
     const msg = String(e && e.message ? e.message : e).toLowerCase();
@@ -14339,7 +15586,7 @@ function setRecordsOpen(open) {
 setRecordsOpen(false);
 btnToggleRecords.addEventListener("click", () => setRecordsOpen(recordsPanel.hidden));
 
-const APP_BUILD = "2026-04-10-04";
+const APP_BUILD = "2026-04-10-55";
 
 // ======= Reset / Refresh Service Worker + Cache =======
 async function hardRefreshPWA() {
@@ -14370,11 +15617,49 @@ async function hardRefreshPWA() {
   }
 }
 
-btnRefreshSW.addEventListener("click", hardRefreshPWA);
-if (btnLogout) {
-  btnLogout.addEventListener("click", logout);
-}
+btnRefreshSW.addEventListener("click", async () => {
+  try {
+    // ✅ guardar flag para mostrar animación después del reload
+    sessionStorage.setItem("showRefreshAfterReload", "1");
 
+    // ✅ mostrar animación actual
+    showRefreshSpin("Actualizando…");
+
+    // pequeño delay para que se vea antes del reload
+    await new Promise(resolve => requestAnimationFrame(() => resolve()));
+    await new Promise(resolve => setTimeout(resolve, 60));
+
+    // ✅ refrescar inmediatamente
+    await hardRefreshPWA();
+
+  } catch (e) {
+    hideRefreshSpin();
+    setStatus("bad", "No se pudo actualizar", String(e && e.message ? e.message : e));
+  }
+});
+
+// ✅ NUEVO: al abrir la app, ejecutar la misma actualización del botón
+window.addEventListener("load", async () => {
+  try {
+    const alreadyAutoRefreshed = sessionStorage.getItem("didAutoRefreshOnOpen");
+
+    if (alreadyAutoRefreshed === "1") return;
+
+    sessionStorage.setItem("didAutoRefreshOnOpen", "1");
+    sessionStorage.setItem("showRefreshAfterReload", "1");
+
+    await hardRefreshPWA();
+  } catch (e) {
+    console.error(e);
+  }
+});
+
+if (btnLogout) {
+  btnLogout.addEventListener("click", () => {
+    sessionStorage.removeItem("didAutoRefreshOnOpen");
+    logout();
+  });
+}
 
 // ======= SW register + auto refresh por build =======
 if ("serviceWorker" in navigator) {
