@@ -1035,6 +1035,46 @@ body:not(.is-admin) #adminMonthSummary{
 }
 
 
+.disc-actions{
+  display:flex;
+  gap:8px;
+  align-items:center;
+  margin-top:10px;
+}
+
+.disc-icon-btn{
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,.14);
+  background: rgba(255,255,255,.06);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  flex: 0 0 auto;
+  transition: transform .15s ease, filter .15s ease, background .15s ease, border-color .15s ease;
+}
+
+.disc-icon-btn:hover{
+  filter: brightness(1.08);
+}
+
+.disc-icon-btn:active{
+  transform: translateY(1px) scale(.99);
+}
+
+.disc-icon-btn.edit{
+  color:#93c5fd;
+  border-color: rgba(59,130,246,.22);
+  background: rgba(59,130,246,.10);
+}
+
+.disc-icon-btn.delete{
+  color:#ffb4b4;
+  border-color: rgba(239,68,68,.22);
+  background: rgba(239,68,68,.10);
+}
+
 /* =========================================================
    ✅ FIX: Nombre con "..." SIN mover/tapar el bote (Reportados)
    ========================================================= */
@@ -2867,7 +2907,7 @@ body.is-admin #registerActions{
       <button type="button" class="disc-level danger" data-level="4">4 • Grave</button>
     </div>
 
-  
+
 
     <div class="disc-reported">
       <div class="row row-between" style="margin-top:12px;">
@@ -2930,7 +2970,7 @@ body.is-admin #registerActions{
       <button type="button" class="disc-level danger" data-level="4">4 • Grave</button>
     </div>
 
- 
+
 
     <div class="disc-reported">
       <div class="row row-between" style="margin-top:12px;">
@@ -3100,6 +3140,31 @@ body.is-admin #registerActions{
       <button id="confirmOk" class="btn btn-danger">
         Confirmar
       </button>
+    </div>
+  </div>
+</div>
+
+<!-- ======= MODAL OBSERVACIÓN LLAMADO ======= -->
+<div id="obsModal" class="modal-backdrop" hidden>
+  <div class="modal-card" style="width:min(520px,100%);">
+    <h3 id="obsModalTitle" class="modal-title">Observación</h3>
+    <p id="obsModalSub" class="modal-sub">
+      Escribe la observación para guardar el reporte.
+    </p>
+
+    <label class="modal-label" for="obsModalInput">Observación</label>
+    <textarea
+      id="obsModalInput"
+      class="modal-input"
+      rows="4"
+      placeholder="Escribe la observación..."
+    ></textarea>
+
+    <div id="obsModalHint" class="modal-hint muted small"></div>
+
+    <div class="modal-actions" style="justify-content:flex-end;">
+      <button id="btnObsCancel" type="button" class="btn btn-ghost">Cancelar</button>
+      <button id="btnObsSave" type="button" class="btn btn-primary">Guardar</button>
     </div>
   </div>
 </div>
@@ -3530,6 +3595,14 @@ const btnInstall = $("btnInstall");
 const btnRefreshSW = $("btnRefreshSW");
 const btnLogout = $("btnLogout");
 
+const obsModal = $("obsModal");
+const obsModalTitle = $("obsModalTitle");
+const obsModalSub = $("obsModalSub");
+const obsModalInput = $("obsModalInput");
+const obsModalHint = $("obsModalHint");
+const btnObsCancel = $("btnObsCancel");
+const btnObsSave = $("btnObsSave");
+
 // ======= QR SCAN UI (NO tocar hasta init) =======
 let qrModal = null;
 let qrVideo = null;
@@ -3615,7 +3688,8 @@ const btnDiscReload = $("btnDiscReload");
 const discSelectedNameEl = $("discSelectedName");
 const discSelectedMetaEl = $("discSelectedMeta");
 const discLevelDotEl = $("discLevelDot");
-const discStudentEl = $("discStudent"); // ✅ input para escribir estudiante
+const discStudentEl = $("discStudent");
+const discObservationEl = $("discObservation");
 // ======= PIERCING (LLAMADO DE ATENCIÓN) =======
 const btnPiercing = $("btnPiercing");
 const piercingModal = $("piercingModal");
@@ -3632,6 +3706,7 @@ const piercSelectedNameEl = $("piercSelectedName");
 const piercSelectedMetaEl = $("piercSelectedMeta");
 const piercLevelDotEl = $("piercLevelDot");
 const piercStudentEl = $("piercStudent");
+const piercObservationEl = $("piercObservation");
 
 
 
@@ -4526,7 +4601,66 @@ function confirmPro({
 let hasEntradaToday = false;
 let hasSalidaToday  = false;
 
+let __obsModalResolver = null;
 
+function openObservationModal_({
+  title = "Observación",
+  sub = "Escribe la observación para guardar el reporte.",
+  placeholder = "Escribe la observación...",
+  initialValue = ""
+} = {}) {
+  return new Promise((resolve) => {
+    __obsModalResolver = resolve;
+
+    if (obsModalTitle) obsModalTitle.textContent = title;
+    if (obsModalSub) obsModalSub.textContent = sub;
+    if (obsModalInput) {
+      obsModalInput.value = String(initialValue || "");
+      obsModalInput.placeholder = placeholder;
+    }
+    if (obsModalHint) obsModalHint.textContent = "";
+
+    if (obsModal) obsModal.hidden = false;
+
+    setTimeout(() => {
+      try { obsModalInput && obsModalInput.focus(); } catch {}
+    }, 20);
+  });
+}
+
+function closeObservationModal_(result = null) {
+  if (obsModal) obsModal.hidden = true;
+
+  const resolve = __obsModalResolver;
+  __obsModalResolver = null;
+
+  if (resolve) resolve(result);
+}
+
+function bindObservationModal_() {
+  if (obsModal) {
+    obsModal.addEventListener("click", (e) => {
+      if (e.target === obsModal) closeObservationModal_(null);
+    });
+  }
+
+  if (btnObsCancel) {
+    btnObsCancel.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      closeObservationModal_(null);
+    });
+  }
+
+  if (btnObsSave) {
+    btnObsSave.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const value = normalizeObservation_(obsModalInput ? obsModalInput.value : "");
+      closeObservationModal_(value);
+    });
+  }
+}
 
 function todayStr() {
   const d = new Date();
@@ -4666,7 +4800,25 @@ function syncSingleActionUI_() {
 // ======= Helpers =======
 
 
+function reportObservationOf_(x){
+  return String(
+    x?.observacion ||
+    x?.observation ||
+    x?.obs ||
+    x?.motivo ||
+    ""
+  ).trim();
+}
 
+function reportDtOf_(x){
+  return String(
+    x?.dt ||
+    x?.date ||
+    x?.created_at ||
+    x?.createdAt ||
+    ""
+  ).trim();
+}
   
 function pad(n){ return String(n).padStart(2,"0"); }
 function nowParts() {
@@ -6033,6 +6185,26 @@ document.addEventListener("click", (e) => {
   if (!inside) closeFaltasTiposSubMenu_();
 });
 
+
+function reportObservationOf_(x){
+  return String(
+    x?.observacion ||
+    x?.observation ||
+    x?.obs ||
+    x?.motivo ||
+    ""
+  ).trim();
+}
+
+function reportDtOf_(x){
+  return String(
+    x?.dt ||
+    x?.date ||
+    x?.created_at ||
+    x?.createdAt ||
+    ""
+  ).trim();
+}
 /***********************
  * FALTAS (TIPO 1/2/3) - MODAL
  * Requiere: gsPost({action:"courses_list"}) y gsPost({action:"course_students", course})
@@ -11435,9 +11607,7 @@ function discUpdateSelectedBox_(studentName){
   const s = normalizeStudent_(studentName);
   __discCurrentStudent = s;
 
-  // ✅ mantener input sincronizado
   if (discStudentEl) discStudentEl.value = s || "";
-
   if (!discSelectedNameEl || !discSelectedMetaEl) return;
 
   if (!s) {
@@ -11454,13 +11624,14 @@ function discUpdateSelectedBox_(studentName){
   const total = item ? Number(item.totalMarks || 0) : 0;
   const teachersCount = item ? Number(item.teachersCount || 0) : 0;
 
-  discSelectedNameEl.textContent = s;
+discSelectedNameEl.textContent = s;
 
-  if (item) {
-    discSelectedMetaEl.textContent = `Nivel ${maxLevel} • Llamados: ${total} • Docentes: ${teachersCount}`;
-  } else {
-    discSelectedMetaEl.textContent = `Nuevo (sin reportes este mes aún)`;
-  }
+if (item) {
+  discSelectedMetaEl.textContent =
+    `Nivel ${maxLevel} • Llamados: ${total} • Docentes: ${teachersCount}`;
+} else {
+  discSelectedMetaEl.textContent = `Nuevo (sin reportes este mes aún)`;
+}
 
   discSetDotByLevel_(maxLevel);
   discApplyLevelUI_(maxLevel);
@@ -11483,14 +11654,28 @@ function discClearLevelUI_() {
 }
 
 function discApplyLevelUI_(level) {
+  if (!disciplineModal) return;
+
   discClearLevelUI_();
+
   const lv = Number(level || 0);
-  for (let i=1;i<=lv;i++){
-    const btn = document.querySelector(`.disc-level[data-level="${i}"]`);
+
+  // restaura textos base SOLO dentro del modal de disciplina
+  disciplineModal.querySelectorAll(".disc-level").forEach((btn) => {
+    const lvl = Number(btn.getAttribute("data-level") || 0);
+    if (!lvl) return;
+
+    if (lvl === 1) btn.innerHTML = "1 • Leve";
+    else if (lvl === 4) btn.innerHTML = lv >= 4 ? " 4️⃣ Reenviar reporte" : "4 • Grave";
+    else btn.textContent = String(lvl);
+  });
+
+  // activa 1..lv
+  for (let i = 1; i <= lv; i++) {
+    const btn = disciplineModal.querySelector(`.disc-level[data-level="${i}"]`);
     if (btn) btn.classList.add("active");
   }
 }
-
 function discRenderWho_(whoArr) {
   if (!discWhoList) return;
 
@@ -11571,16 +11756,21 @@ const sorted = [...list].sort((a, b) => {
       const isSelected = selectedKey && normalizeKey(student) === selectedKey;
       const selectedCls = isSelected ? " selected" : "";
 
+      const lastObservation = String(it.lastObservation || it.observation || "").trim();
+
       return `
         <div class="disc-item${selectedCls}"
              role="button"
              tabindex="0"
              data-student="${escapeHtml(student)}">
 
-          <div class="left">
-            <span class="${dotCls}"></span>
-            <span class="name">${escapeHtml(student)}</span>
-          </div>
+         <div class="left">
+  <span class="${dotCls}"></span>
+  <div style="min-width:0; flex:1;">
+    <div class="name">${escapeHtml(student)}</div>
+    ${lastObservation ? `<div class="muted small" style="margin-top:4px;">${escapeHtml(lastObservation)}</div>` : ""}
+  </div>
+</div>
 
           <div class="right" style="gap:10px;">
             <button type="button"
@@ -11658,7 +11848,7 @@ function discBackToList_(){
 }
 
 
-  function discRenderDetailView_(){
+function discRenderDetailView_(){
   if (!discReportedList) return;
 
   const s = normalizeStudent_(__discCurrentStudent);
@@ -11673,17 +11863,76 @@ function discBackToList_(){
       <div style="margin-top:10px;">
         <div class="muted small" style="margin-bottom:6px;">Docentes que han reportado</div>
         <div style="display:grid; gap:8px;">
-  ${item.who.map(x => `
+${item.who.map((x, idx) => `
   <div style="
     border:1px solid rgba(255,255,255,.10);
     border-radius:12px;
     padding:10px;
     background:rgba(255,255,255,.04);
   ">
-    <div style="font-weight:800;">${escapeHtml(x.teacher || "—")}</div>
-    <div class="muted small" style="margin-top:4px;">
-      Nivel ${Number(x.level || 0)}
-      ${x.dt ? ` • ${escapeHtml(x.dt)}` : ""}
+    <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:10px;">
+      <div style="min-width:0; flex:1 1 auto;">
+        <div style="font-weight:800;">${escapeHtml(x.teacher || "—")}</div>
+
+        <div class="muted small" style="margin-top:4px;">
+          Nivel ${Number(x.level || 0)}
+          ${x.dt ? ` • ${escapeHtml(x.dt)}` : ""}
+        </div>
+
+        ${
+          (x.observacion || x.observation || x.obs || x.motivo)
+            ? `
+              <div class="muted small" style="margin-top:6px; white-space:pre-wrap;">
+                Obs: ${escapeHtml(
+                  x.observacion || x.observation || x.obs || x.motivo
+                )}
+              </div>
+            `
+            : ""
+        }
+      </div>
+
+      <div style="display:flex; gap:8px; flex:0 0 auto;">
+        <button
+          type="button"
+          title="Editar observación"
+          aria-label="Editar observación"
+          data-disc-edit="${idx}"
+          style="
+            width:38px;
+            height:38px;
+            border-radius:12px;
+            border:1px solid rgba(59,130,246,.22);
+            background:rgba(59,130,246,.10);
+            color:#93c5fd;
+            display:grid;
+            place-items:center;
+            cursor:pointer;
+          "
+        >
+          <i class="fa-solid fa-pen"></i>
+        </button>
+
+        <button
+          type="button"
+          title="Eliminar reporte"
+          aria-label="Eliminar reporte"
+          data-disc-del-one="${idx}"
+          style="
+            width:38px;
+            height:38px;
+            border-radius:12px;
+            border:1px solid rgba(239,68,68,.22);
+            background:rgba(239,68,68,.10);
+            color:#ffb4b4;
+            display:grid;
+            place-items:center;
+            cursor:pointer;
+          "
+        >
+          <i class="fa-solid fa-trash"></i>
+        </button>
+      </div>
     </div>
   </div>
 `).join("")}
@@ -11708,15 +11957,165 @@ function discBackToList_(){
     <div class="muted small" style="margin-bottom:6px;">(Usa los botones de nivel arriba para registrar)</div>
   `;
 
+  if (item && Array.isArray(item.who) && item.who.length) {
+    discReportedList.querySelectorAll("[data-disc-edit]").forEach((btn) => {
+      btn.addEventListener("click", async (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const idx = Number(btn.getAttribute("data-disc-edit"));
+        const row = item.who[idx];
+        if (typeof discEditOne_ === "function") {
+          await discEditOne_(s, row);
+        }
+      });
+    });
+
+    discReportedList.querySelectorAll("[data-disc-del-one]").forEach((btn) => {
+      btn.addEventListener("click", async (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const idx = Number(btn.getAttribute("data-disc-del-one"));
+        const row = item.who[idx];
+        if (typeof discDeleteOne_ === "function") {
+          await discDeleteOne_(s, row);
+        }
+      });
+    });
+  }
+
   discApplyLevelUI_(maxLevel);
-
-
-
 
   // ✅ repinta UI de niveles y “who” usando lo que ya tienes
   discApplyLevelUI_(maxLevel);
   if (item && Array.isArray(item.who) && item.who.length) discRenderWho_(item.who);
   else if (discWhoList) discWhoList.textContent = "—";
+}
+
+async function gsDisciplineUpdateOne(payload) {
+  const res = await fetch(GS_WEBAPP_URL, {
+    method: "POST",
+    body: JSON.stringify({
+      action: "discipline_update_one",
+      ...payload,
+      key: GS_API_KEY
+    })
+  });
+
+  let data = null;
+  try {
+    data = await res.json();
+  } catch {
+    throw new Error("Respuesta inválida del servidor");
+  }
+
+  if (!data.ok) throw new Error(data.msg || data.error || "discipline_update_one_failed");
+  return data;
+}
+
+async function gsDisciplineDeleteOne(payload) {
+  const res = await fetch(GS_WEBAPP_URL, {
+    method: "POST",
+    body: JSON.stringify({
+      action: "discipline_delete_one",
+      ...payload,
+      key: GS_API_KEY
+    })
+  });
+
+  let data = null;
+  try {
+    data = await res.json();
+  } catch {
+    throw new Error("Respuesta inválida del servidor");
+  }
+
+  if (!data.ok) throw new Error(data.msg || data.error || "discipline_delete_one_failed");
+  return data;
+}
+
+
+async function gsPiercingUpdateOne(payload) {
+  const res = await fetch(GS_WEBAPP_URL, {
+    method: "POST",
+    body: JSON.stringify({
+      action: "piercing_update_one",
+      ...payload,
+      key: GS_API_KEY
+    })
+  });
+
+  let data = null;
+  try {
+    data = await res.json();
+  } catch {
+    throw new Error("Respuesta inválida del servidor");
+  }
+
+  if (!data.ok) throw new Error(data.msg || data.error || "piercing_update_one_failed");
+  return data;
+}
+
+async function gsPiercingDeleteOne(payload) {
+  const res = await fetch(GS_WEBAPP_URL, {
+    method: "POST",
+    body: JSON.stringify({
+      action: "piercing_delete_one",
+      ...payload,
+      key: GS_API_KEY
+    })
+  });
+
+  let data = null;
+  try {
+    data = await res.json();
+  } catch {
+    throw new Error("Respuesta inválida del servidor");
+  }
+
+  if (!data.ok) throw new Error(data.msg || data.error || "piercing_delete_one_failed");
+  return data;
+}
+
+async function gsUniformUpdateOne(payload) {
+  const res = await fetch(GS_WEBAPP_URL, {
+    method: "POST",
+    body: JSON.stringify({
+      action: "uniform_update_one",
+      ...payload,
+      key: GS_API_KEY
+    })
+  });
+
+  let data = null;
+  try {
+    data = await res.json();
+  } catch {
+    throw new Error("Respuesta inválida del servidor");
+  }
+
+  if (!data.ok) throw new Error(data.msg || data.error || "uniform_update_one_failed");
+  return data;
+}
+
+async function gsUniformDeleteOne(payload) {
+  const res = await fetch(GS_WEBAPP_URL, {
+    method: "POST",
+    body: JSON.stringify({
+      action: "uniform_delete_one",
+      ...payload,
+      key: GS_API_KEY
+    })
+  });
+
+  let data = null;
+  try {
+    data = await res.json();
+  } catch {
+    throw new Error("Respuesta inválida del servidor");
+  }
+
+  if (!data.ok) throw new Error(data.msg || data.error || "uniform_delete_one_failed");
+  return data;
 }
 
 
@@ -11746,6 +12145,35 @@ async function gsDisciplineDeleteStudent(payload) {
   catch { throw new Error("Respuesta inválida del servidor"); }
 
   if (!data.ok) throw new Error(data.msg || data.error || "discipline_delete_failed");
+  return data;
+}
+
+
+async function gsDisciplineUpdateOne(payload) {
+  const res = await fetch(GS_WEBAPP_URL, {
+    method: "POST",
+    body: JSON.stringify({ action: "discipline_update_one", ...payload, key: GS_API_KEY })
+  });
+
+  let data = null;
+  try { data = await res.json(); }
+  catch { throw new Error("Respuesta inválida del servidor"); }
+
+  if (!data.ok) throw new Error(data.msg || data.error || "discipline_update_one_failed");
+  return data;
+}
+
+async function gsDisciplineDeleteOne(payload) {
+  const res = await fetch(GS_WEBAPP_URL, {
+    method: "POST",
+    body: JSON.stringify({ action: "discipline_delete_one", ...payload, key: GS_API_KEY })
+  });
+
+  let data = null;
+  try { data = await res.json(); }
+  catch { throw new Error("Respuesta inválida del servidor"); }
+
+  if (!data.ok) throw new Error(data.msg || data.error || "discipline_delete_one_failed");
   return data;
 }
 
@@ -12234,7 +12662,145 @@ async function discDeleteStudent_(studentName){
   }
 }
 
+async function discEditOne_(studentName, row){
+  const profile = requireLogin();
+  if (!profile) return;
 
+  const student = normalizeStudent_(studentName);
+  if (!student || !row) return;
+
+  const currentObs = reportObservationOf_(row);
+
+  const observation = await openObservationModal_({
+    title: "Editar observación · Uso del celular",
+    sub: `${student} • ${String(row.teacher || "—").trim()}`,
+    placeholder: "Ej: Uso del celular durante la explicación, no acató el llamado, etc.",
+    initialValue: currentObs
+  });
+
+  if (observation === null) return;
+
+  try {
+    setLoading(true, "Guardando…", "Actualizando observación del reporte.");
+
+    const resp = await gsDisciplineUpdateOne({
+      month: discMonthKey_(),
+      student,
+      teacher: String(row.teacher || "").trim(),
+      dt: reportDtOf_(row),
+      level: Number(row.level || 0),
+      observation,
+      email: profile.email,
+      device_id: getDeviceId()
+    });
+
+    if (resp && Array.isArray(resp.list)) __discCacheList = resp.list;
+    else await discReloadReportedList(false);
+
+    discUpdateSelectedBox_(student);
+    if (__discView === "detail") discRenderDetailView_();
+
+    discSetHint_("Reporte actualizado ✅");
+  } catch (e) {
+    discSetHint_(String(e && e.message ? e.message : e));
+  } finally {
+    setLoading(false);
+  }
+}
+
+async function discDeleteOne_(studentName, row){
+  const profile = requireLogin();
+  if (!profile) return;
+
+  const student = normalizeStudent_(studentName);
+  if (!student || !row) return;
+
+  const ok = await confirmPro({
+    title: "Eliminar reporte",
+    msg: `¿Seguro que deseas eliminar solo este reporte de "${student}"?`,
+    okText: "Sí, eliminar",
+    cancelText: "Cancelar",
+    danger: true
+  });
+
+  if (!ok) return;
+
+  try {
+    setLoading(true, "Eliminando…", "Borrando solo este reporte.");
+
+    const resp = await gsDisciplineDeleteOne({
+      month: discMonthKey_(),
+      student,
+      teacher: String(row.teacher || "").trim(),
+      dt: reportDtOf_(row),
+      level: Number(row.level || 0),
+      email: profile.email,
+      device_id: getDeviceId()
+    });
+
+    if (resp && Array.isArray(resp.list)) {
+      __discCacheList = resp.list;
+    } else if (typeof discReloadReportedList === "function") {
+      await discReloadReportedList(false);
+    }
+
+    if (typeof discUpdateSelectedBox_ === "function") discUpdateSelectedBox_(student);
+    if (typeof discRenderDetailView_ === "function") discRenderDetailView_();
+
+    if (typeof discSetHint_ === "function") discSetHint_("Reporte eliminado ✅");
+  } catch (e) {
+    if (typeof discSetHint_ === "function") {
+      discSetHint_(String(e && e.message ? e.message : e));
+    }
+  } finally {
+    setLoading(false);
+  }
+}
+
+
+
+async function discDeleteOne_(studentName, row){
+  const profile = requireLogin();
+  if (!profile) return;
+
+  const student = normalizeStudent_(studentName);
+  if (!student || !row) return;
+
+  const ok = await confirmPro({
+    title: "Eliminar reporte",
+    msg: `¿Seguro que deseas eliminar solo este reporte de "${student}"?`,
+    okText: "Sí, eliminar",
+    cancelText: "Cancelar",
+    danger: true
+  });
+  if (!ok) return;
+
+  try {
+    setLoading(true, "Eliminando…", "Borrando solo este reporte.");
+
+    const resp = await gsDisciplineDeleteOne({
+      month: discMonthKey_(),
+      student,
+      teacher: String(row.teacher || "").trim(),
+      dt: reportDtOf_(row),
+      level: Number(row.level || 0),
+      email: profile.email,
+      device_id: getDeviceId()
+    });
+
+    if (resp && Array.isArray(resp.list)) __discCacheList = resp.list;
+    else await discReloadReportedList(false);
+
+    discUpdateSelectedBox_(student);
+    if (__discView === "detail") discRenderDetailView_();
+
+    discSetHint_("Reporte eliminado ✅");
+  } catch (e) {
+    discSetHint_(String(e && e.message ? e.message : e));
+  } finally {
+    setLoading(false);
+  }
+}
 
 
 async function shareTextNative_(text) {
@@ -12365,55 +12931,69 @@ async function discDoMarkLevel(level) {
     return;
   }
 
+let observation = "";
+
+// 🚫 Si ya está en nivel 4, NO pedir observación otra vez
+if (lvl === 4 && currentMax >= 4) {
+  // no abrimos modal
+  observation = "";
+} else {
+  observation = await openObservationModal_({
+    title: "Observación · Uso del celular",
+    sub: `Nivel ${lvl} para ${student}`,
+    placeholder: "Ej: Uso del celular durante la explicación, no acató el llamado, etc.",
+    initialValue: ""
+  });
+
+  if (observation === null) {
+    discSetHint_("Registro cancelado.");
+    discApplyLevelUI_(currentMax);
+    return;
+  }
+}
+
   try {
-    setLoading(true, "Guardando…", "Registrando llamado de atención.");
+    setLoading(true, "Guardando…", "Registrando reporte de uso del celular.");
 
     const resp = await gsDisciplineMark({
       month: discMonthKey_(),
       student,
       level: lvl,
+      observation,
       teacher: profile.name,
       email: profile.email,
       device_id: getDeviceId(),
       date: new Date().toISOString()
     });
 
-    if (resp && Array.isArray(resp.list)) {
-      __discCacheList = resp.list;
-    } else {
-      await discReloadReportedList(false);
-    }
+    if (resp && Array.isArray(resp.list)) __discCacheList = resp.list;
+    else await discReloadReportedList(false);
 
-    // ✅ actualizar seleccionado (arriba) + volver a lista actualizada
     discUpdateSelectedBox_(student);
-
     __discView = "list";
     discRenderReportedList_(__discCacheList);
-
-    // ocultar Atrás porque estamos en lista
     if (btnDiscBack) btnDiscBack.hidden = true;
 
- let openedShare = false;
-
-// ✅ Solo cuando es reporte por primera vez (nivel 4)
-if (resp && resp.ok && resp.justReported && lvl >= 4) {
-  const msg = String(resp.wa_msg || "").trim();
-
-  const out = await confirmAndShareReport_({
-    student,
-    msg,
-    title: "Compartir reporte (Celular)"
-  });
-
-  openedShare = !!out.didShare;
-}
-
-
-    if (lvl >= 4) {
-      discSetHint_(openedShare ? "Nivel 4 registrado. Compartir abierto ✅" : "Nivel 4 registrado ✅");
-    } else {
-      discSetHint_("Registrado ✅");
+    if (resp && resp.ok && lvl >= 4) {
+      const msg = String(resp.wa_msg || "").trim();
+      if (msg) {
+        await confirmAndShareReport_({
+          student,
+          msg,
+          title: "Compartir reporte (Uso del celular)"
+        });
+      }
     }
+
+  discSetHint_(
+  (lvl === 4 && currentMax >= 4)
+    ? "Listo para compartir nuevamente ✅"
+    : (
+        observation
+          ? (lvl >= 4 ? "Nivel 4 registrado ✅ Observación guardada." : "Registrado ✅ Observación guardada.")
+          : (lvl >= 4 ? "Nivel 4 registrado ✅" : "Registrado ✅")
+      )
+);
 
   } catch (e) {
     discSetHint_(String(e && e.message ? e.message : e));
@@ -12421,7 +13001,6 @@ if (resp && resp.ok && resp.justReported && lvl >= 4) {
     setLoading(false);
   }
 }
-
 
 
 
@@ -12625,8 +13204,18 @@ function piercClearLevelUI_() {
 
 function piercApplyLevelUI_(level) {
   piercClearLevelUI_();
+
   const lv = Number(level || 0);
-  for (let i=1;i<=lv;i++){
+
+  // restaura textos base
+  piercingModal.querySelectorAll(".disc-level").forEach((btn) => {
+    const lvl = Number(btn.getAttribute("data-level") || 0);
+    if (lvl === 1) btn.innerHTML = "1 • Leve";
+    else if (lvl === 4) btn.innerHTML = lv >= 4 ? "4️⃣ Reenviar reporte" : "4 • Grave";
+    else if (lvl > 0) btn.textContent = String(lvl);
+  });
+
+  for (let i = 1; i <= lv; i++) {
     const btn = piercingModal.querySelector(`.disc-level[data-level="${i}"]`);
     if (btn) btn.classList.add("active");
   }
@@ -12668,7 +13257,6 @@ function piercUpdateSelectedBox_(studentName){
   __piercCurrentStudent = s;
 
   if (piercStudentEl) piercStudentEl.value = s || "";
-
   if (!piercSelectedNameEl || !piercSelectedMetaEl) return;
 
   if (!s) {
@@ -12685,11 +13273,11 @@ function piercUpdateSelectedBox_(studentName){
   const total = item ? Number(item.totalMarks || 0) : 0;
   const teachersCount = item ? Number(item.teachersCount || 0) : 0;
 
-  piercSelectedNameEl.textContent = s;
+ piercSelectedNameEl.textContent = s;
 
-  piercSelectedMetaEl.textContent = item
-    ? `Nivel ${maxLevel} • Llamados: ${total} • Docentes: ${teachersCount}`
-    : `Nuevo (sin reportes este mes aún)`;
+piercSelectedMetaEl.textContent = item
+  ? `Nivel ${maxLevel} • Llamados: ${total} • Docentes: ${teachersCount}`
+  : `Nuevo (sin reportes este mes aún)`;
 
   piercSetDotByLevel_(maxLevel);
   piercApplyLevelUI_(maxLevel);
@@ -12732,13 +13320,17 @@ function piercRenderReportedList_(items) {
     const dotCls = maxLevel ? `lvl-dot lvl-${maxLevel}` : "lvl-dot";
     const isSelected = selectedKey && normalizeKey(student) === selectedKey;
     const selectedCls = isSelected ? " selected" : "";
+    const lastObservation = String(it.lastObservation || it.observation || "").trim();
 
     return `
       <div class="disc-item${selectedCls}" role="button" tabindex="0" data-student="${escapeHtml(student)}">
-        <div class="left">
-          <span class="${dotCls}"></span>
-          <span class="name">${escapeHtml(student)}</span>
-        </div>
+       <div class="left">
+  <span class="${dotCls}"></span>
+  <div style="min-width:0; flex:1;">
+    <div class="name">${escapeHtml(student)}</div>
+    ${lastObservation ? `<div class="muted small" style="margin-top:4px;">${escapeHtml(lastObservation)}</div>` : ""}
+  </div>
+</div>
         <div class="right" style="gap:10px;">
           <button type="button" class="disc-trash" title="Eliminar estudiante" aria-label="Eliminar estudiante" data-del="${escapeHtml(student)}">
             ${trashSvg}
@@ -12780,28 +13372,89 @@ function piercRenderReportedList_(items) {
 
 function piercRenderDetailView_(){
   if (!piercReportedList) return;
+
   const s = piercNormalizeStudent_(__piercCurrentStudent);
   const item = s ? piercFindInCache_(s) : null;
 
   const maxLevel = item ? Number(item.maxLevel || 0) : 0;
   const total = item ? Number(item.totalMarks || 0) : 0;
   const teachersCount = item ? Number(item.teachersCount || 0) : 0;
+
   const docentesHtml = (item && Array.isArray(item.who) && item.who.length)
     ? `
       <div style="margin-top:10px;">
         <div class="muted small" style="margin-bottom:6px;">Docentes que han reportado</div>
         <div style="display:grid; gap:8px;">
-     ${item.who.map(x => `
+${item.who.map((x, idx) => `
   <div style="
     border:1px solid rgba(255,255,255,.10);
     border-radius:12px;
     padding:10px;
     background:rgba(255,255,255,.04);
   ">
-    <div style="font-weight:800;">${escapeHtml(x.teacher || "—")}</div>
-    <div class="muted small" style="margin-top:4px;">
-      Nivel ${Number(x.level || 0)}
-      ${x.dt ? ` • ${escapeHtml(x.dt)}` : ""}
+    <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:10px;">
+      <div style="min-width:0; flex:1 1 auto;">
+        <div style="font-weight:800;">${escapeHtml(x.teacher || "—")}</div>
+
+        <div class="muted small" style="margin-top:4px;">
+          Nivel ${Number(x.level || 0)}
+          ${x.dt ? ` • ${escapeHtml(x.dt)}` : ""}
+        </div>
+
+        ${
+          (x.observacion || x.observation || x.obs || x.motivo)
+            ? `
+              <div class="muted small" style="margin-top:6px; white-space:pre-wrap;">
+                Obs: ${escapeHtml(
+                  x.observacion || x.observation || x.obs || x.motivo
+                )}
+              </div>
+            `
+            : ""
+        }
+      </div>
+
+      <div style="display:flex; gap:8px; flex:0 0 auto;">
+        <button
+          type="button"
+          title="Editar observación"
+          aria-label="Editar observación"
+          data-pierc-edit="${idx}"
+          style="
+            width:38px;
+            height:38px;
+            border-radius:12px;
+            border:1px solid rgba(59,130,246,.22);
+            background:rgba(59,130,246,.10);
+            color:#93c5fd;
+            display:grid;
+            place-items:center;
+            cursor:pointer;
+          "
+        >
+          <i class="fa-solid fa-pen"></i>
+        </button>
+
+        <button
+          type="button"
+          title="Eliminar reporte"
+          aria-label="Eliminar reporte"
+          data-pierc-del-one="${idx}"
+          style="
+            width:38px;
+            height:38px;
+            border-radius:12px;
+            border:1px solid rgba(239,68,68,.22);
+            background:rgba(239,68,68,.10);
+            color:#ffb4b4;
+            display:grid;
+            place-items:center;
+            cursor:pointer;
+          "
+        >
+          <i class="fa-solid fa-trash"></i>
+        </button>
+      </div>
     </div>
   </div>
 `).join("")}
@@ -12825,6 +13478,32 @@ function piercRenderDetailView_(){
     </div>
     <div class="muted small" style="margin-bottom:6px;">(Usa los botones de nivel arriba para registrar)</div>
   `;
+
+  if (item && Array.isArray(item.who) && item.who.length) {
+    piercReportedList.querySelectorAll("[data-pierc-edit]").forEach((btn) => {
+      btn.addEventListener("click", async (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const idx = Number(btn.getAttribute("data-pierc-edit"));
+        const row = item.who[idx];
+        if (typeof piercEditOne_ === "function") {
+          await piercEditOne_(s, row);
+        }
+      });
+    });
+
+    piercReportedList.querySelectorAll("[data-pierc-del-one]").forEach((btn) => {
+      btn.addEventListener("click", async (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const idx = Number(btn.getAttribute("data-pierc-del-one"));
+        const row = item.who[idx];
+        if (typeof piercDeleteOne_ === "function") {
+          await piercDeleteOne_(s, row);
+        }
+      });
+    });
+  }
 
   piercApplyLevelUI_(maxLevel);
 }
@@ -12882,6 +13561,36 @@ async function gsPiercingDeleteStudent(payload) {
   if (!data.ok) throw new Error(data.msg || data.error || "piercing_delete_failed");
   return data;
 }
+
+
+async function gsPiercingUpdateOne(payload) {
+  const res = await fetch(GS_WEBAPP_URL, {
+    method: "POST",
+    body: JSON.stringify({ action: "piercing_update_one", ...payload, key: GS_API_KEY })
+  });
+
+  let data = null;
+  try { data = await res.json(); }
+  catch { throw new Error("Respuesta inválida del servidor"); }
+
+  if (!data.ok) throw new Error(data.msg || data.error || "piercing_update_one_failed");
+  return data;
+}
+
+async function gsPiercingDeleteOne(payload) {
+  const res = await fetch(GS_WEBAPP_URL, {
+    method: "POST",
+    body: JSON.stringify({ action: "piercing_delete_one", ...payload, key: GS_API_KEY })
+  });
+
+  let data = null;
+  try { data = await res.json(); }
+  catch { throw new Error("Respuesta inválida del servidor"); }
+
+  if (!data.ok) throw new Error(data.msg || data.error || "piercing_delete_one_failed");
+  return data;
+}
+
 
 /* ======= UI actions ======= */
 async function piercReloadReportedList(showHint=false) {
@@ -12947,6 +13656,145 @@ async function piercDeleteStudent_(studentName){
   }
 }
 
+async function piercEditOne_(studentName, row){
+  const profile = requireLogin();
+  if (!profile) return;
+
+  const student = piercNormalizeStudent_(studentName);
+  if (!student || !row) return;
+
+  const currentObs = reportObservationOf_(row);
+
+  const observation = await openObservationModal_({
+    title: "Editar observación · Piercing y perforaciones",
+    sub: `${student} • ${String(row.teacher || "—").trim()}`,
+    placeholder: "Ej: Tiene piercing visible en la ceja, arete no permitido, etc.",
+    initialValue: currentObs
+  });
+
+  if (observation === null) return;
+
+  try {
+    setLoading(true, "Guardando…", "Actualizando observación del reporte.");
+
+    const resp = await gsPiercingUpdateOne({
+      month: piercMonthKey_(),
+      student,
+      teacher: String(row.teacher || "").trim(),
+      dt: reportDtOf_(row),
+      level: Number(row.level || 0),
+      observation,
+      email: profile.email,
+      device_id: getDeviceId()
+    });
+
+    if (resp && Array.isArray(resp.list)) __piercCacheList = resp.list;
+    else await piercReloadReportedList(false);
+
+    piercUpdateSelectedBox_(student);
+    if (__piercView === "detail") piercRenderDetailView_();
+
+    piercSetHint_("Reporte actualizado ✅");
+  } catch (e) {
+    piercSetHint_(String(e && e.message ? e.message : e));
+  } finally {
+    setLoading(false);
+  }
+}
+
+async function piercDeleteOne_(studentName, row){
+  const profile = requireLogin();
+  if (!profile) return;
+
+  const student = piercNormalizeStudent_(studentName);
+  if (!student || !row) return;
+
+  const ok = await confirmPro({
+    title: "Eliminar reporte",
+    msg: `¿Seguro que deseas eliminar solo este reporte de "${student}"?`,
+    okText: "Sí, eliminar",
+    cancelText: "Cancelar",
+    danger: true
+  });
+
+  if (!ok) return;
+
+  try {
+    setLoading(true, "Eliminando…", "Borrando solo este reporte.");
+
+    const resp = await gsPiercingDeleteOne({
+      month: piercMonthKey_(),
+      student,
+      teacher: String(row.teacher || "").trim(),
+      dt: reportDtOf_(row),
+      level: Number(row.level || 0),
+      email: profile.email,
+      device_id: getDeviceId()
+    });
+
+    if (resp && Array.isArray(resp.list)) {
+      __piercCacheList = resp.list;
+    } else if (typeof piercReloadReportedList === "function") {
+      await piercReloadReportedList(false);
+    }
+
+    if (typeof piercUpdateSelectedBox_ === "function") piercUpdateSelectedBox_(student);
+    if (typeof piercRenderDetailView_ === "function") piercRenderDetailView_();
+
+    if (typeof piercSetHint_ === "function") piercSetHint_("Reporte eliminado ✅");
+  } catch (e) {
+    if (typeof piercSetHint_ === "function") {
+      piercSetHint_(String(e && e.message ? e.message : e));
+    }
+  } finally {
+    setLoading(false);
+  }
+}
+
+
+
+async function piercDeleteOne_(studentName, row){
+  const profile = requireLogin();
+  if (!profile) return;
+
+  const student = piercNormalizeStudent_(studentName);
+  if (!student || !row) return;
+
+  const ok = await confirmPro({
+    title: "Eliminar reporte",
+    msg: `¿Seguro que deseas eliminar solo este reporte de "${student}"?`,
+    okText: "Sí, eliminar",
+    cancelText: "Cancelar",
+    danger: true
+  });
+  if (!ok) return;
+
+  try {
+    setLoading(true, "Eliminando…", "Borrando solo este reporte.");
+
+    const resp = await gsPiercingDeleteOne({
+      month: piercMonthKey_(),
+      student,
+      teacher: String(row.teacher || "").trim(),
+      dt: reportDtOf_(row),
+      level: Number(row.level || 0),
+      email: profile.email,
+      device_id: getDeviceId()
+    });
+
+    if (resp && Array.isArray(resp.list)) __piercCacheList = resp.list;
+    else await piercReloadReportedList(false);
+
+    piercUpdateSelectedBox_(student);
+    if (__piercView === "detail") piercRenderDetailView_();
+
+    piercSetHint_("Reporte eliminado ✅");
+  } catch (e) {
+    piercSetHint_(String(e && e.message ? e.message : e));
+  } finally {
+    setLoading(false);
+  }
+}
 
 async function piercDoMarkLevel(level) {
   const profile = requireLogin();
@@ -12956,7 +13804,10 @@ async function piercDoMarkLevel(level) {
   if (lvl < 1 || lvl > 4) return;
 
   const student = piercNormalizeStudent_(__piercCurrentStudent);
-  if (!student) { piercSetHint_("Primero selecciona un estudiante de la lista."); return; }
+  if (!student) {
+    piercSetHint_("Primero selecciona un estudiante de la lista.");
+    return;
+  }
 
   const item = piercFindInCache_(student);
   const currentMax = item ? Number(item.maxLevel || 0) : 0;
@@ -12967,6 +13818,25 @@ async function piercDoMarkLevel(level) {
     return;
   }
 
+let observation = "";
+
+if (lvl === 4 && currentMax >= 4) {
+  observation = "";
+} else {
+  observation = await openObservationModal_({
+    title: "Observación · Piercing y perforaciones",
+    sub: `Nivel ${lvl} para ${student}`,
+    placeholder: "Ej: Tiene piercing visible en la ceja, arete no permitido, etc.",
+    initialValue: ""
+  });
+
+  if (observation === null) {
+    piercSetHint_("Registro cancelado.");
+    piercApplyLevelUI_(currentMax);
+    return;
+  }
+}
+
   try {
     setLoading(true, "Guardando…", "Registrando reporte de piercing/perforaciones.");
 
@@ -12974,6 +13844,7 @@ async function piercDoMarkLevel(level) {
       month: piercMonthKey_(),
       student,
       level: lvl,
+      observation,
       teacher: profile.name,
       email: profile.email,
       device_id: getDeviceId(),
@@ -12988,18 +13859,22 @@ async function piercDoMarkLevel(level) {
     piercRenderReportedList_(__piercCacheList);
     if (btnPiercBack) btnPiercBack.hidden = true;
 
-    // ✅ Solo cuando es reporte por primera vez (nivel 4)
-if (resp && resp.ok && resp.justReported && lvl >= 4) {
-  const msg = String(resp.wa_msg || "").trim();
-  await confirmAndShareReport_({
-    student,
-    msg,
-    title: "Compartir reporte (Piercing)"
-  });
-}
+    if (resp && resp.ok && lvl >= 4) {
+      const msg = String(resp.wa_msg || "").trim();
+      if (msg) {
+        await confirmAndShareReport_({
+          student,
+          msg,
+          title: "Compartir reporte (Piercing)"
+        });
+      }
+    }
 
-
-    piercSetHint_(lvl >= 4 ? "Nivel 4 registrado ✅" : "Registrado ✅");
+    piercSetHint_(
+      observation
+        ? (lvl >= 4 ? "Nivel 4 registrado ✅ Observación guardada." : "Registrado ✅ Observación guardada.")
+        : (lvl >= 4 ? "Nivel 4 registrado ✅" : "Registrado ✅")
+    );
 
   } catch (e) {
     piercSetHint_(String(e && e.message ? e.message : e));
@@ -13242,6 +14117,7 @@ const uniSelectedMetaEl = document.getElementById("uniSelectedMeta");
 const uniLevelDot = document.getElementById("uniLevelDot");
 const uniWhoList = document.getElementById("uniWhoList");
 const uniStudentEl = document.getElementById("uniStudent");
+const uniObservationEl = document.getElementById("uniObservation");
 const uniReportedList = document.getElementById("uniReportedList");
 const uniHintEl = document.getElementById("uniHint");
 
@@ -13281,6 +14157,34 @@ async function gsUniformDeleteStudent(payload) {
   let data = null;
   try { data = await res.json(); } catch { throw new Error("Respuesta inválida del servidor"); }
   if (!data.ok) throw new Error(data.msg || data.error || "uniform_delete_failed");
+  return data;
+}
+
+async function gsUniformUpdateOne(payload) {
+  const res = await fetch(GS_WEBAPP_URL, {
+    method: "POST",
+    body: JSON.stringify({ action: "uniform_update_one", ...payload, key: GS_API_KEY })
+  });
+
+  let data = null;
+  try { data = await res.json(); }
+  catch { throw new Error("Respuesta inválida del servidor"); }
+
+  if (!data.ok) throw new Error(data.msg || data.error || "uniform_update_one_failed");
+  return data;
+}
+
+async function gsUniformDeleteOne(payload) {
+  const res = await fetch(GS_WEBAPP_URL, {
+    method: "POST",
+    body: JSON.stringify({ action: "uniform_delete_one", ...payload, key: GS_API_KEY })
+  });
+
+  let data = null;
+  try { data = await res.json(); }
+  catch { throw new Error("Respuesta inválida del servidor"); }
+
+  if (!data.ok) throw new Error(data.msg || data.error || "uniform_delete_one_failed");
   return data;
 }
 
@@ -13328,6 +14232,18 @@ function uniApplyLevelUI_(maxLevel) {
   uniClearLevelUI_();
 
   const max = Number(maxLevel || 0);
+
+  // restaura textos base
+  uniformModal.querySelectorAll(".disc-level").forEach(btn => {
+    const lvl = Number(btn.getAttribute("data-level") || 0);
+    if (!lvl) return;
+
+    btn.disabled = false;
+
+    if (lvl === 1) btn.innerHTML = "1 • Leve";
+    else if (lvl === 4) btn.innerHTML = max >= 4 ? "4️⃣ Reenviar reporte" : "4 • Grave";
+    else btn.textContent = String(lvl);
+  });
 
   // activa 1..max
   for (let i = 1; i <= max; i++) {
@@ -13422,6 +14338,7 @@ function uniRenderReportedList_(items){
 
     const isSelected = selectedKey && normalizeKey(student) === selectedKey;
     const selectedCls = isSelected ? " selected" : "";
+    const lastObservation = String(it.lastObservation || it.observation || "").trim();
 
     return `
       <div class="disc-item${selectedCls}"
@@ -13429,10 +14346,13 @@ function uniRenderReportedList_(items){
            tabindex="0"
            data-student="${escapeHtml(student)}">
 
-        <div class="left">
-          <span class="${dotCls}"></span>
-          <span class="name">${escapeHtml(student)}</span>
-        </div>
+      <div class="left">
+  <span class="${dotCls}"></span>
+  <div style="min-width:0; flex:1;">
+    <div class="name">${escapeHtml(student)}</div>
+    ${lastObservation ? `<div class="muted small" style="margin-top:4px;">${escapeHtml(lastObservation)}</div>` : ""}
+  </div>
+</div>
 
         <div class="right" style="gap:10px;">
           <button type="button"
@@ -13473,6 +14393,12 @@ function uniRenderReportedList_(items){
   });
 }
 
+
+function normalizeObservation_(value) {
+  return String(value || "").trim().replace(/\s+/g, " ");
+}
+
+
 // ✅ Reusar el mismo ícono de basura en Disciplina / Piercing / Uniforme
 window.trashSvg = `
   <svg viewBox="0 0 448 512" aria-hidden="true" focusable="false">
@@ -13503,12 +14429,12 @@ function uniUpdateSelectedBox_(studentName){
   const total = item ? Number(item.totalMarks || 0) : 0;
   const teachersCount = item ? Number(item.teachersCount || 0) : 0;
 
-  if (uniSelectedNameEl) uniSelectedNameEl.textContent = s;
-  if (uniSelectedMetaEl) {
-    uniSelectedMetaEl.textContent = item
-      ? `Nivel ${maxLevel} • Llamados: ${total} • Docentes: ${teachersCount}`
-      : `Nuevo (sin reportes este mes aún)`;
-  }
+if (uniSelectedNameEl) uniSelectedNameEl.textContent = s;
+if (uniSelectedMetaEl) {
+  uniSelectedMetaEl.textContent = item
+    ? `Nivel ${maxLevel} • Llamados: ${total} • Docentes: ${teachersCount}`
+    : `Nuevo (sin reportes este mes aún)`;
+}
 
   uniSetDotByLevel_(maxLevel);
   uniApplyLevelUI_(maxLevel);
@@ -13534,6 +14460,7 @@ function uniRenderDetailView_(){
   // igual que disciplina: deja arriba el box y debajo info
   // aquí simplemente reusamos la lista, pero mostrando “seleccionado”
   if (!uniReportedList) return;
+
   const s = uniNormalizeStudent_(__uniCurrentStudent);
   const item = s ? uniFindInCache_(s) : null;
 
@@ -13546,17 +14473,76 @@ function uniRenderDetailView_(){
       <div style="margin-top:10px;">
         <div class="muted small" style="margin-bottom:6px;">Docentes que han reportado</div>
         <div style="display:grid; gap:8px;">
-${item.who.map(x => `
+${item.who.map((x, idx) => `
   <div style="
     border:1px solid rgba(255,255,255,.10);
     border-radius:12px;
     padding:10px;
     background:rgba(255,255,255,.04);
   ">
-    <div style="font-weight:800;">${escapeHtml(x.teacher || "—")}</div>
-    <div class="muted small" style="margin-top:4px;">
-      Nivel ${Number(x.level || 0)}
-      ${x.dt ? ` • ${escapeHtml(x.dt)}` : ""}
+    <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:10px;">
+      <div style="min-width:0; flex:1 1 auto;">
+        <div style="font-weight:800;">${escapeHtml(x.teacher || "—")}</div>
+
+        <div class="muted small" style="margin-top:4px;">
+          Nivel ${Number(x.level || 0)}
+          ${x.dt ? ` • ${escapeHtml(x.dt)}` : ""}
+        </div>
+
+        ${
+          (x.observacion || x.observation || x.obs || x.motivo)
+            ? `
+              <div class="muted small" style="margin-top:6px; white-space:pre-wrap;">
+                Obs: ${escapeHtml(
+                  x.observacion || x.observation || x.obs || x.motivo
+                )}
+              </div>
+            `
+            : ""
+        }
+      </div>
+
+      <div style="display:flex; gap:8px; flex:0 0 auto;">
+        <button
+          type="button"
+          title="Editar observación"
+          aria-label="Editar observación"
+          data-uni-edit="${idx}"
+          style="
+            width:38px;
+            height:38px;
+            border-radius:12px;
+            border:1px solid rgba(59,130,246,.22);
+            background:rgba(59,130,246,.10);
+            color:#93c5fd;
+            display:grid;
+            place-items:center;
+            cursor:pointer;
+          "
+        >
+          <i class="fa-solid fa-pen"></i>
+        </button>
+
+        <button
+          type="button"
+          title="Eliminar reporte"
+          aria-label="Eliminar reporte"
+          data-uni-del-one="${idx}"
+          style="
+            width:38px;
+            height:38px;
+            border-radius:12px;
+            border:1px solid rgba(239,68,68,.22);
+            background:rgba(239,68,68,.10);
+            color:#ffb4b4;
+            display:grid;
+            place-items:center;
+            cursor:pointer;
+          "
+        >
+          <i class="fa-solid fa-trash"></i>
+        </button>
+      </div>
     </div>
   </div>
 `).join("")}
@@ -13580,6 +14566,32 @@ ${item.who.map(x => `
     </div>
     <div class="muted small" style="margin-bottom:6px;">(Usa los botones de nivel arriba para registrar)</div>
   `;
+
+  if (item && Array.isArray(item.who) && item.who.length) {
+    uniReportedList.querySelectorAll("[data-uni-edit]").forEach((btn) => {
+      btn.addEventListener("click", async (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const idx = Number(btn.getAttribute("data-uni-edit"));
+        const row = item.who[idx];
+        if (typeof uniEditOne_ === "function") {
+          await uniEditOne_(s, row);
+        }
+      });
+    });
+
+    uniReportedList.querySelectorAll("[data-uni-del-one]").forEach((btn) => {
+      btn.addEventListener("click", async (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const idx = Number(btn.getAttribute("data-uni-del-one"));
+        const row = item.who[idx];
+        if (typeof uniDeleteOne_ === "function") {
+          await uniDeleteOne_(s, row);
+        }
+      });
+    });
+  }
 
   uniApplyLevelUI_(maxLevel);
 }
@@ -13649,6 +14661,147 @@ async function uniDeleteStudent_(studentName){
 }
 
 
+async function uniEditOne_(studentName, row){
+  const profile = requireLogin();
+  if (!profile) return;
+
+  const student = uniNormalizeStudent_(studentName);
+  if (!student || !row) return;
+
+  const currentObs = reportObservationOf_(row);
+
+  const observation = await openObservationModal_({
+    title: "Editar observación · Porte del uniforme",
+    sub: `${student} • ${String(row.teacher || "—").trim()}`,
+    placeholder: "Ej: No trajo las medias institucionales, lleva buzo no autorizado, etc.",
+    initialValue: currentObs
+  });
+
+  if (observation === null) return;
+
+  try {
+    setLoading(true, "Guardando…", "Actualizando observación del reporte.");
+
+    const resp = await gsUniformUpdateOne({
+      month: uniMonthKey_(),
+      student,
+      teacher: String(row.teacher || "").trim(),
+      dt: reportDtOf_(row),
+      level: Number(row.level || 0),
+      observation,
+      email: profile.email,
+      device_id: getDeviceId()
+    });
+
+    if (resp && Array.isArray(resp.list)) __uniCacheList = resp.list;
+    else await uniReloadReportedList(false);
+
+    uniUpdateSelectedBox_(student);
+    if (__uniView === "detail") uniRenderDetailView_();
+
+    uniSetHint_("Reporte actualizado ✅");
+  } catch (e) {
+    uniSetHint_(String(e && e.message ? e.message : e));
+  } finally {
+    setLoading(false);
+  }
+}
+
+async function uniDeleteOne_(studentName, row){
+  const profile = requireLogin();
+  if (!profile) return;
+
+  const student = uniNormalizeStudent_(studentName);
+  if (!student || !row) return;
+
+  const ok = await confirmPro({
+    title: "Eliminar reporte",
+    msg: `¿Seguro que deseas eliminar solo este reporte de "${student}"?`,
+    okText: "Sí, eliminar",
+    cancelText: "Cancelar",
+    danger: true
+  });
+
+  if (!ok) return;
+
+  try {
+    setLoading(true, "Eliminando…", "Borrando solo este reporte.");
+
+    const resp = await gsUniformDeleteOne({
+      month: uniMonthKey_(),
+      student,
+      teacher: String(row.teacher || "").trim(),
+      dt: reportDtOf_(row),
+      level: Number(row.level || 0),
+      email: profile.email,
+      device_id: getDeviceId()
+    });
+
+    if (resp && Array.isArray(resp.list)) {
+      __uniCacheList = resp.list;
+    } else if (typeof uniReloadReportedList === "function") {
+      await uniReloadReportedList(false);
+    }
+
+    if (typeof uniUpdateSelectedBox_ === "function") uniUpdateSelectedBox_(student);
+    if (typeof uniRenderDetailView_ === "function") uniRenderDetailView_();
+
+    if (typeof uniSetHint_ === "function") uniSetHint_("Reporte eliminado ✅");
+  } catch (e) {
+    if (typeof uniSetHint_ === "function") {
+      uniSetHint_(String(e && e.message ? e.message : e));
+    }
+  } finally {
+    setLoading(false);
+  }
+}
+
+
+
+
+async function uniDeleteOne_(studentName, row){
+  const profile = requireLogin();
+  if (!profile) return;
+
+  const student = uniNormalizeStudent_(studentName);
+  if (!student || !row) return;
+
+  const ok = await confirmPro({
+    title: "Eliminar reporte",
+    msg: `¿Seguro que deseas eliminar solo este reporte de "${student}"?`,
+    okText: "Sí, eliminar",
+    cancelText: "Cancelar",
+    danger: true
+  });
+  if (!ok) return;
+
+  try {
+    setLoading(true, "Eliminando…", "Borrando solo este reporte.");
+
+    const resp = await gsUniformDeleteOne({
+      month: uniMonthKey_(),
+      student,
+      teacher: String(row.teacher || "").trim(),
+      dt: reportDtOf_(row),
+      level: Number(row.level || 0),
+      email: profile.email,
+      device_id: getDeviceId()
+    });
+
+    if (resp && Array.isArray(resp.list)) __uniCacheList = resp.list;
+    else await uniReloadReportedList(false);
+
+    uniUpdateSelectedBox_(student);
+    if (__uniView === "detail") uniRenderDetailView_();
+
+    uniSetHint_("Reporte eliminado ✅");
+  } catch (e) {
+    uniSetHint_(String(e && e.message ? e.message : e));
+  } finally {
+    setLoading(false);
+  }
+}
+
 async function uniDoMarkLevel(level) {
   const profile = requireLogin();
   if (!profile) return;
@@ -13657,7 +14810,10 @@ async function uniDoMarkLevel(level) {
   if (lvl < 1 || lvl > 4) return;
 
   const student = uniNormalizeStudent_(__uniCurrentStudent);
-  if (!student) { uniSetHint_("Primero selecciona un estudiante de la lista."); return; }
+  if (!student) {
+    uniSetHint_("Primero selecciona un estudiante de la lista.");
+    return;
+  }
 
   const item = uniFindInCache_(student);
   const currentMax = item ? Number(item.maxLevel || 0) : 0;
@@ -13668,6 +14824,25 @@ async function uniDoMarkLevel(level) {
     return;
   }
 
+let observation = "";
+
+if (lvl === 4 && currentMax >= 4) {
+  observation = "";
+} else {
+  observation = await openObservationModal_({
+    title: "Observación · Porte del uniforme",
+    sub: `Nivel ${lvl} para ${student}`,
+    placeholder: "Ej: No trajo las medias institucionales, lleva buzo no autorizado, etc.",
+    initialValue: ""
+  });
+
+  if (observation === null) {
+    uniSetHint_("Registro cancelado.");
+    uniApplyLevelUI_(currentMax);
+    return;
+  }
+}
+
   try {
     setLoading(true, "Guardando…", "Registrando porte del uniforme.");
 
@@ -13675,6 +14850,7 @@ async function uniDoMarkLevel(level) {
       month: uniMonthKey_(),
       student,
       level: lvl,
+      observation,
       teacher: profile.name,
       email: profile.email,
       device_id: getDeviceId(),
@@ -13689,18 +14865,22 @@ async function uniDoMarkLevel(level) {
     uniRenderReportedList_(__uniCacheList);
     if (btnUniBack) btnUniBack.hidden = true;
 
-    // ✅ Solo cuando es reporte por primera vez (nivel 4)
- if (resp && resp.ok && resp.justReported && lvl >= 4) {
-  const msg = String(resp.wa_msg || "").trim();
-  await confirmAndShareReport_({
-    student,
-    msg,
-    title: "Compartir reporte (Uniforme)"
-  });
-}
+    if (resp && resp.ok && lvl >= 4) {
+      const msg = String(resp.wa_msg || "").trim();
+      if (msg) {
+        await confirmAndShareReport_({
+          student,
+          msg,
+          title: "Compartir reporte (Uniforme)"
+        });
+      }
+    }
 
-
-    uniSetHint_(lvl >= 4 ? "Nivel 4 registrado ✅" : "Registrado ✅");
+    uniSetHint_(
+      observation
+        ? (lvl >= 4 ? "Nivel 4 registrado ✅ Observación guardada." : "Registrado ✅ Observación guardada.")
+        : (lvl >= 4 ? "Nivel 4 registrado ✅" : "Registrado ✅")
+    );
   } catch (e) {
     uniSetHint_(String(e && e.message ? e.message : e));
   } finally {
@@ -15586,7 +16766,7 @@ function setRecordsOpen(open) {
 setRecordsOpen(false);
 btnToggleRecords.addEventListener("click", () => setRecordsOpen(recordsPanel.hidden));
 
-const APP_BUILD = "2026-04-10-55";
+const APP_BUILD = "2026-04-10-56";
 
 // ======= Reset / Refresh Service Worker + Cache =======
 async function hardRefreshPWA() {
@@ -15749,7 +16929,7 @@ piercStartPolling_();
 uniBindUI_();
 uniStartPolling_();
 
-
+bindObservationModal_();
 
 document.body.classList.toggle("is-admin", isAdminMode());
 
@@ -15832,3 +17012,4 @@ setInterval(async () => {
 
 </body>
 </html>
+g
