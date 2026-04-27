@@ -160,11 +160,18 @@ h2{font-size:16px; margin:0 0 12px}
 .table tr:hover td{background: rgba(255,255,255,.03)}
 
 .footer{
-  flex: 0 0 auto;
-  padding: 10px 16px calc(10px + env(safe-area-inset-bottom));
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 50;
+
+  min-height: 42px;
+  padding: 8px 16px calc(8px + env(safe-area-inset-bottom));
   border-top: 1px solid var(--line);
-  background: rgba(11,18,32,.75);
+  background: rgba(11,18,32,.86);
   backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
 
   display:flex;
   justify-content:center;
@@ -891,14 +898,16 @@ body:not(.is-admin) #adminMonthSummary{
 /* padding seguro en móviles (notch/safe-area) */
 #disciplineModal,
 #piercingModal,
-#uniformModal{
+#uniformModal,
+#lateArrivalModal{
   padding: max(12px, env(safe-area-inset-top)) 12px max(12px, env(safe-area-inset-bottom));
 }
 
 /* el card se adapta a altura y NO scrollea */
 #disciplineModal .modal-card,
 #piercingModal .modal-card,
-#uniformModal .modal-card{
+#uniformModal .modal-card,
+#lateArrivalModal .modal-card{
   width: min(720px, 100%);
   max-height: calc(100dvh - 24px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
   display: flex;
@@ -2276,6 +2285,1237 @@ body.is-admin #registerActions{
   }
 }
 
+/* =========================================
+   HUB + FULLSCREEN para llamados de atención
+========================================= */
+
+.behavior-hub-grid{
+  display:grid;
+  gap:14px;
+  margin-top:18px;
+}
+
+.behavior-hub-card{
+  border:1px solid rgba(255,255,255,.12);
+  border-radius:20px;
+  padding:18px;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.04));
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.06),
+    0 14px 30px rgba(0,0,0,.18);
+  cursor:pointer;
+  transition: transform .18s ease, filter .18s ease, border-color .18s ease;
+}
+
+.behavior-hub-card:hover{
+  transform: translateY(-1px);
+  filter: brightness(1.04);
+  border-color: rgba(11,95,255,.35);
+}
+
+.behavior-hub-title{
+  font-size: 17px;
+  font-weight: 900;
+  letter-spacing: .2px;
+}
+
+.behavior-hub-sub{
+  margin-top:6px;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.behavior-full{
+  padding: 0 !important;
+  align-items: stretch !important;
+  justify-content: stretch !important;
+}
+
+.behavior-full .modal-card{
+  width: 100vw !important;
+  max-width: 100vw !important;
+  height: 100dvh !important;
+  max-height: 100dvh !important;
+  border-radius: 0 !important;
+  border: 0 !important;
+  padding: 0 !important;
+  display:flex !important;
+  flex-direction:column !important;
+  overflow:hidden !important;
+  background:
+    radial-gradient(1200px 800px at 15% 0%, rgba(11,95,255,.16), transparent 55%),
+    radial-gradient(900px 600px at 85% 20%, rgba(59,130,246,.10), transparent 50%),
+    #0b1220 !important;
+}
+
+/* ✅ Ajuste solo para Llegadas tarde en celular */
+#lateArrivalModal.behavior-full .modal-card{
+  width: 100% !important;
+  max-width: 430px !important;
+  height: 100dvh !important;
+  margin: 0 auto !important;
+  border-radius: 0 !important;
+}
+
+#lateArrivalModal .behavior-panel{
+  width: 100% !important;
+  max-width: 430px !important;
+}
+
+#lateArrivalModal .behavior-full-body{
+  padding-left: 14px !important;
+  padding-right: 14px !important;
+  overflow-x: hidden !important;
+}
+
+#lateArrivalModal .behavior-panel-card{
+  width: 100% !important;
+  max-width: 100% !important;
+  overflow: hidden !important;
+}
+
+.behavior-full-header{
+  flex:0 0 auto;
+  display:flex;
+  align-items:center;
+  gap:12px;
+  padding: max(16px, env(safe-area-inset-top)) 16px 14px;
+  border-bottom:1px solid rgba(255,255,255,.08);
+  background: rgba(11,18,32,.72);
+  backdrop-filter: blur(12px);
+  position: relative;
+}
+
+.behavior-full-back{
+  width:44px;
+  height:44px;
+  border-radius:14px;
+  border:1px solid rgba(255,255,255,.12);
+  background: rgba(255,255,255,.06);
+  color: var(--text);
+  display:grid;
+  place-items:center;
+  cursor:pointer;
+  flex:0 0 auto;
+}
+
+.behavior-full-back:active{
+  transform: translateY(1px);
+}
+
+.behavior-full-headtext{
+  min-width:0;
+  flex:1 1 auto;
+}
+
+.behavior-full-title{
+  font-size:18px;
+  font-weight:900;
+  letter-spacing:.2px;
+}
+
+.behavior-full-sub{
+  margin-top:4px;
+  color:var(--muted);
+  font-size:12px;
+}
+
+.behavior-full-body{
+  flex:1 1 auto;
+  min-height:0;
+  overflow:auto;
+  -webkit-overflow-scrolling:touch;
+  padding:16px;
+}
+
+.behavior-panel{
+  width:min(920px, 100%);
+  margin:0 auto;
+  display:grid;
+  gap:14px;
+}
+
+.behavior-panel-card{
+  border:1px solid rgba(255,255,255,.10);
+  border-radius:22px;
+  padding:16px;
+  background: rgba(18,26,43,.82);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.04),
+    0 14px 28px rgba(0,0,0,.20);
+}
+
+.behavior-form-grid{
+  display:grid;
+  gap:12px;
+}
+
+@media (min-width: 760px){
+  .behavior-form-grid.two{
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.behavior-big-select{
+  min-height: 52px;
+  font-size: 15px;
+}
+
+.behavior-levels-wrap{
+  margin-top: 6px;
+}
+
+.behavior-observation{
+  min-height: 110px;
+  resize: vertical;
+}
+
+.behavior-viewer-filters{
+  display:grid;
+  gap:12px;
+  margin-bottom:14px;
+}
+
+@media (min-width: 760px){
+  .behavior-viewer-filters{
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.behavior-viewer-list{
+  min-height: 220px;
+  max-height: none;
+  overflow:auto;
+  -webkit-overflow-scrolling:touch;
+  border:1px solid var(--line);
+  border-radius:18px;
+  padding:12px;
+  background: rgba(0,0,0,.12);
+}
+
+.behavior-empty{
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.behavior-report-card{
+  border:1px solid rgba(255,255,255,.10);
+  border-radius:16px;
+  padding:12px;
+  background: rgba(255,255,255,.05);
+}
+
+.behavior-report-top{
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-start;
+  gap:10px;
+}
+
+.behavior-report-name{
+  font-weight:900;
+  font-size:15px;
+}
+
+.behavior-report-meta{
+  margin-top:4px;
+  color:var(--muted);
+  font-size:12px;
+}
+
+.behavior-report-obs{
+  margin-top:10px;
+  font-size:13px;
+  line-height:1.45;
+  color:var(--text);
+  white-space:pre-wrap;
+}
+
+.behavior-form-grid .input-with-select{
+  position: relative;
+}
+
+.behavior-form-grid .input-with-select > .input-real{
+  width: 100%;
+  padding-right: 48px;
+}
+
+.behavior-form-grid .input-with-select > .student-overlay{
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 48px;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.behavior-form-grid .input-with-select::after{
+  content: "▾";
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+  font-size: 22px;
+  font-weight: 700;
+  opacity: .9;
+}
+
+
+.behavior-level-badge{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  border-radius:999px;
+  padding:6px 10px;
+  border:1px solid rgba(255,255,255,.12);
+  background:rgba(255,255,255,.06);
+  font-size:12px;
+  font-weight:900;
+  white-space:nowrap;
+}
+
+.behavior-report-card{
+  cursor:pointer;
+}
+
+.behavior-report-card.selected{
+  border-color: rgba(11,95,255,.62);
+  background: rgba(11,95,255,.16);
+}
+
+.behavior-detail-box{
+  display:grid;
+  gap:10px;
+}
+
+.behavior-detail-title{
+  font-size:17px;
+  font-weight:950;
+  line-height:1.25;
+}
+
+.behavior-detail-row{
+  border:1px solid rgba(255,255,255,.10);
+  border-radius:14px;
+  padding:12px;
+  background:rgba(255,255,255,.05);
+}
+
+.behavior-detail-row-top{
+  display:flex;
+  justify-content:space-between;
+  gap:10px;
+  align-items:flex-start;
+}
+
+.behavior-detail-teacher{
+  font-weight:900;
+}
+
+.behavior-detail-meta{
+  margin-top:5px;
+  color:var(--muted);
+  font-size:12px;
+}
+
+.behavior-detail-obs{
+  margin-top:9px;
+  font-size:13px;
+  line-height:1.45;
+  white-space:pre-wrap;
+}
+
+
+.behavior-back-btn{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  border-radius:10px;
+  padding:6px 10px;
+  font-size:12px;
+  font-weight:800;
+  border:1px solid rgba(255,255,255,.15);
+  background:rgba(255,255,255,.06);
+  cursor:pointer;
+  width:max-content;
+}
+
+.behavior-back-btn:hover{
+  background:rgba(255,255,255,.12);
+}
+
+
+.behavior-detail-actions{
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+  justify-content:flex-end;
+  margin-top:10px;
+}
+
+.behavior-mini-btn{
+  width:38px;
+  height:38px;
+  border-radius:12px;
+  border:1px solid rgba(255,255,255,.14);
+  background:rgba(255,255,255,.06);
+  color:var(--text);
+  display:grid;
+  place-items:center;
+  cursor:pointer;
+}
+
+.behavior-mini-btn.edit{
+  color:#93c5fd;
+  background:rgba(59,130,246,.10);
+  border-color:rgba(59,130,246,.22);
+}
+
+.behavior-mini-btn.delete{
+  color:#ffb4b4;
+  background:rgba(239,68,68,.10);
+  border-color:rgba(239,68,68,.22);
+}
+
+
+#obsModal {
+  position: fixed;
+  inset: 0;
+  z-index: 10000000 !important;
+}
+
+/* =========================================================
+   AJUSTE VISUAL: Hub Reportar / Ver reportes
+   Scope: solo modal #behaviorHubModal
+   ========================================================= */
+#behaviorHubModal .behavior-panel{
+  max-width: 760px;
+}
+
+#behaviorHubModal .behavior-panel-card{
+  border-color: rgba(148,163,184,.16);
+  background:
+    linear-gradient(180deg, rgba(15,23,42,.88), rgba(15,23,42,.72));
+}
+
+#behaviorHubModal .behavior-hub-grid{
+  gap: 12px;
+  margin-top: 10px;
+}
+
+#behaviorHubModal .behavior-hub-card{
+  position: relative;
+  display: block;
+  width: 100%;
+  text-align: left;
+  color: var(--text);
+  -webkit-text-fill-color: var(--text);
+  border: 1px solid rgba(148,163,184,.18);
+  border-radius: 22px;
+  padding: 18px 18px 18px 58px;
+  background:
+    radial-gradient(circle at top left, rgba(59,130,246,.18), transparent 42%),
+    linear-gradient(180deg, rgba(255,255,255,.075), rgba(255,255,255,.035));
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.08),
+    0 14px 28px rgba(0,0,0,.18);
+}
+
+#behaviorHubModal .behavior-hub-card::before{
+  position: absolute;
+  left: 18px;
+  top: 18px;
+  width: 28px;
+  height: 28px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  font-family: 'Font Awesome 6 Free';
+  font-weight: 900;
+  font-size: 13px;
+  color: #bfdbfe;
+  -webkit-text-fill-color: #bfdbfe;
+  background: rgba(59,130,246,.16);
+  border: 1px solid rgba(147,197,253,.20);
+}
+
+#behaviorHubModal #btnBehaviorOpenReport::before{
+  content: "\f044";
+}
+
+#behaviorHubModal #btnBehaviorOpenViewer::before{
+  content: "\f06e";
+}
+
+#behaviorHubModal .behavior-hub-card:hover{
+  transform: translateY(-1px);
+  filter: none;
+  border-color: rgba(96,165,250,.42);
+  background:
+    radial-gradient(circle at top left, rgba(59,130,246,.24), transparent 44%),
+    linear-gradient(180deg, rgba(255,255,255,.10), rgba(255,255,255,.045));
+}
+
+#behaviorHubModal .behavior-hub-card:active{
+  transform: translateY(1px);
+}
+
+#behaviorHubModal .behavior-hub-title{
+  color: #f8fbff;
+  -webkit-text-fill-color: #f8fbff;
+  font-size: 18px;
+  font-weight: 950;
+  letter-spacing: .15px;
+  line-height: 1.2;
+}
+
+#behaviorHubModal .behavior-hub-sub{
+  color: rgba(203,213,225,.88);
+  -webkit-text-fill-color: rgba(203,213,225,.88);
+  margin-top: 6px;
+  line-height: 1.45;
+}
+
+#behaviorHubModal .behavior-full-title{
+  color: #f8fbff;
+  -webkit-text-fill-color: #f8fbff;
+}
+
+#behaviorHubModal .behavior-full-sub{
+  color: rgba(203,213,225,.82);
+  -webkit-text-fill-color: rgba(203,213,225,.82);
+}
+
+@media (max-width: 520px){
+  #behaviorHubModal .behavior-hub-card{
+    padding: 16px 16px 16px 54px;
+  }
+
+  #behaviorHubModal .behavior-hub-card::before{
+    left: 16px;
+    top: 16px;
+  }
+}
+/* =========================================================
+   FAB Atrás Pro - Viewer Celular / Piercing / Uniforme
+   ========================================================= */
+
+#disciplineViewerModal .modal-card,
+#piercingViewerModal .modal-card,
+#uniformViewerModal .modal-card{
+  position: relative !important;
+}
+
+/* BOTONES REALES */
+#btnDiscViewerBack,
+#btnPiercViewerBack,
+#btnUniViewerBack,
+#btnBehaviorHubClose{
+  position: absolute !important;
+left: 16px !important;
+bottom: calc(16px + env(safe-area-inset-bottom)) !important;
+  top: auto !important;
+  right: auto !important;
+  z-index: 9999999 !important;
+
+  width: 54px !important;
+  height: 54px !important;
+  min-width: 54px !important;
+  min-height: 54px !important;
+  padding: 0 !important;
+
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+
+  border-radius: 18px !important;
+  opacity: 1 !important;
+
+  background:
+    linear-gradient(180deg, rgba(18,26,43,.96), rgba(11,18,32,.94)) !important;
+
+  border: 1px solid rgba(255,255,255,.14) !important;
+
+  box-shadow:
+    0 12px 28px rgba(0,0,0,.42),
+    inset 0 1px 0 rgba(255,255,255,.10) !important;
+
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+
+  cursor: pointer;
+  overflow: hidden;
+  isolation: isolate;
+
+  animation: fabBackIn .25s ease-out both;
+  transition:
+    transform .16s ease,
+    box-shadow .16s ease,
+    background .16s ease;
+}
+
+
+
+/* icono */
+#btnDiscViewerBack i,
+#btnPiercViewerBack i,
+#btnUniViewerBack i,
+#btnBehaviorHubClose i{
+  font-size: 22px !important;
+  color: rgba(233,238,252,.96) !important;
+  text-shadow: none !important;
+}
+
+/* hover */
+#btnDiscViewerBack:hover,
+#btnPiercViewerBack:hover,
+#btnUniViewerBack:hover,
+#btnBehaviorHubClose:hover{
+  transform: translateY(-2px) scale(1.05) !important;
+  filter: brightness(1.08);
+}
+
+/* active */
+#btnDiscViewerBack:active,
+#btnPiercViewerBack:active,
+#btnUniViewerBack:active,
+#btnBehaviorHubClose:active{
+  transform: scale(.92) !important;
+}
+
+/* espacio inferior */
+#disciplineViewerModal .behavior-full-body,
+#piercingViewerModal .behavior-full-body,
+#uniformViewerModal .behavior-full-body{
+  padding-bottom: 160px !important;
+}
+
+
+@keyframes fabBackIn{
+  from{
+    opacity: 0;
+    transform: translateY(20px) scale(.82);
+  }
+  to{
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes fabBackShine{
+  0%{ left: -70%; opacity: 0; }
+  20%{ opacity: 1; }
+  40%{ left: 130%; opacity: 0; }
+  100%{ left: 130%; opacity: 0; }
+}
+
+
+/* =========================================================
+   FAB Cerrar Pro - Viewer Reportes
+   ========================================================= */
+
+#reportesViewerModal .modal-card{
+  position: relative !important;
+  padding-bottom: 120px !important;
+}
+
+/* Botón Cerrar convertido en FAB inferior izquierdo */
+#btnCerrarViewerReportes{
+  position: absolute !important;
+  left: 20px !important;
+  bottom: 80px !important;
+  top: auto !important;
+  right: auto !important;
+  z-index: 9999999 !important;
+
+  width: 54px !important;
+  height: 54px !important;
+  min-width: 54px !important;
+  min-height: 54px !important;
+  padding: 0 !important;
+
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+
+  border-radius: 18px !important;
+  opacity: 1 !important;
+
+  /* oculta el texto "Cerrar" */
+  font-size: 0 !important;
+
+  background:
+    linear-gradient(180deg, rgba(18,26,43,.96), rgba(11,18,32,.94)) !important;
+
+  border: 1px solid rgba(255,255,255,.14) !important;
+
+  box-shadow:
+    0 12px 28px rgba(0,0,0,.42),
+    inset 0 1px 0 rgba(255,255,255,.10) !important;
+
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+
+  cursor: pointer;
+}
+
+/* Ícono flecha */
+#btnCerrarViewerReportes::before{
+  content: "←";
+  font-size: 28px !important;
+  line-height: 1;
+  color: rgba(233,238,252,.96) !important;
+}
+
+#btnCerrarViewerReportes:hover{
+  transform: translateY(-1px) scale(1.03);
+  background:
+    linear-gradient(180deg, rgba(30,41,59,.98), rgba(15,23,42,.96)) !important;
+}
+
+#btnCerrarViewerReportes:active{
+  transform: scale(.94);
+}
+
+
+/* =========================================================
+   FAB Atrás - Formularios Celular / Piercing / Uniforme
+   ========================================================= */
+
+#disciplineModal .modal-card,
+#piercingModal .modal-card,
+#uniformModal .modal-card{
+  position: relative !important;
+}
+
+#btnDiscBack,
+#btnPiercBack,
+#btnUniBack,
+#btnLateBack{
+  position: absolute !important;
+  left: 16px !important;
+  bottom: calc(16px + env(safe-area-inset-bottom)) !important;
+  top: auto !important;
+  right: auto !important;
+  z-index: 9999999 !important;
+
+  width: 52px !important;
+  height: 52px !important;
+  min-width: 52px !important;
+  min-height: 52px !important;
+  padding: 0 !important;
+
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+
+  border-radius: 16px !important;
+  opacity: 1 !important;
+
+  background: rgba(15, 23, 42, 0.92) !important;
+  border: 1px solid rgba(255,255,255,.12) !important;
+
+  box-shadow:
+    0 10px 24px rgba(0,0,0,.4),
+    inset 0 1px 0 rgba(255,255,255,.08) !important;
+
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+
+  transition:
+    transform .16s ease,
+    background .16s ease,
+    box-shadow .16s ease;
+  cursor: pointer;
+}
+
+#btnDiscBack i,
+#btnPiercBack i,
+#btnUniBack i,
+#btnLateBack i{
+  font-size: 20px !important;
+  color: rgba(230,235,255,.95) !important;
+}
+
+#btnDiscBack:hover,
+#btnPiercBack:hover,
+#btnUniBack:hover{
+  transform: translateY(-1px);
+  background: rgba(30,41,59,.95) !important;
+}
+
+#btnDiscBack:active,
+#btnPiercBack:active,
+#btnUniBack:active{
+  transform: scale(.95);
+}
+
+#disciplineModal .behavior-full-body,
+#piercingModal .behavior-full-body,
+#uniformModal .behavior-full-body{
+  padding-bottom: 90px !important;
+}
+
+/* =========================================================
+   Iconos editar / borrar - tamaño compacto PRO
+   ========================================================= */
+
+/* Botones */
+button[data-disc-edit],
+button[data-disc-del-one],
+button[data-pierc-edit],
+button[data-pierc-del-one],
+button[data-uni-edit],
+button[data-uni-del-one],
+.behavior-mini-btn.edit,
+.behavior-mini-btn.delete{
+  width: 28px !important;
+  height: 28px !important;
+  min-width: 28px !important;
+  min-height: 28px !important;
+
+  border-radius: 8px !important;
+  padding: 0 !important;
+}
+
+/* Iconos */
+button[data-disc-edit] i,
+button[data-disc-del-one] i,
+button[data-pierc-edit] i,
+button[data-pierc-del-one] i,
+button[data-uni-edit] i,
+button[data-uni-del-one] i,
+.behavior-mini-btn.edit i,
+.behavior-mini-btn.delete i{
+  font-size: 11px !important;
+  line-height: 1 !important;
+}
+
+/* Separación */
+button[data-disc-edit] + button[data-disc-del-one],
+button[data-pierc-edit] + button[data-pierc-del-one],
+button[data-uni-edit] + button[data-uni-del-one]{
+  margin-left: 2px !important;
+}
+
+#lateArrivalModal .disc-item{
+  max-width: 100%;
+  overflow: hidden;
+}
+
+#lateArrivalModal .disc-item .left{
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+#lateArrivalModal .disc-item .right{
+  flex: 0 0 auto;
+}
+
+#lateArrivalModal .disc-item .name{
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ===== Llegadas tarde: fila compacta curso + estudiante ===== */
+#lateArrivalModal .late-compact-row{
+  display: grid;
+  grid-template-columns: 80px 1fr;
+  gap: 8px;
+  align-items: end;
+}
+
+#lateArrivalModal .late-course-box,
+#lateArrivalModal .late-student-box{
+  min-width: 0;
+}
+
+#lateArrivalModal #lateCourse{
+  min-height: 44px;
+  font-size: 13px;
+  padding-left: 8px;
+  padding-right: 24px;
+}
+
+#lateArrivalModal #lateStudent{
+  min-height: 50px;
+  font-size: 14px;
+}
+
+#lateArrivalModal .behavior-levels-wrap{
+  margin-top: 10px;
+}
+
+#lateArrivalModal .behavior-observation{
+  min-height: 78px;
+}
+
+#lateArrivalModal .modal-actions{
+  margin-top: 10px !important;
+}
+
+#lateArrivalModal .disc-reported{
+  margin-top: 12px !important;
+}
+
+@media (max-width: 360px){
+  #lateArrivalModal .late-compact-row{
+    grid-template-columns: 72px 1fr;
+    gap: 6px;
+  }
+
+  #lateArrivalModal #lateCourse{
+    font-size: 12px;
+    padding-left: 6px;
+    padding-right: 20px;
+  }
+
+  #lateArrivalModal #lateStudent{
+    font-size: 13px;
+  }
+}
+
+/* ===== Scroll interno reportados ===== */
+#lateArrivalModal .disc-reported{
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+#lateArrivalModal #lateReportedList{
+  max-height: 220px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 4px;
+}
+
+#lateArrivalModal #lateReportedList::-webkit-scrollbar{
+  width: 6px;
+}
+
+#lateArrivalModal #lateReportedList::-webkit-scrollbar-thumb{
+  background: rgba(255,255,255,.2);
+  border-radius: 6px;
+}
+
+/* ===== DETALLE ===== */
+#lateArrivalModal .late-detail-box{
+  margin-top: 12px;
+  border: 1px solid rgba(255,255,255,.12);
+  border-radius: 16px;
+  padding: 12px;
+  background: rgba(0,0,0,.12);
+}
+
+#lateArrivalModal .late-detail-head{
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+#lateArrivalModal .late-detail-title{
+  font-size: 15px;
+  font-weight: 950;
+  color: var(--text);
+}
+
+#lateArrivalModal .late-detail-list{
+  display: grid;
+  gap: 10px;
+  max-height: 190px;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding-right: 4px;
+}
+
+#lateArrivalModal .late-detail-item{
+  border: 1px solid rgba(255,255,255,.10);
+  border-radius: 14px;
+  padding: 10px;
+  background: rgba(255,255,255,.05);
+}
+
+#lateArrivalModal .late-detail-row-top{
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+#lateArrivalModal .late-detail-teacher{
+  font-weight: 900;
+}
+
+#lateArrivalModal .late-detail-meta{
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+#lateArrivalModal .late-detail-obs{
+  margin-top: 8px;
+  font-size: 13px;
+  line-height: 1.45;
+  white-space: pre-wrap;
+}
+
+/* ===== MODO DETALLE (FIX FINAL) ===== */
+#lateArrivalModal.late-detail-mode .disc-reported{
+  display: none !important;
+}
+
+#lateArrivalModal.late-detail-mode .behavior-full-body{
+  overflow: hidden !important;
+}
+
+#lateArrivalModal.late-detail-mode .behavior-panel-card{
+  height: calc(100dvh - 112px);
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+
+#lateArrivalModal.late-detail-mode .late-detail-box{
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+}
+
+#lateArrivalModal.late-detail-mode .late-detail-list{
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: none !important;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  padding-right: 4px;
+
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 10px;
+}
+
+#lateArrivalModal.late-detail-mode .late-detail-item{
+  flex: 0 0 auto !important;
+  min-height: 0 !important;
+  height: auto !important;
+  padding: 10px !important;
+  display: block !important;
+}
+
+#lateArrivalModal.late-detail-mode .late-detail-row-top{
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+#lateArrivalModal.late-detail-mode .late-detail-row-top > div{
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+#lateArrivalModal.late-detail-mode .late-detail-teacher,
+#lateArrivalModal.late-detail-mode .late-detail-meta,
+#lateArrivalModal.late-detail-mode .late-detail-obs{
+  position: static !important;
+  transform: none !important;
+}
+
+#lateArrivalModal.late-detail-mode .late-detail-obs{
+  display: block;
+  margin-top: 8px !important;
+  min-height: 0 !important;
+  height: auto !important;
+  line-height: 1.35;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* BOTÓN DENTRO DEL MODAL */
+#lateArrivalModal.late-detail-mode .modal-actions{
+  position: sticky !important;
+  bottom: 0 !important;
+  z-index: 20 !important;
+  margin-top: 10px !important;
+  padding-top: 10px;
+  display: flex !important;
+  justify-content: flex-end !important;
+  background: #121a2b;
+}
+
+#lateArrivalModal.late-detail-mode #btnLateReport{
+  height: 52px;
+  border-radius: 16px;
+  padding: 0 22px;
+}
+
+/* BOTÓN VOLVER */
+#lateArrivalModal .late-detail-back{
+  border: 1px solid rgba(255,255,255,.14);
+  background: rgba(255,255,255,.06);
+  color: var(--text);
+  border-radius: 12px;
+  padding: 8px 10px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+
+#lateArrivalModal .behavior-mini-btn{
+  width: 28px !important;
+  height: 28px !important;
+  min-width: 28px !important;
+  min-height: 28px !important;
+  border-radius: 8px !important;
+  padding: 0 !important;
+}
+
+#lateArrivalModal .behavior-mini-btn i{
+  font-size: 11px !important;
+  line-height: 1 !important;
+}
+
+.late-edit-card{
+  width: min(460px, 100%);
+  border-radius: 22px;
+  background:
+    radial-gradient(circle at top left, rgba(59,130,246,.18), transparent 45%),
+    #0b1220;
+}
+
+.late-edit-card textarea{
+  min-height: 140px;
+  resize: vertical;
+}
+
+.late-success-backdrop{
+  position: fixed;
+  inset: 0;
+  z-index: 10000050;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+  opacity: 0;
+  background: rgba(0,0,0,.24);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  transition: opacity .18s ease;
+}
+
+.late-success-backdrop.show{
+  opacity: 1;
+}
+
+.late-success-toast{
+  width: min(86vw, 300px);
+  padding: 22px 18px;
+  border-radius: 26px;
+  text-align: center;
+
+  background:
+    radial-gradient(circle at top left, rgba(34,197,94,.22), transparent 44%),
+    rgba(15,23,42,.94);
+
+  border: 1px solid rgba(255,255,255,.14);
+  box-shadow:
+    0 22px 55px rgba(0,0,0,.48),
+    inset 0 1px 0 rgba(255,255,255,.10);
+
+  transform: scale(.78);
+  opacity: 0;
+
+  transition:
+    transform .26s cubic-bezier(.2,.9,.2,1),
+    opacity .18s ease;
+}
+
+.late-success-backdrop.show .late-success-toast{
+  transform: scale(1);
+  opacity: 1;
+}
+
+.late-success-icon{
+  width: 76px;
+  height: 76px;
+  margin: 0 auto 14px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+
+  color: #dcfce7;
+  font-size: 46px;
+  font-weight: 950;
+
+  background: rgba(34,197,94,.20);
+  border: 1px solid rgba(34,197,94,.42);
+  box-shadow:
+    0 0 0 8px rgba(34,197,94,.10),
+    0 0 32px rgba(34,197,94,.20);
+
+  animation: lateToastPop .34s cubic-bezier(.2,.9,.2,1);
+}
+
+.late-success-title{
+  font-weight: 950;
+  font-size: 17px;
+  color: #f8fafc;
+}
+
+.late-success-sub{
+  margin-top: 5px;
+  font-size: 13px;
+  font-weight: 800;
+  color: rgba(203,213,225,.92);
+}
+
+@keyframes lateToastPop{
+  0%{ transform: scale(.55); opacity: .2; }
+  65%{ transform: scale(1.14); opacity: 1; }
+  100%{ transform: scale(1); opacity: 1; }
+}
+
+body{
+  padding-bottom: calc(46px + env(safe-area-inset-bottom));
+}
+
+.container{
+  padding-bottom: calc(58px + env(safe-area-inset-bottom)) !important;
+}
+
+#btnBehaviorHubClose{
+  position: fixed !important;
+  left: 16px !important;
+  bottom: calc(16px + env(safe-area-inset-bottom)) !important;
+  top: auto !important;
+  right: auto !important;
+  z-index: 9999999 !important;
+
+  width: 52px !important;
+  height: 52px !important;
+  min-width: 52px !important;
+  min-height: 52px !important;
+
+  border-radius: 16px !important;
+  background: rgba(15, 23, 42, 0.92) !important;
+  border: 1px solid rgba(255,255,255,.12) !important;
+  box-shadow:
+    0 10px 24px rgba(0,0,0,.4),
+    inset 0 1px 0 rgba(255,255,255,.08) !important;
+
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
 
 
 </style>
@@ -2318,6 +3558,7 @@ body.is-admin #registerActions{
     <button id="btnDiscipline" class="menu-item" type="button" role="menuitem">Uso del celular</button>
     <button id="btnPiercing" class="menu-item" type="button" role="menuitem">Piercing y perforaciones</button>
     <button id="btnUniform" class="menu-item" type="button" role="menuitem">Porte del uniforme</button>
+    <button id="btnLlegadasTarde" class="menu-item" type="button" role="menuitem">Llegadas tarde</button>
   </div>
 
 <!-- ✅ NUEVO: Botón que abre el submenú "Faltas" (TIPOS) -->
@@ -2804,192 +4045,333 @@ body.is-admin #registerActions{
     </div>
   </div>
 </div>
-
 <!-- ======= MODAL LLAMADO DE ATENCIÓN (CELULAR EN CLASE) ======= -->
-<div id="disciplineModal" class="modal-backdrop" hidden>
-  <div class="modal-card" style="width:min(720px,100%);">
-    <h2 class="modal-title">Uso inadecuado del celular</h2>
-    <p class="modal-sub">Reporta uso de celular en clase. Marca el nivel (1 a 4). Al llegar a 4 se notifica a los docentes que participaron.</p>
-
-    <label class="modal-label">Seleccionado</label>
-    <div id="discSelectedBox" class="status" style="margin-top:6px;">
-      <span class="dot" id="discLevelDot"></span>
-      <div>
-        <div id="discSelectedName" style="font-weight:900;">Selecciona un estudiante de la lista</div>
-        <div class="muted" id="discSelectedMeta">—</div>
+<div id="disciplineModal" class="modal-backdrop behavior-full" hidden>
+  <div class="modal-card">
+    <div class="behavior-full-header">
+      <div class="behavior-full-headtext">
+        <div class="behavior-full-title">Uso inadecuado del celular</div>
+        <div class="behavior-full-sub">Registrar llamado de atención.</div>
       </div>
     </div>
 
-    <!-- ✅ NUEVO: Curso + Autocomplete -->
-    <label class="modal-label" for="discCourse">Curso</label>
-    <select id="discCourse" class="modal-input"></select>
-    <datalist id="discStudentsList"></datalist>
-    <label class="modal-label" for="discStudentSelect">Estudiante (lista)</label>
-<select id="discStudentSelect" class="modal-input"></select>
+    <div class="behavior-full-body">
+      <div class="behavior-panel">
+        <div class="behavior-panel-card">
+          <div class="behavior-form-grid two">
+            <div>
+              <label class="modal-label" for="discCourse">Curso</label>
+              <select id="discCourse" class="modal-input behavior-big-select"></select>
+            </div>
 
+            <div>
+              <datalist id="discStudentsList"></datalist>
+              <label class="modal-label" for="discStudent">Estudiante</label>
 
-    <label class="modal-label" for="discStudent">Estudiante</label>
-    <input id="discStudent" class="modal-input" type="text"
-           list="discStudentsList"
-           placeholder="Escribe el nombre del estudiante…" autocomplete="off" />
-    <div class="muted small" style="margin-top:6px;">
-      Tip: también puedes tocar un nombre en “Reportados” para cargarlo arriba.
-    </div>
+              <div class="input-with-select">
+                <input
+                  id="discStudent"
+                  class="modal-input input-real behavior-big-select"
+                  type="text"
+                  list="discStudentsList"
+                  placeholder="Escribe el nombre del estudiante..."
+                  autocomplete="off"
+                />
 
-    <div class="disc-levels">
-      <button type="button" class="disc-level" data-level="1">1 • Leve</button>
-      <button type="button" class="disc-level" data-level="2">2</button>
-      <button type="button" class="disc-level" data-level="3">3</button>
-      <button type="button" class="disc-level danger" data-level="4">4 • Grave</button>
-    </div>
+                <select
+                  id="discStudentSelect"
+                  class="modal-input student-overlay"
+                  aria-label="Seleccionar estudiante"
+                ></select>
+              </div>
+            </div>
+          </div>
 
+          <div class="behavior-levels-wrap">
+            <label class="modal-label">Nivel</label>
+            <div class="disc-levels">
+              <button type="button" class="disc-level" data-level="1">1 • Leve</button>
+              <button type="button" class="disc-level" data-level="2">2</button>
+              <button type="button" class="disc-level" data-level="3">3</button>
+              <button type="button" class="disc-level danger" data-level="4">4 • Grave</button>
+            </div>
+          </div>
 
+          <div>
+            <label class="modal-label" for="discObservation">Observación</label>
+            <textarea
+              id="discObservation"
+              class="modal-input behavior-observation"
+              placeholder="Ej: Uso del celular durante la explicación, no acató el llamado, etc."
+            ></textarea>
+          </div>
 
-    <div class="disc-reported">
-      <div class="row row-between" style="margin-top:12px;">
-        <div class="muted small">Reportados (mes actual)</div>
+          <div id="discHint" class="modal-hint muted small"></div>
+
+          <div class="modal-actions" style="justify-content:flex-end; margin-top:14px;">
+            <button id="btnDiscReport" type="button" class="btn btn-primary">Reportar</button>
+          </div>
+        </div>
       </div>
-
-      <div id="discReportedList" class="disc-reported-list"></div>
-
-      <div id="discHint" class="modal-hint muted small"></div>
-
-      <div class="modal-actions" style="justify-content:flex-end;">
-        <button id="btnDiscBack" type="button" class="btn btn-ghost" hidden>← Atrás</button>
-        <button id="btnDiscReload" type="button" class="btn btn-ghost">Recargar</button>
-        <button id="btnDiscClose" type="button" class="btn btn-ghost">Cerrar</button>
-      </div>
     </div>
+
+    <button id="btnDiscBack" type="button" class="behavior-form-fab-back" aria-label="Atrás">
+      <i class="fa-solid fa-arrow-left" aria-hidden="true"></i>
+    </button>
   </div>
 </div>
-
 
 
 <!-- ======= MODAL PIERCING Y PERFORACIONES ======= -->
-<div id="piercingModal" class="modal-backdrop" hidden>
-  <div class="modal-card" style="width:min(720px,100%);">
-
-    <h2 class="modal-title">Piercing y perforaciones</h2>
-    <p class="modal-sub">
-      Reporta piercing/perforaciones no permitidas. Marca el nivel (1 a 4). Al llegar a 4 se notifica por WhatsApp.
-    </p>
-
-    <label class="modal-label">Seleccionado</label>
-    <div id="piercSelectedBox" class="status" style="margin-top:6px;">
-      <span class="dot" id="piercLevelDot"></span>
-      <div>
-        <div id="piercSelectedName" style="font-weight:900;">Selecciona un estudiante de la lista</div>
-        <div class="muted" id="piercSelectedMeta">—</div>
+<div id="piercingModal" class="modal-backdrop behavior-full" hidden>
+  <div class="modal-card">
+    <div class="behavior-full-header">
+      <div class="behavior-full-headtext">
+        <div class="behavior-full-title">Piercing y perforaciones</div>
+        <div class="behavior-full-sub">Registrar llamado de atención.</div>
       </div>
     </div>
 
-    <label class="modal-label" for="piercCourse">Curso</label>
-    <select id="piercCourse" class="modal-input"></select>
+    <div class="behavior-full-body">
+      <div class="behavior-panel">
+        <div class="behavior-panel-card">
+          <div class="behavior-form-grid two">
+            <div>
+              <label class="modal-label" for="piercCourse">Curso</label>
+              <select id="piercCourse" class="modal-input behavior-big-select"></select>
+            </div>
 
-    <datalist id="piercStudentsList"></datalist>
+            <div>
+              <datalist id="piercStudentsList"></datalist>
+              <label class="modal-label" for="piercStudent">Estudiante</label>
 
-    <label class="modal-label" for="piercStudentSelect">Estudiante (lista)</label>
-    <select id="piercStudentSelect" class="modal-input"></select>
+              <div class="input-with-select">
+                <input
+                  id="piercStudent"
+                  class="modal-input input-real behavior-big-select"
+                  type="text"
+                  list="piercStudentsList"
+                  placeholder="Escribe el nombre del estudiante..."
+                  autocomplete="off"
+                />
 
-    <label class="modal-label" for="piercStudent">Estudiante</label>
-    <input id="piercStudent" class="modal-input" type="text"
-      list="piercStudentsList"
-      placeholder="Escribe el nombre del estudiante…" autocomplete="off" />
+                <select
+                  id="piercStudentSelect"
+                  class="modal-input student-overlay"
+                  aria-label="Seleccionar estudiante"
+                ></select>
+              </div>
+            </div>
+          </div>
 
-    <div class="muted small" style="margin-top:6px;">
-      Tip: también puedes tocar un nombre en “Reportados” para cargarlo arriba.
-    </div>
+          <div class="behavior-levels-wrap">
+            <label class="modal-label">Nivel</label>
+            <div class="disc-levels">
+              <button type="button" class="disc-level" data-level="1">1 • Leve</button>
+              <button type="button" class="disc-level" data-level="2">2</button>
+              <button type="button" class="disc-level" data-level="3">3</button>
+              <button type="button" class="disc-level danger" data-level="4">4 • Grave</button>
+            </div>
+          </div>
 
-    <div class="disc-levels">
-      <button type="button" class="disc-level" data-level="1">1 • Leve</button>
-      <button type="button" class="disc-level" data-level="2">2</button>
-      <button type="button" class="disc-level" data-level="3">3</button>
-      <button type="button" class="disc-level danger" data-level="4">4 • Grave</button>
-    </div>
+          <div>
+            <label class="modal-label" for="piercObservation">Observación</label>
+            <textarea
+              id="piercObservation"
+              class="modal-input behavior-observation"
+              placeholder="Ej: Tiene piercing visible en la ceja, arete no permitido, etc."
+            ></textarea>
+          </div>
 
+          <div id="piercHint" class="modal-hint muted small"></div>
 
-
-    <div class="disc-reported">
-      <div class="row row-between" style="margin-top:12px;">
-        <div class="muted small">Reportados (mes actual)</div>
+          <div class="modal-actions" style="justify-content:flex-end; margin-top:14px;">
+            <button id="btnPiercReport" type="button" class="btn btn-primary">Reportar</button>
+          </div>
+        </div>
       </div>
-
-      <div id="piercReportedList" class="disc-reported-list"></div>
-      <div id="piercHint" class="modal-hint muted small"></div>
-
-      <div class="modal-actions" style="justify-content:flex-end;">
-        <button id="btnPiercBack" type="button" class="btn btn-ghost" hidden>← Atrás</button>
-        <button id="btnPiercReload" type="button" class="btn btn-ghost">Recargar</button>
-        <button id="btnPiercClose" type="button" class="btn btn-ghost">Cerrar</button>
-      </div>
     </div>
+
+    <button id="btnPiercBack" type="button" class="behavior-form-fab-back" aria-label="Atrás">
+      <i class="fa-solid fa-arrow-left" aria-hidden="true"></i>
+    </button>
   </div>
 </div>
-
 
 
 <!-- ======= MODAL: PORTE DEL UNIFORME ======= -->
-<div id="uniformModal" class="modal-backdrop" hidden>
-  <div class="modal-card" style="width:min(720px,100%);">
+<div id="uniformModal" class="modal-backdrop behavior-full" hidden>
+  <div class="modal-card">
+    <div class="behavior-full-header">
+      <div class="behavior-full-headtext">
+        <div class="behavior-full-title">Porte del uniforme</div>
+        <div class="behavior-full-sub">Registrar llamado de atención.</div>
+      </div>
+    </div>
 
-    <h2 class="modal-title">Porte del uniforme</h2>
-    <p class="modal-sub">
-      Reporta porte incorrecto del uniforme. Marca el nivel (1 a 4). Al llegar a 4 se notifica por WhatsApp.
-    </p>
+    <div class="behavior-full-body">
+      <div class="behavior-panel">
+        <div class="behavior-panel-card">
+          <div class="behavior-form-grid two">
+            <div>
+              <label class="modal-label" for="uniCourse">Curso</label>
+              <select id="uniCourse" class="modal-input behavior-big-select"></select>
+            </div>
 
-    <label class="modal-label">Seleccionado</label>
-    <div id="uniSelectedBox" class="status" style="margin-top:6px;">
-      <span class="dot" id="uniLevelDot"></span>
+            <div>
+              <datalist id="uniStudentsList"></datalist>
+              <label class="modal-label" for="uniStudent">Estudiante</label>
+
+              <div class="input-with-select">
+                <input
+                  id="uniStudent"
+                  class="modal-input input-real behavior-big-select"
+                  type="text"
+                  list="uniStudentsList"
+                  placeholder="Escribe el nombre del estudiante..."
+                  autocomplete="off"
+                />
+
+                <select
+                  id="uniStudentSelect"
+                  class="modal-input student-overlay"
+                  aria-label="Seleccionar estudiante"
+                ></select>
+              </div>
+            </div>
+          </div>
+
+          <div class="behavior-levels-wrap">
+            <label class="modal-label">Nivel</label>
+            <div class="disc-levels">
+              <button type="button" class="disc-level" data-level="1">1 • Leve</button>
+              <button type="button" class="disc-level" data-level="2">2</button>
+              <button type="button" class="disc-level" data-level="3">3</button>
+              <button type="button" class="disc-level danger" data-level="4">4 • Grave</button>
+            </div>
+          </div>
+
+          <div>
+            <label class="modal-label" for="uniObservation">Observación</label>
+            <textarea
+              id="uniObservation"
+              class="modal-input behavior-observation"
+              placeholder="Ej: No trajo las medias institucionales, lleva buzo no autorizado, etc."
+            ></textarea>
+          </div>
+
+          <div id="uniHint" class="modal-hint muted small"></div>
+
+          <div class="modal-actions" style="justify-content:flex-end; margin-top:14px;">
+            <button id="btnUniReport" type="button" class="btn btn-primary">Reportar</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <button id="btnUniBack" type="button" class="behavior-form-fab-back" aria-label="Atrás">
+      <i class="fa-solid fa-arrow-left" aria-hidden="true"></i>
+    </button>
+  </div>
+</div>
+
+<!-- ======= MODAL LLEGADAS TARDE ======= -->
+<div id="lateArrivalModal" class="modal-backdrop behavior-full" hidden>
+  <div class="modal-card">
+    <div class="behavior-full-header">
+      <div class="behavior-full-headtext">
+        <div class="behavior-full-title">Llegadas tarde</div>
+        <div class="behavior-full-sub">Registrar llegada tarde del estudiante.</div>
+      </div>
+    </div>
+
+    <div class="behavior-full-body">
+      <div class="behavior-panel">
+        <div class="behavior-panel-card">
+
+        <div class="late-compact-row">
+  <div class="late-course-box">
+    <label class="modal-label" for="lateCourse">Curso</label>
+    <select id="lateCourse" class="modal-input behavior-big-select"></select>
+  </div>
+
+  <div class="late-student-box">
+    <datalist id="lateStudentsList"></datalist>
+    <label class="modal-label" for="lateStudent">Estudiante</label>
+
+    <div class="input-with-select">
+      <input
+        id="lateStudent"
+        class="modal-input input-real behavior-big-select"
+        type="text"
+        list="lateStudentsList"
+        placeholder="Escribe o selecciona estudiante..."
+        autocomplete="off"
+      />
+
+      <select
+        id="lateStudentSelect"
+        class="modal-input student-overlay"
+        aria-label="Seleccionar estudiante"
+      ></select>
+    </div>
+  </div>
+</div>
+
+    <div class="behavior-levels-wrap">
+  <label class="modal-label">Conteo automático</label>
+  <div id="lateAutoBox" class="disc-item" style="cursor:default;">
+    <div class="left">
+      <span id="lateAutoDot" class="lvl-dot lvl-1"></span>
       <div>
-        <div id="uniSelectedName" style="font-weight:900;">Selecciona un estudiante de la lista</div>
-        <div class="muted" id="uniSelectedMeta">—</div>
-      </div>
-    </div>
-
-    <label class="modal-label" for="uniCourse">Curso</label>
-    <select id="uniCourse" class="modal-input"></select>
-
-    <datalist id="uniStudentsList"></datalist>
-
-    <label class="modal-label" for="uniStudentSelect">Estudiante (lista)</label>
-    <select id="uniStudentSelect" class="modal-input"></select>
-
-    <label class="modal-label" for="uniStudent">Estudiante</label>
-    <input id="uniStudent" class="modal-input" type="text"
-      list="uniStudentsList"
-      placeholder="Escribe el nombre del estudiante…" autocomplete="off" />
-
-    <div class="muted small" style="margin-top:6px;">
-      Tip: también puedes tocar un nombre en “Reportados” para cargarlo arriba.
-    </div>
-
-    <div class="disc-levels">
-      <button type="button" class="disc-level" data-level="1">1 • Leve</button>
-      <button type="button" class="disc-level" data-level="2">2</button>
-      <button type="button" class="disc-level" data-level="3">3</button>
-      <button type="button" class="disc-level danger" data-level="4">4 • Grave</button>
-    </div>
-
-
-
-    <div class="disc-reported">
-      <div class="row row-between" style="margin-top:12px;">
-        <div class="muted small">Reportados (mes actual)</div>
-      </div>
-
-      <div id="uniReportedList" class="disc-reported-list"></div>
-      <div id="uniHint" class="modal-hint muted small"></div>
-
-      <div class="modal-actions" style="justify-content:flex-end;">
-        <button id="btnUniBack" type="button" class="btn btn-ghost" hidden>← Atrás</button>
-        <button id="btnUniReload" type="button" class="btn btn-ghost">Recargar</button>
-        <button id="btnUniClose" type="button" class="btn btn-ghost">Cerrar</button>
+        <div id="lateAutoTitle" class="name">Selecciona un estudiante</div>
+        <div id="lateAutoSub" class="muted small">La app calculará automáticamente la próxima llegada tarde.</div>
       </div>
     </div>
   </div>
 </div>
 
+          <div>
+            <label class="modal-label" for="lateObservation">Observación</label>
+            <textarea
+              id="lateObservation"
+              class="modal-input behavior-observation"
+              placeholder="Ej: El estudiante llegó tarde al inicio de la jornada."
+            ></textarea>
+          </div>
 
+          <div id="lateHint" class="modal-hint muted small"></div>
+
+          <div id="lateDetailBox" class="late-detail-box" hidden>
+  <div class="late-detail-head">
+    <div>
+      <div id="lateDetailTitle" class="late-detail-title">Detalle</div>
+      <div id="lateDetailSub" class="muted small"></div>
+    </div>
+  </div>
+
+  <div id="lateDetailList" class="late-detail-list"></div>
+</div>
+
+          <div class="modal-actions" style="justify-content:flex-end; margin-top:14px;">
+            <button id="btnLateReport" type="button" class="btn btn-primary">Reportar</button>
+          </div>
+
+          <div class="disc-reported" style="margin-top:18px;">
+  <div class="muted small" style="margin-bottom:8px;">Llegadas tarde del mes</div>
+  <div id="lateReportedList" class="disc-reported-list">
+    <div class="muted small">Cargando...</div>
+  </div>
+</div>
+        </div>
+      </div>
+    </div>
+
+    <button id="btnLateBack" type="button" class="behavior-form-fab-back" aria-label="Atrás">
+      <i class="fa-solid fa-arrow-left" aria-hidden="true"></i>
+    </button>
+  </div>
+</div>
 
   <!-- ======= MODAL PISOS ======= -->
 <div id="pisosModal" class="modal-backdrop" hidden>
@@ -3504,6 +4886,167 @@ body.is-admin #registerActions{
   </div>
 </div>
 
+<!-- ======= MODAL HUB LLAMADOS ======= -->
+<div id="behaviorHubModal" class="modal-backdrop behavior-full" hidden>
+  <div class="modal-card">
+    <div class="behavior-full-header">
+      <div class="behavior-full-headtext">
+        <div id="behaviorHubTitle" class="behavior-full-title">Llamados de atención</div>
+        <div id="behaviorHubSub" class="behavior-full-sub">Selecciona la acción que deseas realizar.</div>
+      </div>
+    </div>
+
+    <div class="behavior-full-body">
+      <div class="behavior-panel">
+        <div class="behavior-panel-card">
+          <div class="behavior-hub-grid">
+            <button id="btnBehaviorOpenReport" type="button" class="behavior-hub-card">
+              <div class="behavior-hub-title">Reportar</div>
+              <div class="behavior-hub-sub">
+                Registrar un nuevo llamado de atención con curso, estudiante, nivel y observación.
+              </div>
+            </button>
+
+            <button id="btnBehaviorOpenViewer" type="button" class="behavior-hub-card">
+              <div class="behavior-hub-title">Ver reportes</div>
+              <div class="behavior-hub-sub">
+                Consultar los reportes del mes con filtros por curso y estudiante.
+              </div>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <button id="btnBehaviorHubClose" type="button" class="behavior-full-back" aria-label="Cerrar">
+      <i class="fa-solid fa-arrow-left" aria-hidden="true"></i>
+    </button>
+  </div>
+</div>
+
+
+<!-- ======= VIEWER DISCIPLINA ======= -->
+<div id="disciplineViewerModal" class="modal-backdrop behavior-full" hidden>
+  <div class="modal-card">
+    <div class="behavior-full-header">
+    
+      <div class="behavior-full-headtext">
+        <div class="behavior-full-title">Uso inadecuado del celular</div>
+        <div class="behavior-full-sub">Ver reportes del mes actual.</div>
+      </div>
+    </div>
+
+    <div class="behavior-full-body">
+      <div class="behavior-panel">
+        <div class="behavior-panel-card">
+          <div class="behavior-viewer-filters">
+            <div>
+              <label class="modal-label" for="discViewerCourse">Curso</label>
+              <select id="discViewerCourse" class="modal-input behavior-big-select"></select>
+            </div>
+            <div>
+              <label class="modal-label" for="discViewerStudent">Estudiante</label>
+              <select id="discViewerStudent" class="modal-input behavior-big-select">
+                <option value="">Todos los estudiantes</option>
+              </select>
+            </div>
+          </div>
+
+          <div id="discViewerList" class="behavior-viewer-list">
+            <div class="behavior-empty">Cargando...</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  <button id="btnDiscViewerBack" type="button" class="behavior-full-back" aria-label="Atrás">
+        <i class="fa-solid fa-arrow-left" aria-hidden="true"></i>
+      </button>
+
+  </div>
+</div>
+
+<!-- ======= VIEWER PIERCING ======= -->
+<div id="piercingViewerModal" class="modal-backdrop behavior-full" hidden>
+  <div class="modal-card">
+    <div class="behavior-full-header">
+   
+      <div class="behavior-full-headtext">
+        <div class="behavior-full-title">Piercing y perforaciones</div>
+        <div class="behavior-full-sub">Ver reportes del mes actual.</div>
+      </div>
+    </div>
+
+    <div class="behavior-full-body">
+      <div class="behavior-panel">
+        <div class="behavior-panel-card">
+          <div class="behavior-viewer-filters">
+            <div>
+              <label class="modal-label" for="piercViewerCourse">Curso</label>
+              <select id="piercViewerCourse" class="modal-input behavior-big-select"></select>
+            </div>
+            <div>
+              <label class="modal-label" for="piercViewerStudent">Estudiante</label>
+              <select id="piercViewerStudent" class="modal-input behavior-big-select">
+                <option value="">Todos los estudiantes</option>
+              </select>
+            </div>
+          </div>
+
+          <div id="piercViewerList" class="behavior-viewer-list">
+            <div class="behavior-empty">Cargando...</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+       <button id="btnPiercViewerBack" type="button" class="behavior-full-back" aria-label="Atrás">
+        <i class="fa-solid fa-arrow-left" aria-hidden="true"></i>
+      </button>
+
+  </div>
+</div>
+
+<!-- ======= VIEWER UNIFORME ======= -->
+<div id="uniformViewerModal" class="modal-backdrop behavior-full" hidden>
+  <div class="modal-card">
+    <div class="behavior-full-header">
+      
+      <div class="behavior-full-headtext">
+        <div class="behavior-full-title">Porte del uniforme</div>
+        <div class="behavior-full-sub">Ver reportes del mes actual.</div>
+      </div>
+    </div>
+
+    <div class="behavior-full-body">
+      <div class="behavior-panel">
+        <div class="behavior-panel-card">
+          <div class="behavior-viewer-filters">
+            <div>
+              <label class="modal-label" for="uniViewerCourse">Curso</label>
+              <select id="uniViewerCourse" class="modal-input behavior-big-select"></select>
+            </div>
+            <div>
+              <label class="modal-label" for="uniViewerStudent">Estudiante</label>
+              <select id="uniViewerStudent" class="modal-input behavior-big-select">
+                <option value="">Todos los estudiantes</option>
+              </select>
+            </div>
+          </div>
+
+          <div id="uniViewerList" class="behavior-viewer-list">
+            <div class="behavior-empty">Cargando...</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <button id="btnUniViewerBack" type="button" class="behavior-full-back" aria-label="Atrás">
+        <i class="fa-solid fa-arrow-left" aria-hidden="true"></i>
+      </button>
+
+  </div>
+</div>
+
 
 <script>
 // ======= CONFIG DEL COLEGIO (CAMBIA ESTO) =======
@@ -3603,12 +5146,1517 @@ const obsModalHint = $("obsModalHint");
 const btnObsCancel = $("btnObsCancel");
 const btnObsSave = $("btnObsSave");
 
+const behaviorHubModal = $("behaviorHubModal");
+const btnBehaviorHubClose = $("btnBehaviorHubClose");
+const behaviorHubTitle = $("behaviorHubTitle");
+const behaviorHubSub = $("behaviorHubSub");
+const btnBehaviorOpenReport = $("btnBehaviorOpenReport");
+const btnBehaviorOpenViewer = $("btnBehaviorOpenViewer");
+
+const disciplineViewerModal = $("disciplineViewerModal");
+const piercingViewerModal = $("piercingViewerModal");
+const uniformViewerModal = $("uniformViewerModal");
+
+const btnDiscViewerBack = $("btnDiscViewerBack");
+const btnPiercViewerBack = $("btnPiercViewerBack");
+const btnUniViewerBack = $("btnUniViewerBack");
+
+const discViewerCourse = $("discViewerCourse");
+const discViewerStudent = $("discViewerStudent");
+const discViewerList = $("discViewerList");
+
+const piercViewerCourse = $("piercViewerCourse");
+const piercViewerStudent = $("piercViewerStudent");
+const piercViewerList = $("piercViewerList");
+
+const uniViewerCourse = $("uniViewerCourse");
+const uniViewerStudent = $("uniViewerStudent");
+const uniViewerList = $("uniViewerList");
+
+const btnDiscReport = $("btnDiscReport");
+const btnPiercReport = $("btnPiercReport");
+const btnUniReport = $("btnUniReport");
+
+const lateReportedListEl = $("lateReportedList");
+const lateAutoTitleEl = $("lateAutoTitle");
+const lateAutoSubEl = $("lateAutoSub");
+const lateAutoDotEl = $("lateAutoDot");
+
+const lateDetailBoxEl = $("lateDetailBox");
+const lateDetailTitleEl = $("lateDetailTitle");
+const lateDetailSubEl = $("lateDetailSub");
+const lateDetailListEl = $("lateDetailList");
+
+let __lateCacheList = [];
+let __lateCurrentStudent = "";
+
+let __isHardRefreshing = false;
+
+function lateCacheKey_(){
+  return `late_arrivals_cache_${lateMonthKey_()}`;
+}
+
+function lateTokenKey_(){
+  return `late_arrivals_token_${lateMonthKey_()}`;
+}
+
+function lateLoadCacheFromStorage_(){
+  try {
+    const raw = localStorage.getItem(lateCacheKey_());
+    const list = raw ? JSON.parse(raw) : [];
+    __lateCacheList = Array.isArray(list) ? list : [];
+
+    __latePollToken = localStorage.getItem(lateTokenKey_()) || "";
+  } catch {
+    __lateCacheList = [];
+    __latePollToken = "";
+  }
+}
+
+function lateSaveCacheToStorage_(){
+  try {
+    localStorage.setItem(lateCacheKey_(), JSON.stringify(__lateCacheList || []));
+    localStorage.setItem(lateTokenKey_(), String(__latePollToken || ""));
+  } catch {}
+}
+
+/* ✅ Guarda el filtro/lista desde donde se abrió el detalle */
+let __lateReturnCourseFilter = null;
+let __lateReturnListScrollTop = 0;
+
+
+function lateNormalizeKey_(v){
+  return String(v || "")
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/\s+/g, " ");
+}
+
+
+function lateNormalizeCourse_(v){
+  return String(v || "")
+    .trim()
+    .toUpperCase()
+    .replace(/\s+/g, " ");
+}
+
+function lateFindInCache_(student){
+  const key = lateNormalizeKey_(student);
+  return (__lateCacheList || []).find(x => lateNormalizeKey_(x.student) === key) || null;
+}
+
+function lateSetDetailMode_(on){
+  if (!lateArrivalModal) return;
+  lateArrivalModal.classList.toggle("late-detail-mode", !!on);
+}
+
+function lateClearDetail_(){
+  lateSetDetailMode_(false);
+
+  if (lateDetailBoxEl) lateDetailBoxEl.hidden = true;
+  if (lateDetailTitleEl) lateDetailTitleEl.textContent = "Detalle";
+  if (lateDetailSubEl) lateDetailSubEl.textContent = "";
+  if (lateDetailListEl) lateDetailListEl.innerHTML = "";
+}
+
+
+function lateBackToMonthlyList_(){
+  const returnCourse = __lateReturnCourseFilter || "__ALL__";
+
+  if (lateCourseEl) {
+    lateCourseEl.value = returnCourse;
+  }
+
+  lateClearDetail_();
+  lateRenderReportedList_();
+
+  setTimeout(() => {
+    if (lateReportedListEl) {
+      lateReportedListEl.scrollTop = __lateReturnListScrollTop || 0;
+    }
+  }, 0);
+}
+
+
+function lateRenderDetail_(student){
+  const item = lateFindInCache_(student);
+
+  if (!lateDetailBoxEl || !lateDetailTitleEl || !lateDetailSubEl || !lateDetailListEl) return;
+
+  if (!item) {
+    lateClearDetail_();
+    return;
+  }
+
+  const studentName = String(item.student || student || "").trim();
+  const course = String(item.course || "").trim();
+  const maxTimes = Number(item.maxTimes || 0);
+  const who = Array.isArray(item.who) ? item.who : [];
+
+  lateSetDetailMode_(true);
+
+  lateDetailBoxEl.hidden = false;
+lateDetailTitleEl.innerHTML = `
+  <div style="display:flex; align-items:center; justify-content:space-between; gap:10px;">
+    <span style="min-width:0; overflow:hidden; text-overflow:ellipsis;">
+      ${escapeHtml(studentName)}
+    </span>
+
+    <button
+      type="button"
+      class="behavior-mini-btn delete"
+      id="btnLateDeleteStudent"
+      title="Eliminar todos los reportes"
+    >
+      <i class="fa-solid fa-trash"></i>
+    </button>
+  </div>
+`;
+
+  lateDetailSubEl.textContent = `${course} • ${maxTimes}/4 llegada${maxTimes === 1 ? "" : "s"} tarde`;
+
+
+
+  const deleteStudentBtn = document.getElementById("btnLateDeleteStudent");
+  if (deleteStudentBtn) {
+    deleteStudentBtn.onclick = async (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      await lateDeleteStudent_(studentName);
+    };
+  }
+
+  if (!who.length) {
+    lateDetailListEl.innerHTML = `<div class="muted small">No hay detalles disponibles.</div>`;
+    return;
+  }
+
+  lateDetailListEl.innerHTML = who.map((x, idx) => {
+    const teacher = String(x.teacher || "").trim() || "Docente";
+    const times = Number(x.times || x.level || 0);
+    const observation = String(x.observation || "").trim();
+    const date = String(x.date || "").trim();
+    const time = String(x.time || "").trim();
+    const dt = String(x.dt || "").trim();
+    const when = date && time ? `${date} • ${time}` : (dt || "Sin fecha");
+
+    return `
+      <div class="late-detail-item">
+        <div class="late-detail-row-top">
+          <div>
+            <div class="late-detail-teacher">${escapeHtml(teacher)}</div>
+            <div class="late-detail-meta">${escapeHtml(when)} ${times ? `• ${times}ª vez` : ""}</div>
+          </div>
+
+          <div style="display:flex; align-items:center; gap:6px;">
+            <span class="badge ${times >= 4 ? "badge-late" : "badge-neutral"}">${times || "-"}/4</span>
+
+            <button
+              type="button"
+              class="behavior-mini-btn edit"
+              data-late-edit-one="${idx}"
+              title="Editar observación"
+            >
+              <i class="fa-solid fa-pen"></i>
+            </button>
+
+            <button
+              type="button"
+              class="behavior-mini-btn delete"
+              data-late-delete-one="${idx}"
+              title="Eliminar este reporte"
+            >
+              <i class="fa-solid fa-trash"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="late-detail-obs">
+          ${observation ? escapeHtml(observation) : `<span class="muted small">Sin observación.</span>`}
+        </div>
+      </div>
+    `;
+  }).join("");
+
+  lateDetailListEl.querySelectorAll("[data-late-edit-one]").forEach(btn => {
+    btn.addEventListener("click", async (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+
+      const idx = Number(btn.getAttribute("data-late-edit-one") || -1);
+      const row = who[idx];
+      await lateEditOne_(studentName, row);
+    });
+  });
+
+  lateDetailListEl.querySelectorAll("[data-late-delete-one]").forEach(btn => {
+    btn.addEventListener("click", async (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+
+      const idx = Number(btn.getAttribute("data-late-delete-one") || -1);
+      const row = who[idx];
+      await lateDeleteOne_(studentName, row);
+    });
+  });
+}
+
+function lateBuildShareMessage_(student){
+  const item = lateFindInCache_(student);
+  if (!item) return "";
+
+  const studentName = String(item.student || student || "").trim();
+  const month = lateMonthKey_();
+  const who = Array.isArray(item.who) ? item.who : [];
+
+  return (
+    `Hola profe,\n\n` +
+    `El estudiante "${studentName}" alcanzó la cuarta llegada tarde.\n\n` +
+    `Mes: ${month}\n\n` +
+    `Registros:\n` +
+    who
+      .slice()
+      .sort((a, b) => Number(a.times || 0) - Number(b.times || 0))
+      .map(x => {
+        const teacher = String(x.teacher || "Docente").trim();
+        const times = Number(x.times || 0);
+        const obs = String(x.observation || "").trim();
+        return `- ${teacher} (${times}ª vez)${obs ? `: ${obs}` : ""}`;
+      })
+      .join("\n")
+  );
+}
+
+async function lateShareReachedFour_(student){
+  const msg = lateBuildShareMessage_(student);
+
+  if (!msg.trim()) {
+    lateSetHint_("No hay mensaje para compartir.");
+    return;
+  }
+
+  if (typeof confirmAndShareReport_ === "function") {
+    await confirmAndShareReport_({
+      student,
+      msg,
+      title: "Reenviar reporte (Llegadas tarde)"
+    });
+  } else if (navigator.share) {
+    await navigator.share({ text: msg });
+  } else {
+    window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, "_blank");
+  }
+}
+
+function lateUpdateAutoBox_(){
+  const student = String(lateStudentEl?.value || __lateCurrentStudent || "").trim();
+  const item = student ? lateFindInCache_(student) : null;
+  const current = item ? Number(item.maxTimes || 0) : 0;
+  const next = Math.min(current + 1, 4);
+
+  if (!lateAutoTitleEl || !lateAutoSubEl || !lateAutoDotEl) return;
+
+  lateAutoDotEl.className = `lvl-dot lvl-${Math.max(1, Math.min(next, 4))}`;
+
+  if (!student) {
+    lateAutoTitleEl.textContent = "Selecciona un estudiante";
+    lateAutoSubEl.textContent = "La app calculará automáticamente la próxima llegada tarde.";
+
+    if (btnLateReport) {
+      btnLateReport.textContent = "Reportar";
+      btnLateReport.classList.remove("btn-secondary");
+      btnLateReport.classList.add("btn-primary");
+    }
+
+    return;
+  }
+
+  if (current >= 4) {
+    lateAutoTitleEl.textContent = "Ya alcanzó 4 llegadas tarde";
+    lateAutoSubEl.textContent = "Puedes reenviar el reporte para compartirlo nuevamente.";
+
+    if (btnLateReport) {
+      btnLateReport.textContent = "Reenviar";
+      btnLateReport.classList.remove("btn-primary");
+      btnLateReport.classList.add("btn-secondary");
+    }
+
+    return;
+  }
+
+  const labels = ["", "Primera vez", "Segunda vez", "Tercera vez", "Cuarta vez"];
+  lateAutoTitleEl.textContent = labels[next];
+  lateAutoSubEl.textContent = `${student} tiene ${current} registrada(s) este mes. Se guardará como ${labels[next].toLowerCase()}.`;
+
+  if (btnLateReport) {
+    btnLateReport.textContent = "Reportar";
+    btnLateReport.classList.remove("btn-secondary");
+    btnLateReport.classList.add("btn-primary");
+  }
+}
+
+function lateCurrentCourseFilter_(){
+  return String(lateCourseEl && lateCourseEl.value || "__ALL__").trim();
+}
+
+function lateFilteredList_(){
+  const selectedCourse = String(
+    (lateCourseEl && lateCourseEl.value) || "__ALL__"
+  ).trim();
+
+  const list = Array.isArray(__lateCacheList) ? __lateCacheList : [];
+
+  if (!selectedCourse || selectedCourse === "__ALL__") {
+    return list;
+  }
+
+  const selectedKey = lateNormalizeCourse_(selectedCourse);
+
+  return list.filter(item => {
+    const itemCourse = String(item.course || item.course_name || "").trim();
+    return lateNormalizeCourse_(itemCourse) === selectedKey;
+  });
+}
+
+function lateSuccessToast_(times){
+  const n = Number(times || 0);
+  const labels = {
+    1: "Primera llegada tarde",
+    2: "Segunda llegada tarde",
+    3: "Tercera llegada tarde",
+    4: "Cuarta llegada tarde"
+  };
+
+  const old = document.getElementById("lateSuccessToastBackdrop");
+  if (old) old.remove();
+
+  const overlay = document.createElement("div");
+  overlay.id = "lateSuccessToastBackdrop";
+  overlay.className = "late-success-backdrop";
+  overlay.innerHTML = `
+    <div id="lateSuccessToast" class="late-success-toast">
+      <div class="late-success-icon">✓</div>
+      <div class="late-success-title">Reporte registrado</div>
+      <div class="late-success-sub">${escapeHtml(labels[n] || "Llegada tarde registrada")}</div>
+    </div>
+  `;
+
+  document.body.appendChild(overlay);
+
+  setTimeout(() => overlay.classList.add("show"), 10);
+
+  setTimeout(() => {
+    overlay.classList.remove("show");
+    setTimeout(() => overlay.remove(), 220);
+  }, 1800); // 👈 cambia este número para que dure más o menos
+}
+
+async function lateSelectReportedStudent_(student){
+  const item = lateFindInCache_(student);
+  if (!item) return;
+
+  /* Guarda el filtro actual ANTES de cambiar al curso del estudiante */
+  __lateReturnCourseFilter = String(
+    (lateCourseEl && lateCourseEl.value) || "__ALL__"
+  ).trim();
+
+  __lateReturnListScrollTop = lateReportedListEl ? lateReportedListEl.scrollTop : 0;
+
+  const studentName = String(item.student || student || "").trim();
+  const course = String(item.course || item.course_name || "").trim();
+
+  if (course && lateCourseEl) {
+    const exists = Array.from(lateCourseEl.options || []).some(opt => opt.value === course);
+
+    if (!exists) {
+      const opt = document.createElement("option");
+      opt.value = course;
+      opt.textContent = course;
+      lateCourseEl.appendChild(opt);
+    }
+
+    lateCourseEl.value = course;
+  }
+
+  if (course && course !== "__ALL__") {
+    try {
+      await lateLoadStudentsForCourse_(course);
+    } catch (e) {
+      console.warn("No se pudieron cargar estudiantes del curso:", e);
+    }
+  }
+
+  if (lateStudentEl) lateStudentEl.value = studentName;
+  if (lateStudentSelectEl) lateStudentSelectEl.value = studentName;
+
+  __lateCurrentStudent = studentName;
+
+  lateUpdateAutoBox_();
+  lateRenderDetail_(studentName);
+  lateSetHint_("");
+}
+
+
+function lateRenderReportedList_(){
+  if (!lateReportedListEl) return;
+
+  const list = lateFilteredList_();
+
+  if (!list.length) {
+    lateReportedListEl.innerHTML = `<div class="muted small">No hay llegadas tarde este mes.</div>`;
+    return;
+  }
+
+  lateReportedListEl.innerHTML = list.map(item => {
+    const student = String(item.student || "").trim();
+    const course = String(item.course || "").trim();
+    const maxTimes = Number(item.maxTimes || 0);
+    const obs = String(item.lastObservation || "").trim();
+
+    return `
+      <div class="disc-item ${lateNormalizeKey_(student) === lateNormalizeKey_(__lateCurrentStudent) ? "selected" : ""}" data-late-student="${escapeHtml(student)}">
+        <div class="left">
+          <span class="lvl-dot lvl-${Math.max(1, Math.min(maxTimes, 4))}"></span>
+          <div style="min-width:0; flex:1;">
+            <div class="name">${escapeHtml(student)}</div>
+            <div class="muted small" style="margin-top:4px;">
+              ${escapeHtml(course)} • ${maxTimes}/4 llegada${maxTimes === 1 ? "" : "s"} tarde
+            </div>
+            ${obs ? `<div class="muted small" style="margin-top:4px;">${escapeHtml(obs)}</div>` : ""}
+          </div>
+        </div>
+
+        <div class="right">
+          <span class="badge ${maxTimes >= 4 ? "badge-late" : "badge-neutral"}">${maxTimes}/4</span>
+
+          <button
+            type="button"
+            class="behavior-mini-btn delete"
+            data-late-delete-student="${escapeHtml(student)}"
+            title="Eliminar todos los reportes"
+          >
+            <i class="fa-solid fa-trash"></i>
+          </button>
+        </div>
+      </div>
+    `;
+  }).join("");
+
+  lateReportedListEl.querySelectorAll("[data-late-delete-student]").forEach(btn => {
+    btn.addEventListener("click", async (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+
+      const student = btn.getAttribute("data-late-delete-student") || "";
+      await lateDeleteStudent_(student);
+    });
+  });
+
+  lateReportedListEl.querySelectorAll("[data-late-student]").forEach(el => {
+    el.addEventListener("click", async () => {
+      const student = el.getAttribute("data-late-student") || "";
+      await lateSelectReportedStudent_(student);
+    });
+  });
+}
+
+async function lateRefreshList_(){
+  __lateCacheList = await gsLateArrivalList();
+
+  try {
+    __latePollToken = await gsLateArrivalChangesToken();
+  } catch {}
+
+  lateSaveCacheToStorage_();
+
+  lateRenderReportedList_();
+  lateUpdateAutoBox_();
+}
+
+let __latePollToken = "";
+
+let __latePollingBusy = false;
+
+function lateStartPolling_(){
+  if (__latePollTimer) return;
+
+  __latePollTimer = setInterval(async () => {
+    if (__latePollingBusy) return;
+
+    const p = loadProfile();
+    const admin = isAdminMode();
+    if (!p && !admin) return;
+
+    const modalVisible =
+      lateArrivalModal &&
+      lateArrivalModal.style.display !== "none" &&
+      lateArrivalModal.hidden !== true;
+
+    if (!modalVisible) return;
+
+    __latePollingBusy = true;
+
+    try {
+      const token = await gsLateArrivalChangesToken();
+
+      if (token && token !== __latePollToken) {
+        __latePollToken = token;
+
+        await lateRefreshList_();
+
+        if (__lateCurrentStudent) {
+          lateRenderDetail_(__lateCurrentStudent);
+        }
+      }
+    } catch (e) {
+      console.warn("Polling llegadas tarde falló:", e);
+    } finally {
+      __latePollingBusy = false;
+    }
+  }, 4000);
+}
+let __behaviorKind = "";
+
+let __behaviorLoadPromises = {
+  discipline: null,
+  piercing: null,
+  uniform: null
+};
+
+let __behaviorLoadedMonth = {
+  discipline: "",
+  piercing: "",
+  uniform: ""
+};
+
 // ======= QR SCAN UI (NO tocar hasta init) =======
 let qrModal = null;
 let qrVideo = null;
 let qrCanvas = null;
 let qrHintEl = null;
 let btnQrClose = null;
+
+let __discPendingLevel = 0;
+let __piercPendingLevel = 0;
+let __uniPendingLevel = 0;
+
+function behaviorMetaByKind_(kind){
+  if (kind === "discipline") {
+    return {
+      title: "Uso inadecuado del celular",
+      sub: "Selecciona la acción que deseas realizar."
+    };
+  }
+  if (kind === "piercing") {
+    return {
+      title: "Piercing y perforaciones",
+      sub: "Selecciona la acción que deseas realizar."
+    };
+  }
+  return {
+    title: "Porte del uniforme",
+    sub: "Selecciona la acción que deseas realizar."
+  };
+}
+
+function behaviorKindMonth_(kind){
+  if (kind === "discipline") return discMonthKey_();
+  if (kind === "piercing") return piercMonthKey_();
+  return uniMonthKey_();
+}
+
+function behaviorKindHasCache_(kind){
+  const month = behaviorKindMonth_(kind);
+  return String(__behaviorLoadedMonth[kind] || "") === String(month || "");
+}
+
+function behaviorKindSetCache_(kind, items){
+  const list = Array.isArray(items) ? items : [];
+  const month = behaviorKindMonth_(kind);
+
+  if (kind === "discipline") {
+    __discCacheList = list;
+    __behaviorLoadedMonth.discipline = month;
+    behaviorSaveCache_("discipline", month, list);
+    return;
+  }
+
+  if (kind === "piercing") {
+    __piercCacheList = list;
+    __behaviorLoadedMonth.piercing = month;
+    behaviorSaveCache_("piercing", month, list);
+    return;
+  }
+
+  if (kind === "uniform") {
+    __uniCacheList = list;
+    __behaviorLoadedMonth.uniform = month;
+    behaviorSaveCache_("uniform", month, list);
+  }
+}
+
+function behaviorKindReadStorage_(kind){
+  const month = behaviorKindMonth_(kind);
+  return behaviorReadCache_(kind, month);
+}
+
+async function behaviorKindFetchList_(kind){
+  if (kind === "discipline") return await gsDisciplineList(discMonthKey_());
+  if (kind === "piercing") return await gsPiercingList(piercMonthKey_());
+  if (kind === "uniform") return await gsUniformList(uniMonthKey_());
+  return [];
+}
+
+async function ensureBehaviorDataLoaded_(kind, options = {}){
+  const force = !!options.force;
+  const silent = options.silent !== false;
+
+  kind = String(kind || "").trim();
+  if (!kind) return [];
+
+  if (!force && behaviorKindHasCache_(kind)) {
+    if (kind === "discipline") return __discCacheList || [];
+    if (kind === "piercing") return __piercCacheList || [];
+    if (kind === "uniform") return __uniCacheList || [];
+  }
+
+  if (!force) {
+    const saved = behaviorKindReadStorage_(kind);
+    if (Array.isArray(saved)) {
+      behaviorKindSetCache_(kind, saved);
+      return saved;
+    }
+  }
+
+  if (__behaviorLoadPromises[kind]) {
+    return await __behaviorLoadPromises[kind];
+  }
+
+  __behaviorLoadPromises[kind] = (async () => {
+    try {
+      if (!silent) {
+        setLoading(true, "Cargando…", "Consultando reportes del mes.");
+      }
+
+      const items = await behaviorKindFetchList_(kind);
+      behaviorKindSetCache_(kind, items);
+
+      return items;
+    } finally {
+      __behaviorLoadPromises[kind] = null;
+      if (!silent) setLoading(false);
+    }
+  })();
+
+  return await __behaviorLoadPromises[kind];
+}
+
+async function preloadBehaviorModule_(kind){
+  try {
+    await ensureBehaviorDataLoaded_(kind, { silent: true });
+
+    if (typeof initAllModalCourses_ === "function") {
+      initAllModalCourses_();
+    }
+
+    if (kind === "discipline" && disciplineViewerModal && !disciplineViewerModal.hidden) {
+      renderBehaviorViewer_("discipline");
+    }
+
+    if (kind === "piercing" && piercingViewerModal && !piercingViewerModal.hidden) {
+      renderBehaviorViewer_("piercing");
+    }
+
+    if (kind === "uniform" && uniformViewerModal && !uniformViewerModal.hidden) {
+      renderBehaviorViewer_("uniform");
+    }
+  } catch (e) {
+    console.warn("No se pudo precargar módulo:", kind, e);
+  }
+}
+
+function openBehaviorHub_(kind){
+  __behaviorKind = String(kind || "");
+  const meta = behaviorMetaByKind_(__behaviorKind);
+
+  if (behaviorHubTitle) behaviorHubTitle.textContent = meta.title;
+  if (behaviorHubSub) behaviorHubSub.textContent = "Cargando información inicial…";
+
+  if (behaviorHubModal) behaviorHubModal.hidden = false;
+
+  preloadBehaviorModule_(__behaviorKind).then(() => {
+    if (behaviorHubSub) behaviorHubSub.textContent = meta.sub;
+
+    // Si mientras carga el usuario ya abrió Ver reportes, repintar apenas llegue
+    if (__behaviorKind === "discipline" && disciplineViewerModal && !disciplineViewerModal.hidden) {
+      renderBehaviorViewer_("discipline");
+    }
+
+    if (__behaviorKind === "piercing" && piercingViewerModal && !piercingViewerModal.hidden) {
+      renderBehaviorViewer_("piercing");
+    }
+
+    if (__behaviorKind === "uniform" && uniformViewerModal && !uniformViewerModal.hidden) {
+      renderBehaviorViewer_("uniform");
+    }
+  }).catch(() => {
+    if (behaviorHubSub) behaviorHubSub.textContent = meta.sub;
+  });
+}
+
+function closeBehaviorHub_(){
+  if (behaviorHubModal) behaviorHubModal.hidden = true;
+}
+
+
+const BEHAVIOR_CACHE_TTL_MS = 5 * 60 * 1000;
+
+function behaviorStorageKey_(kind, month) {
+  return `behavior_cache_${kind}_${month}`;
+}
+
+function behaviorReadCache_(kind, month) {
+  try {
+    const raw = localStorage.getItem(behaviorStorageKey_(kind, month));
+    if (!raw) return null;
+
+    const parsed = JSON.parse(raw);
+    if (!parsed || !Array.isArray(parsed.items)) return null;
+
+    const savedAt = Number(parsed.savedAt || 0);
+    if (!savedAt || Date.now() - savedAt > BEHAVIOR_CACHE_TTL_MS) return null;
+
+    return parsed.items;
+  } catch (e) {
+    return null;
+  }
+}
+
+function behaviorSaveCache_(kind, month, items) {
+  try {
+    localStorage.setItem(
+      behaviorStorageKey_(kind, month),
+      JSON.stringify({
+        savedAt: Date.now(),
+        items: Array.isArray(items) ? items : []
+      })
+    );
+  } catch (e) {}
+}
+
+function behaviorHasLocalCache_(items, kind, month) {
+  if (Array.isArray(items) && items.length) return true;
+
+  const saved = behaviorReadCache_(kind, month);
+  return Array.isArray(saved);
+}
+
+
+async function openBehaviorReport_(){
+  closeBehaviorHub_();
+
+  try {
+    await ensureBehaviorDataLoaded_(__behaviorKind, { silent: false });
+
+    if (__behaviorKind === "discipline") {
+      openDisciplineModal();
+      return;
+    }
+
+    if (__behaviorKind === "piercing") {
+      openPiercingModal();
+      return;
+    }
+
+    if (__behaviorKind === "uniform") {
+      openUniformModal();
+      return;
+    }
+  } catch (e) {
+    const msg = String(e && e.message ? e.message : e);
+
+    if (__behaviorKind === "discipline") {
+      openDisciplineModal();
+      discSetHint_(msg);
+      return;
+    }
+
+    if (__behaviorKind === "piercing") {
+      openPiercingModal();
+      piercSetHint_(msg);
+      return;
+    }
+
+    if (__behaviorKind === "uniform") {
+      openUniformModal();
+      uniSetHint_(msg);
+    }
+  }
+}
+
+async function openBehaviorViewer_(){
+  closeBehaviorHub_();
+
+  if (__behaviorKind === "discipline") {
+    if (disciplineViewerModal) disciplineViewerModal.hidden = false;
+    if (discViewerList) discViewerList.innerHTML = `<div class="behavior-empty">Cargando reportes...</div>`;
+
+    try {
+      await ensureBehaviorDataLoaded_("discipline", { silent: false });
+      renderBehaviorViewer_("discipline");
+    } catch (e) {
+      if (discViewerList) {
+        discViewerList.innerHTML = `<div class="behavior-empty">${escapeHtml(String(e && e.message ? e.message : e))}</div>`;
+      }
+    }
+    return;
+  }
+
+  if (__behaviorKind === "piercing") {
+    if (piercingViewerModal) piercingViewerModal.hidden = false;
+    if (piercViewerList) piercViewerList.innerHTML = `<div class="behavior-empty">Cargando reportes...</div>`;
+
+    try {
+      await ensureBehaviorDataLoaded_("piercing", { silent: false });
+      renderBehaviorViewer_("piercing");
+    } catch (e) {
+      if (piercViewerList) {
+        piercViewerList.innerHTML = `<div class="behavior-empty">${escapeHtml(String(e && e.message ? e.message : e))}</div>`;
+      }
+    }
+    return;
+  }
+
+  if (__behaviorKind === "uniform") {
+    if (uniformViewerModal) uniformViewerModal.hidden = false;
+    if (uniViewerList) uniViewerList.innerHTML = `<div class="behavior-empty">Cargando reportes...</div>`;
+
+    try {
+      await ensureBehaviorDataLoaded_("uniform", { silent: false });
+      renderBehaviorViewer_("uniform");
+    } catch (e) {
+      if (uniViewerList) {
+        uniViewerList.innerHTML = `<div class="behavior-empty">${escapeHtml(String(e && e.message ? e.message : e))}</div>`;
+      }
+    }
+  }
+}
+
+function backToBehaviorHub_(){
+  if (disciplineModal) disciplineModal.hidden = true;
+  if (piercingModal) piercingModal.hidden = true;
+  if (uniformModal) uniformModal.hidden = true;
+  if (disciplineViewerModal) disciplineViewerModal.hidden = true;
+  if (piercingViewerModal) piercingViewerModal.hidden = true;
+  if (uniformViewerModal) uniformViewerModal.hidden = true;
+  openBehaviorHub_(__behaviorKind);
+}
+
+function collectCoursesFromBehaviorItems_(items){
+  const set = new Set();
+  (items || []).forEach(it => {
+    const course = String(it.course || it.course_name || "").trim();
+    if (course) set.add(course);
+  });
+  return Array.from(set).sort((a,b)=>a.localeCompare(b,"es",{sensitivity:"base"}));
+}
+
+function populateSimpleSelect_(selectEl, firstText, items){
+  if (!selectEl) return;
+
+  const values = (items || []).map(v => String(v || ""));
+  const nextSignature = JSON.stringify([String(firstText || ""), ...values]);
+  const prevSignature = selectEl.dataset.optionsSignature || "";
+
+  // ✅ Si las opciones son iguales, NO repintar.
+  // Esto evita el parpadeo causado por el polling.
+  if (prevSignature === nextSignature) return;
+
+  const currentValue = String(selectEl.value || "");
+
+  selectEl.innerHTML = "";
+
+  const opt0 = document.createElement("option");
+  opt0.value = "";
+  opt0.textContent = firstText;
+  selectEl.appendChild(opt0);
+
+  values.forEach(v => {
+    const opt = document.createElement("option");
+    opt.value = v;
+    opt.textContent = v;
+    selectEl.appendChild(opt);
+  });
+
+  selectEl.dataset.optionsSignature = nextSignature;
+
+  // ✅ Mantiene la selección actual si todavía existe
+  if (currentValue && values.includes(currentValue)) {
+    selectEl.value = currentValue;
+  }
+}
+
+
+function behaviorItemStudent_(it){
+  return String(it?.student || it?.student_name || it?.studentName || it?.name || "").trim();
+}
+
+function behaviorItemCourse_(it){
+  return String(it?.course || it?.course_name || it?.courseName || "").trim();
+}
+
+function behaviorItemLevel_(it){
+  const fromMax = Number(it?.maxLevel || 0);
+  const fromLevel = Number(it?.level || 0);
+  const fromTotal = Number(it?.totalMarks || 0);
+
+  const fromWho = Array.isArray(it?.who)
+    ? it.who.reduce((m, r) => Math.max(m, Number(r.level || 0)), 0)
+    : 0;
+
+  return Math.min(4, Math.max(fromMax, fromLevel, fromTotal, fromWho));
+}
+
+function behaviorLevelText_(level){
+  const lv = Number(level || 0);
+  if (lv === 1) return "Nivel 1 • Leve";
+  if (lv === 2) return "Nivel 2";
+  if (lv === 3) return "Nivel 3";
+  if (lv >= 4) return "Nivel 4 • Grave";
+  return "Sin nivel";
+}
+
+function behaviorWhenText_(row){
+  const date = String(row?.date || row?.date_local || "").trim();
+  const time = String(row?.time || row?.time_local || "").trim();
+  const dt = String(row?.dt || row?.created_at || "").trim();
+
+  if (date && time) return `${date} ${time}`;
+  if (dt) return dt;
+  if (date) return date;
+  return "";
+}
+
+function behaviorObservationOf_(row){
+  return String(row?.observation || row?.observacion || row?.obs || "").trim();
+}
+
+function behaviorLevelBadgeHtml_(level){
+  const lv = Number(level || 0);
+  const safeLv = Math.max(1, Math.min(4, lv || 1));
+
+  return `
+    <span class="behavior-level-badge">
+      <span class="lvl-dot lvl-${safeLv}"></span>
+      ${escapeHtml(behaviorLevelText_(lv))}
+    </span>
+  `;
+}
+
+function behaviorKindLabel_(kind){
+  if (kind === "discipline") return "Uso del celular";
+  if (kind === "piercing") return "Piercing y perforaciones";
+  if (kind === "uniform") return "Porte del uniforme";
+  return "Reporte";
+}
+
+function behaviorKindMonthKey_(kind){
+  if (kind === "discipline") return discMonthKey_();
+  if (kind === "piercing") return piercMonthKey_();
+  if (kind === "uniform") return uniMonthKey_();
+  return "";
+}
+
+function behaviorNormalizeStudentByKind_(kind, student){
+  if (kind === "discipline") return normalizeStudent_(student);
+  if (kind === "piercing") return piercNormalizeStudent_(student);
+  if (kind === "uniform") return uniNormalizeStudent_(student);
+  return String(student || "").trim();
+}
+
+function behaviorSetHintByKind_(kind, msg){
+  if (kind === "discipline") discSetHint_(msg);
+  if (kind === "piercing") piercSetHint_(msg);
+  if (kind === "uniform") uniSetHint_(msg);
+}
+
+function behaviorFindInCacheByKind_(kind, student){
+  if (kind === "discipline") return discFindInCache_(student);
+  if (kind === "piercing") return piercFindInCache_(student);
+  if (kind === "uniform") return uniFindInCache_(student);
+  return null;
+}
+
+async function gsBehaviorAction_(kind, suffix, payload){
+  const action = `${kind}_${suffix}`;
+
+  const res = await fetch(GS_WEBAPP_URL, {
+    method: "POST",
+    body: JSON.stringify({
+      action,
+      ...payload,
+      key: GS_API_KEY
+    })
+  });
+
+  let data = null;
+  try { data = await res.json(); }
+  catch { throw new Error("Respuesta inválida del servidor"); }
+
+  if (!data.ok) throw new Error(data.msg || data.error || `${action}_failed`);
+  return data;
+}
+
+async function behaviorDeleteStudent_(kind, studentName){
+  const profile = requireLogin();
+  if (!profile) return;
+
+  const student = behaviorNormalizeStudentByKind_(kind, studentName);
+  if (!student) return;
+
+  const ok = await confirmPro({
+    title: `Eliminar estudiante (${behaviorKindLabel_(kind)})`,
+    msg: `¿Seguro que deseas eliminar a "${student}"?\n\nSe borrarán TODOS sus reportes del mes actual.`,
+    okText: "Sí, eliminar",
+    cancelText: "Cancelar",
+    danger: true
+  });
+
+  if (!ok) return;
+
+  try {
+    setLoading(true, "Eliminando…", "Borrando reportes del estudiante.");
+
+    const resp = await gsBehaviorAction_(kind, "delete_student", {
+      month: behaviorKindMonthKey_(kind),
+      student,
+      teacher: profile.name,
+      email: profile.email,
+      device_id: getDeviceId()
+    });
+
+    if (resp && Array.isArray(resp.list)) {
+      behaviorKindSetCache_(kind, resp.list);
+    } else {
+      await ensureBehaviorDataLoaded_(kind, { force: true, silent: true });
+    }
+
+    behaviorRefreshOpenUI_(kind);
+    renderBehaviorViewer_(kind);
+    behaviorSetHintByKind_(kind, "Estudiante eliminado ✅");
+  } catch (e) {
+    behaviorSetHintByKind_(kind, String(e && e.message ? e.message : e));
+  } finally {
+    setLoading(false);
+  }
+}
+
+async function behaviorEditOne_(kind, studentName, row){
+  const profile = requireLogin();
+  if (!profile) return;
+
+  const student = behaviorNormalizeStudentByKind_(kind, studentName);
+  if (!student || !row) return;
+
+  const currentObs = behaviorObservationOf_(row);
+
+  const observation = await openObservationModal_({
+    title: `Editar observación · ${behaviorKindLabel_(kind)}`,
+    sub: `${student} • ${String(row.teacher || "—").trim()}`,
+    placeholder: "Escribe la observación...",
+    initialValue: currentObs
+  });
+
+  if (observation === null) return;
+
+  try {
+    setLoading(true, "Guardando…", "Actualizando observación del reporte.");
+
+    const resp = await gsBehaviorAction_(kind, "update_one", {
+      month: behaviorKindMonthKey_(kind),
+      student,
+      teacher: String(row.teacher || "").trim(),
+      dt: reportDtOf_(row),
+      level: Number(row.level || 0),
+      observation,
+      email: profile.email,
+      device_id: getDeviceId()
+    });
+
+    if (resp && Array.isArray(resp.list)) {
+      behaviorKindSetCache_(kind, resp.list);
+    } else {
+      await ensureBehaviorDataLoaded_(kind, { force: true, silent: true });
+    }
+
+    behaviorRefreshOpenUI_(kind);
+    renderBehaviorViewer_(kind);
+    behaviorSetHintByKind_(kind, "Reporte actualizado ✅");
+  } catch (e) {
+    behaviorSetHintByKind_(kind, String(e && e.message ? e.message : e));
+  } finally {
+    setLoading(false);
+  }
+}
+
+async function behaviorDeleteOne_(kind, studentName, row){
+  const profile = requireLogin();
+  if (!profile) return;
+
+  const student = behaviorNormalizeStudentByKind_(kind, studentName);
+  if (!student || !row) return;
+
+  const ok = await confirmPro({
+    title: "Eliminar reporte",
+    msg: `¿Seguro que deseas eliminar solo este reporte de "${student}"?`,
+    okText: "Sí, eliminar",
+    cancelText: "Cancelar",
+    danger: true
+  });
+
+  if (!ok) return;
+
+  try {
+    setLoading(true, "Eliminando…", "Borrando solo este reporte.");
+
+    const resp = await gsBehaviorAction_(kind, "delete_one", {
+      month: behaviorKindMonthKey_(kind),
+      student,
+      teacher: String(row.teacher || "").trim(),
+      dt: reportDtOf_(row),
+      level: Number(row.level || 0),
+      email: profile.email,
+      device_id: getDeviceId()
+    });
+
+    if (resp && Array.isArray(resp.list)) {
+      behaviorKindSetCache_(kind, resp.list);
+    } else {
+      await ensureBehaviorDataLoaded_(kind, { force: true, silent: true });
+    }
+
+    behaviorRefreshOpenUI_(kind);
+    renderBehaviorViewer_(kind);
+    behaviorSetHintByKind_(kind, "Reporte eliminado ✅");
+  } catch (e) {
+    behaviorSetHintByKind_(kind, String(e && e.message ? e.message : e));
+  } finally {
+    setLoading(false);
+  }
+}
+
+function behaviorViewerDetailHtml_(item, kind){
+  const student = behaviorItemStudent_(item);
+  const level = behaviorItemLevel_(item);
+  const totalMarks = Number(item?.totalMarks || 0);
+  const teachersCount = Number(item?.teachersCount || (Array.isArray(item?.who) ? item.who.length : 0));
+  const who = Array.isArray(item?.who) ? item.who.slice() : [];
+
+  who.sort((a,b) => String(b.dt || b.created_at || "").localeCompare(String(a.dt || a.created_at || "")));
+
+  const rowsHtml = who.length
+    ? who.map((row, idx) => {
+        const teacher = String(row.teacher || "—").trim();
+        const rowLevel = Number(row.level || 0);
+        const when = behaviorWhenText_(row);
+        const obs = behaviorObservationOf_(row);
+
+        return `
+          <div class="behavior-detail-row" data-row-index="${idx}">
+            <div class="behavior-detail-row-top">
+              <div>
+                <div class="behavior-detail-teacher">${escapeHtml(teacher)}</div>
+                <div class="behavior-detail-meta">
+                  ${when ? escapeHtml(when) : "Sin fecha registrada"}
+                </div>
+              </div>
+              ${behaviorLevelBadgeHtml_(rowLevel)}
+            </div>
+
+            ${obs ? `<div class="behavior-detail-obs">${escapeHtml(obs)}</div>` : ""}
+
+            <div class="behavior-detail-actions">
+              <button type="button" class="behavior-mini-btn edit" data-action="edit-one" data-row-index="${idx}" title="Editar observación">
+                <i class="fa-solid fa-pen"></i>
+              </button>
+
+              <button type="button" class="behavior-mini-btn delete" data-action="delete-one" data-row-index="${idx}" title="Eliminar este reporte">
+                <i class="fa-solid fa-trash"></i>
+              </button>
+            </div>
+          </div>
+        `;
+      }).join("")
+    : `<div class="behavior-empty">Este estudiante no tiene detalle de docentes en el reporte.</div>`;
+
+  return `
+    <div class="behavior-detail-box">
+
+      <div class="behavior-report-card selected">
+        <div class="behavior-report-top">
+          <div>
+            <div class="behavior-detail-title">${escapeHtml(student)}</div>
+            <div class="behavior-report-meta">
+              Llamados: ${totalMarks} • Docentes: ${teachersCount}
+            </div>
+          </div>
+          ${behaviorLevelBadgeHtml_(level)}
+        </div>
+
+        <div class="behavior-detail-actions">
+          <button type="button" class="behavior-mini-btn delete" data-action="delete-student" title="Eliminar todos los reportes del estudiante">
+            <i class="fa-solid fa-trash"></i>
+          </button>
+        </div>
+      </div>
+
+      ${rowsHtml}
+
+
+
+    </div>
+  `;
+}
+
+
+function renderBehaviorViewerList_(listEl, items){
+  if (!listEl) return;
+
+  const arr = Array.isArray(items) ? items : [];
+
+  if (!arr.length) {
+    listEl.innerHTML = `<div class="behavior-empty">No hay reportes para este filtro.</div>`;
+    listEl.onclick = null;
+    return;
+  }
+
+  // Si el filtro dejó un solo estudiante, mostrar detalle completo
+if (arr.length === 1) {
+  const item = arr[0];
+  const student = behaviorItemStudent_(item);
+  const who = Array.isArray(item?.who) ? item.who.slice() : [];
+
+  let kind = "";
+  if (listEl === discViewerList) kind = "discipline";
+  if (listEl === piercViewerList) kind = "piercing";
+  if (listEl === uniViewerList) kind = "uniform";
+
+  who.sort((a,b) => String(b.dt || b.created_at || "").localeCompare(String(a.dt || a.created_at || "")));
+
+  listEl.innerHTML = behaviorViewerDetailHtml_(item, kind);
+
+  listEl.onclick = async (e) => {
+    const backBtn = e.target.closest('[data-action="back"]');
+    if (backBtn) {
+      if (kind === "discipline" && discViewerStudent) discViewerStudent.value = "";
+      if (kind === "piercing" && piercViewerStudent) piercViewerStudent.value = "";
+      if (kind === "uniform" && uniViewerStudent) uniViewerStudent.value = "";
+      renderBehaviorViewer_(kind);
+      return;
+    }
+
+    const deleteStudentBtn = e.target.closest('[data-action="delete-student"]');
+    if (deleteStudentBtn) {
+      e.preventDefault();
+      e.stopPropagation();
+      await behaviorDeleteStudent_(kind, student);
+      return;
+    }
+
+    const editBtn = e.target.closest('[data-action="edit-one"]');
+    if (editBtn) {
+      e.preventDefault();
+      e.stopPropagation();
+
+      const idx = Number(editBtn.getAttribute("data-row-index") || -1);
+      const row = who[idx];
+      await behaviorEditOne_(kind, student, row);
+      return;
+    }
+
+    const deleteOneBtn = e.target.closest('[data-action="delete-one"]');
+    if (deleteOneBtn) {
+      e.preventDefault();
+      e.stopPropagation();
+
+      const idx = Number(deleteOneBtn.getAttribute("data-row-index") || -1);
+      const row = who[idx];
+      await behaviorDeleteOne_(kind, student, row);
+      return;
+    }
+  };
+
+  return;
+}
+
+  listEl.innerHTML = arr.map(it => {
+    const student = behaviorItemStudent_(it);
+    const level = behaviorItemLevel_(it);
+    const totalMarks = Number(it.totalMarks || 0);
+    const teachersCount = Number(it.teachersCount || (Array.isArray(it.who) ? it.who.length : 0));
+    const lastObs = String(
+      it.lastObservation ||
+      it.observation ||
+      (Array.isArray(it.who) && it.who.length ? behaviorObservationOf_(it.who[0]) : "")
+    ).trim();
+
+    return `
+      <div class="behavior-report-card" data-student="${escapeHtml(student)}">
+        <div class="behavior-report-top">
+          <div style="min-width:0;">
+            <div class="behavior-report-name">${escapeHtml(student)}</div>
+            <div class="behavior-report-meta">
+              Llamados: ${totalMarks} • Docentes: ${teachersCount}
+            </div>
+          </div>
+          <div style="display:flex; gap:8px; align-items:center;">
+  ${behaviorLevelBadgeHtml_(level)}
+  <button type="button" class="behavior-mini-btn delete" data-action="delete-student-list" data-student="${escapeHtml(student)}" title="Eliminar todos los reportes">
+    <i class="fa-solid fa-trash"></i>
+  </button>
+</div>
+        </div>
+        ${lastObs ? `<div class="behavior-report-obs">${escapeHtml(lastObs)}</div>` : ""}
+      </div>
+    `;
+  }).join("");
+
+listEl.onclick = async (e) => {
+
+  // 🔙 BOTÓN VOLVER
+  const backBtn = e.target.closest('[data-action="back"]');
+  if (backBtn) {
+    if (listEl === discViewerList) {
+      if (discViewerStudent) discViewerStudent.value = "";
+      renderBehaviorViewer_("discipline");
+      return;
+    }
+
+    if (listEl === piercViewerList) {
+      if (piercViewerStudent) piercViewerStudent.value = "";
+      renderBehaviorViewer_("piercing");
+      return;
+    }
+
+    if (listEl === uniViewerList) {
+      if (uniViewerStudent) uniViewerStudent.value = "";
+      renderBehaviorViewer_("uniform");
+      return;
+    }
+  }
+
+  const deleteStudentListBtn = e.target.closest('[data-action="delete-student-list"]');
+if (deleteStudentListBtn) {
+  e.preventDefault();
+  e.stopPropagation();
+
+  const student = String(deleteStudentListBtn.getAttribute("data-student") || "").trim();
+
+  if (listEl === discViewerList) {
+    await behaviorDeleteStudent_("discipline", student);
+    return;
+  }
+
+  if (listEl === piercViewerList) {
+    await behaviorDeleteStudent_("piercing", student);
+    return;
+  }
+
+  if (listEl === uniViewerList) {
+    await behaviorDeleteStudent_("uniform", student);
+    return;
+  }
+}
+  // 👇 TU LÓGICA ORIGINAL (NO SE TOCA)
+  const card = e.target.closest(".behavior-report-card[data-student]");
+  if (!card) return;
+
+  const student = String(card.getAttribute("data-student") || "").trim();
+  if (!student) return;
+
+  if (listEl === discViewerList) {
+    if (discViewerStudent) discViewerStudent.value = student;
+    renderBehaviorViewer_("discipline");
+    return;
+  }
+
+  if (listEl === piercViewerList) {
+    if (piercViewerStudent) piercViewerStudent.value = student;
+    renderBehaviorViewer_("piercing");
+    return;
+  }
+
+  if (listEl === uniViewerList) {
+    if (uniViewerStudent) uniViewerStudent.value = student;
+    renderBehaviorViewer_("uniform");
+  }
+};
+}
+
+function renderBehaviorViewer_(kind){
+  let items = [];
+  let courseEl = null;
+  let studentEl = null;
+  let listEl = null;
+
+  if (kind === "discipline") {
+    items = Array.isArray(__discCacheList) ? __discCacheList : [];
+    courseEl = discViewerCourse;
+    studentEl = discViewerStudent;
+    listEl = discViewerList;
+  } else if (kind === "piercing") {
+    items = Array.isArray(__piercCacheList) ? __piercCacheList : [];
+    courseEl = piercViewerCourse;
+    studentEl = piercViewerStudent;
+    listEl = piercViewerList;
+  } else {
+    items = Array.isArray(__uniCacheList) ? __uniCacheList : [];
+    courseEl = uniViewerCourse;
+    studentEl = uniViewerStudent;
+    listEl = uniViewerList;
+  }
+
+  const prevCourse = String(courseEl && courseEl.value || "").trim();
+  const prevStudent = String(studentEl && studentEl.value || "").trim();
+
+  const courses = Array.from(
+    new Set(items.map(behaviorItemCourse_).filter(Boolean))
+  ).sort((a,b)=>a.localeCompare(b,"es",{sensitivity:"base"}));
+
+  populateSimpleSelect_(courseEl, "Todos los cursos", courses);
+
+  if (courseEl && prevCourse && courses.includes(prevCourse)) {
+    courseEl.value = prevCourse;
+  }
+
+  const selectedCourse = String(courseEl && courseEl.value || "").trim();
+
+  let filtered = items.slice();
+
+  if (selectedCourse) {
+    filtered = filtered.filter(it => behaviorItemCourse_(it) === selectedCourse);
+  }
+
+  const students = Array.from(
+    new Set(filtered.map(behaviorItemStudent_).filter(Boolean))
+  ).sort((a,b)=>a.localeCompare(b,"es",{sensitivity:"base"}));
+
+  populateSimpleSelect_(studentEl, "Todos los estudiantes", students);
+
+  if (studentEl && prevStudent && students.includes(prevStudent)) {
+    studentEl.value = prevStudent;
+  }
+
+  const selectedStudent = String(studentEl && studentEl.value || "").trim();
+
+  if (selectedStudent) {
+    filtered = filtered.filter(it => behaviorItemStudent_(it) === selectedStudent);
+  }
+
+  renderBehaviorViewerList_(listEl, filtered);
+}
 
 function initQrUi_() {
   // IMPORTANTE: $() debe existir antes de esto
@@ -4462,11 +7510,16 @@ function hideRefreshSpin() {
 
 
 
-function showSuccessCheck(message = "¡Registro guardado!", ms = 3200) {
+function showSuccessCheck(message = "¡Registro guardado!", ms = 3200, opts = {}) {
   const box = document.getElementById("successCheck");
   const text = document.getElementById("successCheckText");
 
   if (!box || !text) return;
+
+  const fast = opts.fast === true;
+
+  // ⏱️ si es rápido, ignora el ms normal
+  const duration = fast ? 500 : ms;
 
   text.textContent = message;
 
@@ -4475,18 +7528,21 @@ function showSuccessCheck(message = "¡Registro guardado!", ms = 3200) {
     __successCheckTimer = null;
   }
 
-  // reiniciar animaciones
+  // reiniciar animación
   box.hidden = true;
   void box.offsetWidth;
   box.hidden = false;
 
-  vibrateSuccess_();
-  playSuccessTone_();
+  // 🔇 opcional: si quieres que en rápido no vibre ni suene
+  if (!fast) {
+    vibrateSuccess_();
+    playSuccessTone_();
+  }
 
   __successCheckTimer = setTimeout(() => {
     box.hidden = true;
     __successCheckTimer = null;
-  }, ms);
+  }, duration);
 }
 
 /**
@@ -5488,6 +8544,20 @@ function normalizeKey(s) {
 }
 
 
+function behaviorLevelFromItem_(item) {
+  if (!item) return 0;
+
+  const maxLevel = Number(item.maxLevel || 0);
+
+  const fromWho = Array.isArray(item.who)
+    ? item.who.reduce((m, r) => Math.max(m, Number(r.level || 0)), 0)
+    : 0;
+
+  const fromTotal = Number(item.totalMarks || 0);
+
+  return Math.min(4, Math.max(maxLevel, fromWho, fromTotal));
+}
+
   function formatDateShort_(iso) {
   if (!iso) return "";
   const d = new Date(iso);
@@ -5713,6 +8783,29 @@ function loadProfile() {
     return null;
   }
 }
+
+
+function getDeviceId_(){
+  let id = localStorage.getItem("device_id");
+
+  if (!id) {
+    id = "dev_" + Math.random().toString(36).slice(2) + Date.now();
+    localStorage.setItem("device_id", id);
+  }
+
+  return id;
+}
+
+function currentMonthKey_(){
+  const now = new Date();
+
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+
+  return `${year}-${month}`;
+}
+
+
 
 function openAdminConfigModal() {
   if (!adminConfigModal) return;
@@ -11587,66 +14680,81 @@ function discSetHint_(msg) {
 // ✅ colores del puntico según nivel
 // ✅ DOT Disciplina: oculto si NO hay reportes
 function discSetDotByLevel_(level) {
-  if (!discLevelDot) return;
+  if (!discLevelDotEl) return;
 
   const lv = Number(level || 0);
 
   if (lv <= 0) {
-    discLevelDot.style.visibility = "hidden"; // 👈 no se ve si no hay reportes
-    discLevelDot.className = "dot";
+    discLevelDotEl.style.visibility = "hidden";
+    discLevelDotEl.className = "dot";
     return;
   }
 
- discLevelDot.style.visibility = "visible";
-discLevelDot.className = dotClassByLevel_(lv);
-
+  discLevelDotEl.style.visibility = "visible";
+  discLevelDotEl.className = dotClassByLevel_(lv);
 }
 
 // ✅ pinta el recuadro “Seleccionado”
 function discUpdateSelectedBox_(studentName){
   const s = normalizeStudent_(studentName);
-  __discCurrentStudent = s;
+  __discCurrentStudent = s || "";
 
   if (discStudentEl) discStudentEl.value = s || "";
-  if (!discSelectedNameEl || !discSelectedMetaEl) return;
 
-  if (!s) {
-    discSelectedNameEl.textContent = "(Selecciona o escribe un estudiante)";
-    discSelectedMetaEl.textContent = "—";
-    discSetDotByLevel_(0);
-    discClearLevelUI_();
-    if (discWhoList) discWhoList.textContent = "—";
-    return;
-  }
-
-  const item = discFindInCache_(s);
-  const maxLevel = item ? Number(item.maxLevel || 0) : 0;
+  const item = s ? discFindInCache_(s) : null;
+  const maxLevel = behaviorLevelFromItem_(item);
   const total = item ? Number(item.totalMarks || 0) : 0;
   const teachersCount = item ? Number(item.teachersCount || 0) : 0;
 
-discSelectedNameEl.textContent = s;
+  if (!s) {
+    if (discSelectedNameEl) discSelectedNameEl.textContent = "(Selecciona o escribe un estudiante)";
+    if (discSelectedMetaEl) discSelectedMetaEl.textContent = "—";
+    discSetDotByLevel_(0);
+    discClearLevelUI_();
+    if (discWhoList) discWhoList.textContent = "—";
+    __discPendingLevel = 0;
+    return;
+  }
 
-if (item) {
-  discSelectedMetaEl.textContent =
-    `Nivel ${maxLevel} • Llamados: ${total} • Docentes: ${teachersCount}`;
-} else {
-  discSelectedMetaEl.textContent = `Nuevo (sin reportes este mes aún)`;
-}
+  if (discSelectedNameEl) discSelectedNameEl.textContent = s;
+
+  if (discSelectedMetaEl) {
+    discSelectedMetaEl.textContent = item
+      ? `Nivel ${maxLevel} • Llamados: ${total} • Docentes: ${teachersCount}`
+      : `Nuevo (sin reportes este mes aún)`;
+  }
 
   discSetDotByLevel_(maxLevel);
   discApplyLevelUI_(maxLevel);
+  __discPendingLevel = 0;
 
   if (item && Array.isArray(item.who) && item.who.length) {
     discRenderWho_(item.who);
-  } else {
-    if (discWhoList) discWhoList.textContent = "—";
+  } else if (discWhoList) {
+    discWhoList.textContent = "—";
   }
 }
 
 
+function discOnStudentChange_(studentName) {
+  const s = normalizeStudent_(studentName);
+  __discCurrentStudent = s;
+
+  discUpdateSelectedBox_(s);
+
+  const item = s ? discFindInCache_(s) : null;
+  const level = behaviorLevelFromItem_(item);
+
+  discApplyLevelUI_(level);
+  discSetDotByLevel_(level);
+  __discPendingLevel = 0;
+}
+
 function discFindInCache_(studentName) {
   const key = normalizeKey(studentName);
-  return (__discCacheList || []).find(x => normalizeKey(x.student) === key) || null;
+  return (__discCacheList || []).find(x =>
+    normalizeKey(x.student || x.student_name || x.studentName || x.name || "") === key
+  ) || null;
 }
 
 function discClearLevelUI_() {
@@ -12909,12 +16017,41 @@ async function copyTextToClipboard_(text) {
 
 const WHATSAPP_GROUP_LINK = "https://chat.whatsapp.com/EztQUrHgqC6L7di7rvaNwu?mode=gi_t";
 
-async function discDoMarkLevel(level) {
+function discDoMarkLevel(level) {
+  const lvl = Number(level || 0);
+  if (lvl < 1 || lvl > 4) return;
+
+  const student = normalizeStudent_(__discCurrentStudent);
+  const item = student ? discFindInCache_(student) : null;
+  const currentMax = item ? Number(item.maxLevel || 0) : 0;
+
+  if (!student) {
+    discSetHint_("Primero selecciona un estudiante.");
+    return;
+  }
+
+  if (lvl > currentMax + 1) {
+    discSetHint_(`Debes marcar primero el nivel ${currentMax + 1}.`);
+    discApplyLevelUI_(currentMax);
+    __discPendingLevel = 0;
+    return;
+  }
+
+  __discPendingLevel = lvl;
+  discApplyLevelUI_(Math.max(currentMax, lvl));
+  discSetHint_(`Nivel ${lvl} seleccionado. Presiona "Reportar" para guardar.`);
+}
+
+
+async function discSubmitReport_() {
   const profile = requireLogin();
   if (!profile) return;
 
-  const lvl = Number(level || 0);
-  if (lvl < 1 || lvl > 4) return;
+  const lvl = Number(__discPendingLevel || 0);
+  if (lvl < 1 || lvl > 4) {
+    discSetHint_("Debes seleccionar un nivel antes de reportar.");
+    return;
+  }
 
   const student = normalizeStudent_(__discCurrentStudent);
   if (!student) {
@@ -12922,41 +16059,24 @@ async function discDoMarkLevel(level) {
     return;
   }
 
+  const observation = normalizeObservation_(discObservationEl ? discObservationEl.value : "");
+
   const item = discFindInCache_(student);
   const currentMax = item ? Number(item.maxLevel || 0) : 0;
 
   if (lvl > currentMax + 1) {
     discSetHint_(`Debes marcar primero el nivel ${currentMax + 1}.`);
     discApplyLevelUI_(currentMax);
+    __discPendingLevel = currentMax;
     return;
   }
-
-let observation = "";
-
-// 🚫 Si ya está en nivel 4, NO pedir observación otra vez
-if (lvl === 4 && currentMax >= 4) {
-  // no abrimos modal
-  observation = "";
-} else {
-  observation = await openObservationModal_({
-    title: "Observación · Uso del celular",
-    sub: `Nivel ${lvl} para ${student}`,
-    placeholder: "Ej: Uso del celular durante la explicación, no acató el llamado, etc.",
-    initialValue: ""
-  });
-
-  if (observation === null) {
-    discSetHint_("Registro cancelado.");
-    discApplyLevelUI_(currentMax);
-    return;
-  }
-}
 
   try {
     setLoading(true, "Guardando…", "Registrando reporte de uso del celular.");
 
     const resp = await gsDisciplineMark({
       month: discMonthKey_(),
+      course: discCourseEl ? discCourseEl.value : "",
       student,
       level: lvl,
       observation,
@@ -12966,15 +16086,25 @@ if (lvl === 4 && currentMax >= 4) {
       date: new Date().toISOString()
     });
 
-    if (resp && Array.isArray(resp.list)) __discCacheList = resp.list;
-    else await discReloadReportedList(false);
+if (resp && Array.isArray(resp.list)) {
+  behaviorKindSetCache_("discipline", resp.list);
+} else {
+  const items = await gsDisciplineList(discMonthKey_());
+  behaviorKindSetCache_("discipline", items);
+}
 
-    discUpdateSelectedBox_(student);
-    __discView = "list";
-    discRenderReportedList_(__discCacheList);
-    if (btnDiscBack) btnDiscBack.hidden = true;
+behaviorRefreshOpenUI_("discipline");
 
-    if (resp && resp.ok && lvl >= 4) {
+ __discPendingLevel = 0;
+if (discObservationEl) discObservationEl.value = "";
+
+discUpdateSelectedBox_(student);
+
+const discUpdatedItem = discFindInCache_(student);
+const discUpdatedMax = discUpdatedItem ? Number(discUpdatedItem.maxLevel || 0) : lvl;
+discApplyLevelUI_(discUpdatedMax);
+
+    if (resp && resp.ok && resp.justReported && lvl >= 4) {
       const msg = String(resp.wa_msg || "").trim();
       if (msg) {
         await confirmAndShareReport_({
@@ -12985,15 +16115,11 @@ if (lvl === 4 && currentMax >= 4) {
       }
     }
 
-  discSetHint_(
-  (lvl === 4 && currentMax >= 4)
-    ? "Listo para compartir nuevamente ✅"
-    : (
-        observation
-          ? (lvl >= 4 ? "Nivel 4 registrado ✅ Observación guardada." : "Registrado ✅ Observación guardada.")
-          : (lvl >= 4 ? "Nivel 4 registrado ✅" : "Registrado ✅")
-      )
-);
+    discSetHint_(
+      observation
+        ? (lvl >= 4 ? "Nivel 4 registrado ✅ Observación guardada." : "Registrado ✅ Observación guardada.")
+        : (lvl >= 4 ? "Nivel 4 registrado ✅" : "Registrado ✅")
+    );
 
   } catch (e) {
     discSetHint_(String(e && e.message ? e.message : e));
@@ -13004,8 +16130,80 @@ if (lvl === 4 && currentMax >= 4) {
 
 
 
+function behaviorRefreshOpenUI_(kind) {
+  if (kind === "discipline") {
+    if (disciplineViewerModal && !disciplineViewerModal.hidden) {
+      renderBehaviorViewer_("discipline");
+    }
 
+    if (disciplineModal && !disciplineModal.hidden && __discCurrentStudent) {
+      const isTypingStudent = discStudentEl && document.activeElement === discStudentEl;
+      const isWritingObs = discObservationEl && document.activeElement === discObservationEl;
+      const pending = Number(__discPendingLevel || 0);
 
+      const item = discFindInCache_(__discCurrentStudent);
+      const currentLevel = behaviorLevelFromItem_(item);
+
+      if (pending > 0 || isTypingStudent || isWritingObs) {
+        discApplyLevelUI_(Math.max(currentLevel, pending));
+        return;
+      }
+
+      discUpdateSelectedBox_(__discCurrentStudent);
+      discApplyLevelUI_(currentLevel);
+    }
+
+    return;
+  }
+
+  if (kind === "piercing") {
+    if (piercingViewerModal && !piercingViewerModal.hidden) {
+      renderBehaviorViewer_("piercing");
+    }
+
+    if (piercingModal && !piercingModal.hidden && __piercCurrentStudent) {
+      const isTypingStudent = piercStudentEl && document.activeElement === piercStudentEl;
+      const isWritingObs = piercObservationEl && document.activeElement === piercObservationEl;
+      const pending = Number(__piercPendingLevel || 0);
+
+      const item = piercFindInCache_(__piercCurrentStudent);
+      const currentLevel = behaviorLevelFromItem_(item);
+
+      if (pending > 0 || isTypingStudent || isWritingObs) {
+        piercApplyLevelUI_(Math.max(currentLevel, pending));
+        return;
+      }
+
+      piercUpdateSelectedBox_(__piercCurrentStudent);
+      piercApplyLevelUI_(currentLevel);
+    }
+
+    return;
+  }
+
+  if (kind === "uniform") {
+    if (uniformViewerModal && !uniformViewerModal.hidden) {
+      renderBehaviorViewer_("uniform");
+    }
+
+    if (uniformModal && !uniformModal.hidden && __uniCurrentStudent) {
+      const isTypingStudent = uniStudentEl && document.activeElement === uniStudentEl;
+      const isWritingObs = uniObservationEl && document.activeElement === uniObservationEl;
+      const pending = Number(__uniPendingLevel || 0);
+
+      const item = uniFindInCache_(__uniCurrentStudent);
+      const currentLevel = behaviorLevelFromItem_(item);
+
+      if (pending > 0 || isTypingStudent || isWritingObs) {
+        uniApplyLevelUI_(Math.max(currentLevel, pending));
+        return;
+      }
+
+      uniUpdateSelectedBox_(__uniCurrentStudent);
+      uniApplyLevelUI_(currentLevel);
+    }
+  }
+}
 
 /* ======= Poll para sincronizar entre celulares ======= */
 function discStartPolling_() {
@@ -13016,35 +16214,11 @@ function discStartPolling_() {
     const admin = isAdminMode();
     if (!p && !admin) return;
 
-    // ✅ si el modal no está abierto, solo actualiza cache y ya
-    if (!disciplineModal || disciplineModal.hidden === true) {
-      try {
-        __discCacheList = await gsDisciplineList(discMonthKey_());
-      } catch {}
-      return;
-    }
-
     try {
       const items = await gsDisciplineList(discMonthKey_());
-      __discCacheList = items;
 
-      // ✅ Si el usuario está escribiendo en el input, NO pisar su texto
-      const isTyping = (discStudentEl && document.activeElement === discStudentEl);
-
-      // ✅ SI hay estudiante seleccionado (aunque estés en LISTA),
-      // refresca “Seleccionado” (punto arriba + niveles + who)
-      if (__discCurrentStudent && !isTyping) {
-        discUpdateSelectedBox_(__discCurrentStudent);
-      }
-
-      // ✅ Si estoy en detalle: refresco la tarjeta detalle
-      if (__discView === "detail") {
-        if (__discCurrentStudent) discRenderDetailView_();
-        return;
-      }
-
-      // ✅ En lista: repintar lista (para que cambie el punto/orden)
-      discRenderReportedList_(items);
+      behaviorKindSetCache_("discipline", items);
+      behaviorRefreshOpenUI_("discipline");
 
     } catch {
       // silencioso
@@ -13060,18 +16234,17 @@ function openDisciplineModal() {
   if (!disciplineModal) return;
 
   disciplineModal.hidden = false;
+  disciplineModal.removeAttribute("hidden");
+  disciplineModal.style.display = "flex";
+
   discSetHint_("");
+  __discPendingLevel = 0;
+  __discView = "report";
+  __discCurrentStudent = "";
 
-  __discView = "list";               // ✅ siempre abre en lista
-  __discCurrentStudent = "";         // ✅ no debe quedar “pegado” el último
-  discUpdateSelectedBox_("");        // limpia box seleccionado
-  discRenderReportedList_(__discCacheList);
-
-  // ✅ ocultar botón Atrás al abrir
-  if (typeof btnDiscBack !== "undefined" && btnDiscBack) btnDiscBack.hidden = true;
-
-  // si quieres que muestre el “Lista sincronizada ✅” al abrir:
-  discReloadReportedList(true);
+  if (discObservationEl) discObservationEl.value = "";
+  discClearLevelUI_();
+  discUpdateSelectedBox_("");
 }
 
 function closeDisciplineModal() {
@@ -13079,73 +16252,92 @@ function closeDisciplineModal() {
 
   disciplineModal.hidden = true;
 
-  __discView = "list";
+  __discPendingLevel = 0;
+  __discView = "report";
   __discCurrentStudent = "";
+
+  if (discObservationEl) discObservationEl.value = "";
+  discClearLevelUI_();
   discSetHint_("");
   discUpdateSelectedBox_("");
-
-  // ✅ ocultar botón Atrás al cerrar
-  if (typeof btnDiscBack !== "undefined" && btnDiscBack) btnDiscBack.hidden = true;
 }
+
+
+
 function discBindUI_() {
-  // ✅ Mantener menú/submenú abiertos al abrir el modal
   if (btnDiscipline) {
-    btnDiscipline.addEventListener("click", (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      openDisciplineModal();
-    });
+    btnDiscipline.onclick = () => {
+      setMenuOpen(false);
+      openBehaviorHub_("discipline");
+    };
   }
 
-  // ✅ Evitar que cualquier click dentro del modal cierre el menú global
   if (disciplineModal) {
     disciplineModal.addEventListener("click", (e) => e.stopPropagation());
-  }
-
-  if (btnDiscClose) {
-    btnDiscClose.addEventListener("click", (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      closeDisciplineModal();
-    });
-  }
-
-  if (btnDiscReload) {
-    btnDiscReload.addEventListener("click", (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      discReloadReportedList(true);
-    });
   }
 
   if (btnDiscBack) {
     btnDiscBack.addEventListener("click", (e) => {
       e.preventDefault();
       e.stopPropagation();
-      discBackToList_();
+      backToBehaviorHub_();
     });
   }
 
-  // botones 1..4 (también evitamos bubbling)
   if (disciplineModal) {
     disciplineModal.querySelectorAll(".disc-level").forEach((btn) => {
       btn.addEventListener("click", (e) => {
         e.preventDefault();
         e.stopPropagation();
+
         const lvl = Number(btn.getAttribute("data-level") || 0);
-        discDoMarkLevel(lvl);
+        const student = normalizeStudent_(__discCurrentStudent);
+        const item = student ? discFindInCache_(student) : null;
+        const currentMax = behaviorLevelFromItem_(item);
+
+        if (!student) {
+          discSetHint_("Primero selecciona un estudiante.");
+          return;
+        }
+
+        if (lvl > currentMax + 1) {
+          discSetHint_(`Debes marcar primero el nivel ${currentMax + 1}.`);
+          discApplyLevelUI_(currentMax);
+          __discPendingLevel = 0;
+          return;
+        }
+
+        __discPendingLevel = lvl;
+        discApplyLevelUI_(Math.max(currentMax, lvl));
+        discSetHint_(`Nivel ${lvl} seleccionado. Presiona "Reportar" para guardar.`);
       });
     });
   }
 
-  // input: no hace falta stopPropagation aquí, pero no estorba
-  if (discStudentEl) {
-    discStudentEl.addEventListener("input", () => {
-      const raw = String(discStudentEl.value || "");
-      __discCurrentStudent = raw;
+if (discStudentEl) {
+  discStudentEl.addEventListener("input", () => {
+    discOnStudentChange_(discStudentEl.value || "");
+  });
+}
 
-      const s = normalizeStudent_(raw);
-      // ... (TU CÓDIGO EXISTENTE sigue igual desde aquí)
+  if (discStudentSelectEl) {
+    discStudentSelectEl.addEventListener("change", () => {
+      const s = normalizeStudent_(discStudentSelectEl.value || "");
+      if (discStudentEl) discStudentEl.value = s;
+      __discCurrentStudent = s;
+      discUpdateSelectedBox_(s);
+
+      const item = s ? discFindInCache_(s) : null;
+      discApplyLevelUI_(behaviorLevelFromItem_(item));
+      __discPendingLevel = 0;
+    });
+  }
+
+  if (btnDiscReport) {
+    btnDiscReport.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      discSubmitReport_();
     });
   }
 }
@@ -13177,24 +16369,25 @@ function piercSetHint_(msg) {
 
 // ✅ DOT Piercing: oculto si NO hay reportes
 function piercSetDotByLevel_(level) {
-  if (!piercLevelDot) return;
+  if (!piercLevelDotEl) return;
 
   const lv = Number(level || 0);
 
   if (lv <= 0) {
-    piercLevelDot.style.visibility = "hidden";
-    piercLevelDot.className = "dot";
+    piercLevelDotEl.style.visibility = "hidden";
+    piercLevelDotEl.className = "dot";
     return;
   }
 
-piercLevelDot.style.visibility = "visible";
-piercLevelDot.className = dotClassByLevel_(lv);
-
+  piercLevelDotEl.style.visibility = "visible";
+  piercLevelDotEl.className = dotClassByLevel_(lv);
 }
 
 function piercFindInCache_(studentName) {
   const key = normalizeKey(studentName);
-  return (__piercCacheList || []).find(x => normalizeKey(x.student) === key) || null;
+  return (__piercCacheList || []).find(x =>
+    normalizeKey(x.student || x.student_name || x.studentName || x.name || "") === key
+  ) || null;
 }
 
 function piercClearLevelUI_() {
@@ -13254,36 +16447,56 @@ function piercRenderWho_(whoArr) {
 
 function piercUpdateSelectedBox_(studentName){
   const s = piercNormalizeStudent_(studentName);
-  __piercCurrentStudent = s;
+  __piercCurrentStudent = s || "";
 
   if (piercStudentEl) piercStudentEl.value = s || "";
-  if (!piercSelectedNameEl || !piercSelectedMetaEl) return;
 
-  if (!s) {
-    piercSelectedNameEl.textContent = "(Selecciona o escribe un estudiante)";
-    piercSelectedMetaEl.textContent = "—";
-    piercSetDotByLevel_(0);
-    piercClearLevelUI_();
-    if (piercWhoList) piercWhoList.textContent = "—";
-    return;
-  }
-
-  const item = piercFindInCache_(s);
-  const maxLevel = item ? Number(item.maxLevel || 0) : 0;
+  const item = s ? piercFindInCache_(s) : null;
+  const maxLevel = behaviorLevelFromItem_(item);
   const total = item ? Number(item.totalMarks || 0) : 0;
   const teachersCount = item ? Number(item.teachersCount || 0) : 0;
 
- piercSelectedNameEl.textContent = s;
+  if (!s) {
+    if (piercSelectedNameEl) piercSelectedNameEl.textContent = "(Selecciona o escribe un estudiante)";
+    if (piercSelectedMetaEl) piercSelectedMetaEl.textContent = "—";
+    piercSetDotByLevel_(0);
+    piercClearLevelUI_();
+    if (piercWhoList) piercWhoList.textContent = "—";
+    __piercPendingLevel = 0;
+    return;
+  }
 
-piercSelectedMetaEl.textContent = item
-  ? `Nivel ${maxLevel} • Llamados: ${total} • Docentes: ${teachersCount}`
-  : `Nuevo (sin reportes este mes aún)`;
+  if (piercSelectedNameEl) piercSelectedNameEl.textContent = s;
+
+  if (piercSelectedMetaEl) {
+    piercSelectedMetaEl.textContent = item
+      ? `Nivel ${maxLevel} • Llamados: ${total} • Docentes: ${teachersCount}`
+      : `Nuevo (sin reportes este mes aún)`;
+  }
 
   piercSetDotByLevel_(maxLevel);
   piercApplyLevelUI_(maxLevel);
+  __piercPendingLevel = 0;
 
-  if (item && Array.isArray(item.who) && item.who.length) piercRenderWho_(item.who);
-  else if (piercWhoList) piercWhoList.textContent = "—";
+  if (item && Array.isArray(item.who) && item.who.length) {
+    piercRenderWho_(item.who);
+  } else if (piercWhoList) {
+    piercWhoList.textContent = "—";
+  }
+}
+
+function piercOnStudentChange_(studentName) {
+  const s = piercNormalizeStudent_(studentName);
+  __piercCurrentStudent = s;
+
+  piercUpdateSelectedBox_(s);
+
+  const item = s ? piercFindInCache_(s) : null;
+  const level = behaviorLevelFromItem_(item);
+
+  piercApplyLevelUI_(level);
+  piercSetDotByLevel_(level);
+  __piercPendingLevel = 0;
 }
 
 function piercRenderReportedList_(items) {
@@ -13796,12 +17009,39 @@ async function piercDeleteOne_(studentName, row){
   }
 }
 
-async function piercDoMarkLevel(level) {
+function piercDoMarkLevel(level) {
+  const lvl = Number(level || 0);
+  if (lvl < 1 || lvl > 4) return;
+
+  const student = piercNormalizeStudent_(__piercCurrentStudent);
+  const item = student ? piercFindInCache_(student) : null;
+  const currentMax = item ? Number(item.maxLevel || 0) : 0;
+
+  if (!student) {
+    piercSetHint_("Primero selecciona un estudiante.");
+    return;
+  }
+
+  if (lvl > currentMax + 1) {
+    piercSetHint_(`Debes marcar primero el nivel ${currentMax + 1}.`);
+    piercApplyLevelUI_(currentMax);
+    __piercPendingLevel = 0;
+    return;
+  }
+
+  __piercPendingLevel = lvl;
+  piercApplyLevelUI_(Math.max(currentMax, lvl));
+  piercSetHint_(`Nivel ${lvl} seleccionado. Presiona "Reportar" para guardar.`);
+}
+async function piercSubmitReport_() {
   const profile = requireLogin();
   if (!profile) return;
 
-  const lvl = Number(level || 0);
-  if (lvl < 1 || lvl > 4) return;
+  const lvl = Number(__piercPendingLevel || 0);
+  if (lvl < 1 || lvl > 4) {
+    piercSetHint_("Debes seleccionar un nivel antes de reportar.");
+    return;
+  }
 
   const student = piercNormalizeStudent_(__piercCurrentStudent);
   if (!student) {
@@ -13809,39 +17049,24 @@ async function piercDoMarkLevel(level) {
     return;
   }
 
+  const observation = normalizeObservation_(piercObservationEl ? piercObservationEl.value : "");
+
   const item = piercFindInCache_(student);
   const currentMax = item ? Number(item.maxLevel || 0) : 0;
 
   if (lvl > currentMax + 1) {
     piercSetHint_(`Debes marcar primero el nivel ${currentMax + 1}.`);
     piercApplyLevelUI_(currentMax);
+    __piercPendingLevel = currentMax;
     return;
   }
-
-let observation = "";
-
-if (lvl === 4 && currentMax >= 4) {
-  observation = "";
-} else {
-  observation = await openObservationModal_({
-    title: "Observación · Piercing y perforaciones",
-    sub: `Nivel ${lvl} para ${student}`,
-    placeholder: "Ej: Tiene piercing visible en la ceja, arete no permitido, etc.",
-    initialValue: ""
-  });
-
-  if (observation === null) {
-    piercSetHint_("Registro cancelado.");
-    piercApplyLevelUI_(currentMax);
-    return;
-  }
-}
 
   try {
     setLoading(true, "Guardando…", "Registrando reporte de piercing/perforaciones.");
 
     const resp = await gsPiercingMark({
       month: piercMonthKey_(),
+      course: piercCourseEl ? piercCourseEl.value : "",
       student,
       level: lvl,
       observation,
@@ -13851,15 +17076,24 @@ if (lvl === 4 && currentMax >= 4) {
       date: new Date().toISOString()
     });
 
-    if (resp && Array.isArray(resp.list)) __piercCacheList = resp.list;
-    else await piercReloadReportedList(false);
+if (resp && Array.isArray(resp.list)) {
+  behaviorKindSetCache_("piercing", resp.list);
+} else {
+  const items = await gsPiercingList(piercMonthKey_());
+  behaviorKindSetCache_("piercing", items);
+}
 
-    piercUpdateSelectedBox_(student);
-    __piercView = "list";
-    piercRenderReportedList_(__piercCacheList);
-    if (btnPiercBack) btnPiercBack.hidden = true;
+behaviorRefreshOpenUI_("piercing");
+ __piercPendingLevel = 0;
+if (piercObservationEl) piercObservationEl.value = "";
 
-    if (resp && resp.ok && lvl >= 4) {
+piercUpdateSelectedBox_(student);
+
+const piercUpdatedItem = piercFindInCache_(student);
+const piercUpdatedMax = piercUpdatedItem ? Number(piercUpdatedItem.maxLevel || 0) : lvl;
+piercApplyLevelUI_(piercUpdatedMax);
+
+    if (resp && resp.ok && resp.justReported && lvl >= 4) {
       const msg = String(resp.wa_msg || "").trim();
       if (msg) {
         await confirmAndShareReport_({
@@ -13883,7 +17117,6 @@ if (lvl === 4 && currentMax >= 4) {
   }
 }
 
-
 /* ======= Poll ======= */
 function piercStartPolling_() {
   if (__piercPollTimer) return;
@@ -13893,61 +17126,37 @@ function piercStartPolling_() {
     const admin = isAdminMode();
     if (!p && !admin) return;
 
-    if (!piercingModal || piercingModal.hidden === true) {
-      try { __piercCacheList = await gsPiercingList(piercMonthKey_()); } catch {}
-      return;
-    }
-
     try {
       const items = await gsPiercingList(piercMonthKey_());
-      __piercCacheList = items;
 
-      const isTyping = (piercStudentEl && document.activeElement === piercStudentEl);
-      if (__piercCurrentStudent && !isTyping) piercUpdateSelectedBox_(__piercCurrentStudent);
+      behaviorKindSetCache_("piercing", items);
+      behaviorRefreshOpenUI_("piercing");
 
-      if (__piercView === "detail") {
-        if (__piercCurrentStudent) piercRenderDetailView_();
-        return;
-      }
-
-      piercRenderReportedList_(items);
-    } catch {}
+    } catch {
+      // silencioso
+    }
   }, 4000);
 }
 
 function openPiercingModal() {
-  const modal = document.getElementById("piercingModal");
-  if (!modal) return;
+  if (!piercingModal) return;
 
-  // 🔥 FIX: si está anidado dentro de disciplineModal, sácalo al <body>
-  if (modal.parentElement !== document.body) {
-    document.body.appendChild(modal);
-    console.warn("✅ PiercingModal movido al <body> (estaba anidado).");
+  if (piercingModal.parentElement !== document.body) {
+    document.body.appendChild(piercingModal);
   }
 
-  // ✅ (Opcional) cerrar SOLO disciplina (no el menú)
-  if (disciplineModal) disciplineModal.hidden = true;
+  piercingModal.hidden = false;
+  piercingModal.removeAttribute("hidden");
+  piercingModal.style.display = "flex";
 
-  // ❌ NO cerrar menú aquí
-  // setMenuOpen(false);
-
-  // Abre piercing
-  modal.hidden = false;
-  modal.removeAttribute("hidden");
-  modal.style.display = "flex";
-
-  // Reset UI
   piercSetHint_("");
-  __piercView = "list";
+  __piercPendingLevel = 0;
+  __piercView = "report";
   __piercCurrentStudent = "";
+
+  if (piercObservationEl) piercObservationEl.value = "";
+  piercClearLevelUI_();
   piercUpdateSelectedBox_("");
-  piercRenderReportedList_(__piercCacheList);
-  if (btnPiercBack) btnPiercBack.hidden = true;
-
-  // Cargar lista
-  piercReloadReportedList(true);
-
-  console.log("✅ openPiercingModal() abrió el modal y dejó el menú/submenú abiertos");
 }
 
 
@@ -13955,49 +17164,34 @@ function closePiercingModal() {
   if (!piercingModal) return;
 
   piercingModal.hidden = true;
-  __piercView = "list";
+
+  __piercPendingLevel = 0;
+  __piercView = "report";
   __piercCurrentStudent = "";
+
+  if (piercObservationEl) piercObservationEl.value = "";
+  piercClearLevelUI_();
   piercSetHint_("");
   piercUpdateSelectedBox_("");
-  if (btnPiercBack) btnPiercBack.hidden = true;
 }
 
 function piercBindUI_() {
-  // ✅ Mantener menú/submenú abiertos al abrir el modal
   if (btnPiercing) {
-    btnPiercing.addEventListener("click", (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      openPiercingModal();
-    });
+    btnPiercing.onclick = () => {
+      setMenuOpen(false);
+      openBehaviorHub_("piercing");
+    };
   }
 
-  // ✅ Evitar que cualquier click dentro del modal cierre el menú global
   if (piercingModal) {
     piercingModal.addEventListener("click", (e) => e.stopPropagation());
-  }
-
-  if (btnPiercClose) {
-    btnPiercClose.addEventListener("click", (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      closePiercingModal();
-    });
-  }
-
-  if (btnPiercReload) {
-    btnPiercReload.addEventListener("click", (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      piercReloadReportedList(true);
-    });
   }
 
   if (btnPiercBack) {
     btnPiercBack.addEventListener("click", (e) => {
       e.preventDefault();
       e.stopPropagation();
-      piercBackToList_();
+      backToBehaviorHub_();
     });
   }
 
@@ -14006,18 +17200,55 @@ function piercBindUI_() {
       btn.addEventListener("click", (e) => {
         e.preventDefault();
         e.stopPropagation();
+
         const lvl = Number(btn.getAttribute("data-level") || 0);
-        piercDoMarkLevel(lvl);
+        const student = piercNormalizeStudent_(__piercCurrentStudent);
+        const item = student ? piercFindInCache_(student) : null;
+        const currentMax = behaviorLevelFromItem_(item);
+
+        if (!student) {
+          piercSetHint_("Primero selecciona un estudiante.");
+          return;
+        }
+
+        if (lvl > currentMax + 1) {
+          piercSetHint_(`Debes marcar primero el nivel ${currentMax + 1}.`);
+          piercApplyLevelUI_(currentMax);
+          __piercPendingLevel = 0;
+          return;
+        }
+
+        __piercPendingLevel = lvl;
+        piercApplyLevelUI_(Math.max(currentMax, lvl));
+        piercSetHint_(`Nivel ${lvl} seleccionado. Presiona "Reportar" para guardar.`);
       });
     });
   }
 
-  if (piercStudentEl) {
-    piercStudentEl.addEventListener("input", () => {
-      const raw = String(piercStudentEl.value || "");
-      __piercCurrentStudent = raw;
+if (piercStudentEl) {
+  piercStudentEl.addEventListener("input", () => {
+    piercOnStudentChange_(piercStudentEl.value || "");
+  });
+}
 
-      // ... (TU CÓDIGO EXISTENTE sigue igual desde aquí)
+  if (piercStudentSelectEl) {
+    piercStudentSelectEl.addEventListener("change", () => {
+      const s = piercNormalizeStudent_(piercStudentSelectEl.value || "");
+      if (piercStudentEl) piercStudentEl.value = s;
+      __piercCurrentStudent = s;
+      piercUpdateSelectedBox_(s);
+
+      const item = s ? piercFindInCache_(s) : null;
+      piercApplyLevelUI_(behaviorLevelFromItem_(item));
+      __piercPendingLevel = 0;
+    });
+  }
+
+  if (btnPiercReport) {
+    btnPiercReport.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      piercSubmitReport_();
     });
   }
 }
@@ -14044,11 +17275,9 @@ function initAllModalCourses_() {
 
   // ========= DISC =========
   mountStudentSelectIntoInput_(discStudentEl, discStudentSelectEl);
-  bindStudentSelectToInput_(discStudentSelectEl, discStudentEl, (name) => {
-    if (typeof discUpdateSelectedBox_ === "function") {
-      discUpdateSelectedBox_(name);
-    }
-  });
+bindStudentSelectToInput_(discStudentSelectEl, discStudentEl, (name) => {
+  discOnStudentChange_(name);
+});
 
   initCourseComboForModal({
     selectEl: discCourseEl,
@@ -14060,11 +17289,9 @@ function initAllModalCourses_() {
 
   // ========= PIERC =========
   mountStudentSelectIntoInput_(piercStudentEl, piercStudentSelectEl);
-  bindStudentSelectToInput_(piercStudentSelectEl, piercStudentEl, (name) => {
-    if (typeof piercUpdateSelectedBox_ === "function") {
-      piercUpdateSelectedBox_(name);
-    }
-  });
+bindStudentSelectToInput_(piercStudentSelectEl, piercStudentEl, (name) => {
+  piercOnStudentChange_(name);
+});
 
   initCourseComboForModal({
     selectEl: piercCourseEl,
@@ -14289,11 +17516,12 @@ function uniRenderWho_(whoArr){
 }
 
 
-function uniFindInCache_(student){
-  const key = normalizeKey(student);
-  return (__uniCacheList || []).find(it => normalizeKey(it.student) === key) || null;
+function uniFindInCache_(studentName) {
+  const key = normalizeKey(studentName);
+  return (__uniCacheList || []).find(x =>
+    normalizeKey(x.student || x.student_name || x.studentName || x.name || "") === key
+  ) || null;
 }
-
 
 
 function uniOnStudentChange_(studentName) {
@@ -14412,35 +17640,40 @@ function uniUpdateSelectedBox_(studentName){
   const s = uniNormalizeStudent_(studentName);
   __uniCurrentStudent = s || "";
 
+  if (uniStudentEl) uniStudentEl.value = s || "";
+
+  const item = s ? uniFindInCache_(s) : null;
+  const maxLevel = behaviorLevelFromItem_(item);
+  const total = item ? Number(item.totalMarks || 0) : 0;
+  const teachersCount = item ? Number(item.teachersCount || 0) : 0;
+
   if (!s) {
-    if (uniStudentEl) uniStudentEl.value = "";
     if (uniSelectedNameEl) uniSelectedNameEl.textContent = "(Selecciona o escribe un estudiante)";
     if (uniSelectedMetaEl) uniSelectedMetaEl.textContent = "—";
     uniSetDotByLevel_(0);
     uniClearLevelUI_();
     if (uniWhoList) uniWhoList.textContent = "—";
+    __uniPendingLevel = 0;
     return;
   }
 
-  if (uniStudentEl) uniStudentEl.value = s;
+  if (uniSelectedNameEl) uniSelectedNameEl.textContent = s;
 
-  const item = uniFindInCache_(s);
-  const maxLevel = item ? Number(item.maxLevel || 0) : 0;
-  const total = item ? Number(item.totalMarks || 0) : 0;
-  const teachersCount = item ? Number(item.teachersCount || 0) : 0;
-
-if (uniSelectedNameEl) uniSelectedNameEl.textContent = s;
-if (uniSelectedMetaEl) {
-  uniSelectedMetaEl.textContent = item
-    ? `Nivel ${maxLevel} • Llamados: ${total} • Docentes: ${teachersCount}`
-    : `Nuevo (sin reportes este mes aún)`;
-}
+  if (uniSelectedMetaEl) {
+    uniSelectedMetaEl.textContent = item
+      ? `Nivel ${maxLevel} • Llamados: ${total} • Docentes: ${teachersCount}`
+      : `Nuevo (sin reportes este mes aún)`;
+  }
 
   uniSetDotByLevel_(maxLevel);
   uniApplyLevelUI_(maxLevel);
+  __uniPendingLevel = 0;
 
-  if (item && Array.isArray(item.who) && item.who.length) uniRenderWho_(item.who);
-  else if (uniWhoList) uniWhoList.textContent = "—";
+  if (item && Array.isArray(item.who) && item.who.length) {
+    uniRenderWho_(item.who);
+  } else if (uniWhoList) {
+    uniWhoList.textContent = "—";
+  }
 }
 
 /* ======= views ======= */
@@ -14802,12 +18035,41 @@ async function uniDeleteOne_(studentName, row){
   }
 }
 
-async function uniDoMarkLevel(level) {
+function uniDoMarkLevel(level) {
+  const lvl = Number(level || 0);
+  if (lvl < 1 || lvl > 4) return;
+
+  const student = uniNormalizeStudent_(__uniCurrentStudent);
+  const item = student ? uniFindInCache_(student) : null;
+  const currentMax = item ? Number(item.maxLevel || 0) : 0;
+
+  if (!student) {
+    uniSetHint_("Primero selecciona un estudiante.");
+    return;
+  }
+
+  if (lvl > currentMax + 1) {
+    uniSetHint_(`Debes marcar primero el nivel ${currentMax + 1}.`);
+    uniApplyLevelUI_(currentMax);
+    __uniPendingLevel = 0;
+    return;
+  }
+
+  __uniPendingLevel = lvl;
+  uniApplyLevelUI_(Math.max(currentMax, lvl));
+  uniSetHint_(`Nivel ${lvl} seleccionado. Presiona "Reportar" para guardar.`);
+}
+
+
+async function uniSubmitReport_() {
   const profile = requireLogin();
   if (!profile) return;
 
-  const lvl = Number(level || 0);
-  if (lvl < 1 || lvl > 4) return;
+  const lvl = Number(__uniPendingLevel || 0);
+  if (lvl < 1 || lvl > 4) {
+    uniSetHint_("Debes seleccionar un nivel antes de reportar.");
+    return;
+  }
 
   const student = uniNormalizeStudent_(__uniCurrentStudent);
   if (!student) {
@@ -14815,39 +18077,24 @@ async function uniDoMarkLevel(level) {
     return;
   }
 
+  const observation = normalizeObservation_(uniObservationEl ? uniObservationEl.value : "");
+
   const item = uniFindInCache_(student);
   const currentMax = item ? Number(item.maxLevel || 0) : 0;
 
   if (lvl > currentMax + 1) {
     uniSetHint_(`Debes marcar primero el nivel ${currentMax + 1}.`);
     uniApplyLevelUI_(currentMax);
+    __uniPendingLevel = currentMax;
     return;
   }
-
-let observation = "";
-
-if (lvl === 4 && currentMax >= 4) {
-  observation = "";
-} else {
-  observation = await openObservationModal_({
-    title: "Observación · Porte del uniforme",
-    sub: `Nivel ${lvl} para ${student}`,
-    placeholder: "Ej: No trajo las medias institucionales, lleva buzo no autorizado, etc.",
-    initialValue: ""
-  });
-
-  if (observation === null) {
-    uniSetHint_("Registro cancelado.");
-    uniApplyLevelUI_(currentMax);
-    return;
-  }
-}
 
   try {
     setLoading(true, "Guardando…", "Registrando porte del uniforme.");
 
     const resp = await gsUniformMark({
       month: uniMonthKey_(),
+      course: uniCourseEl ? uniCourseEl.value : "",
       student,
       level: lvl,
       observation,
@@ -14857,15 +18104,25 @@ if (lvl === 4 && currentMax >= 4) {
       date: new Date().toISOString()
     });
 
-    if (resp && Array.isArray(resp.list)) __uniCacheList = resp.list;
-    else await uniReloadReportedList(false);
+if (resp && Array.isArray(resp.list)) {
+  behaviorKindSetCache_("uniform", resp.list);
+} else {
+  const items = await gsUniformList(uniMonthKey_());
+  behaviorKindSetCache_("uniform", items);
+}
 
-    uniUpdateSelectedBox_(student);
-    __uniView = "list";
-    uniRenderReportedList_(__uniCacheList);
-    if (btnUniBack) btnUniBack.hidden = true;
+behaviorRefreshOpenUI_("uniform");
 
-    if (resp && resp.ok && lvl >= 4) {
+  __uniPendingLevel = 0;
+if (uniObservationEl) uniObservationEl.value = "";
+
+uniUpdateSelectedBox_(student);
+
+const uniUpdatedItem = uniFindInCache_(student);
+const uniUpdatedMax = uniUpdatedItem ? Number(uniUpdatedItem.maxLevel || 0) : lvl;
+uniApplyLevelUI_(uniUpdatedMax);
+
+    if (resp && resp.ok && resp.justReported && lvl >= 4) {
       const msg = String(resp.wa_msg || "").trim();
       if (msg) {
         await confirmAndShareReport_({
@@ -14888,69 +18145,56 @@ if (lvl === 4 && currentMax >= 4) {
   }
 }
 
-
 /* ======= modal open/close/bind ======= */
 function openUniformModal() {
   if (!uniformModal) return;
+
   uniformModal.hidden = false;
+  uniformModal.removeAttribute("hidden");
+  uniformModal.style.display = "flex";
 
   uniSetHint_("");
-  __uniView = "list";
+  __uniPendingLevel = 0;
+  __uniView = "report";
   __uniCurrentStudent = "";
-  uniUpdateSelectedBox_("");
-  uniRenderReportedList_(__uniCacheList);
 
-  if (btnUniBack) btnUniBack.hidden = true;
-  uniReloadReportedList(true);
+  if (uniObservationEl) uniObservationEl.value = "";
+  uniClearLevelUI_();
+  uniUpdateSelectedBox_("");
 }
 
 function closeUniformModal() {
   if (!uniformModal) return;
+
   uniformModal.hidden = true;
 
-  __uniView = "list";
+  __uniPendingLevel = 0;
+  __uniView = "report";
   __uniCurrentStudent = "";
+
+  if (uniObservationEl) uniObservationEl.value = "";
+  uniClearLevelUI_();
   uniSetHint_("");
   uniUpdateSelectedBox_("");
-  if (btnUniBack) btnUniBack.hidden = true;
 }
 
 function uniBindUI_() {
-  // ✅ Mantener menú/submenú abiertos al abrir el modal
   if (btnUniform) {
-    btnUniform.addEventListener("click", (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      openUniformModal();
-    });
+    btnUniform.onclick = () => {
+      setMenuOpen(false);
+      openBehaviorHub_("uniform");
+    };
   }
 
-  // ✅ Evitar que cualquier click dentro del modal cierre el menú global
   if (uniformModal) {
     uniformModal.addEventListener("click", (e) => e.stopPropagation());
-  }
-
-  if (btnUniClose) {
-    btnUniClose.addEventListener("click", (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      closeUniformModal();
-    });
-  }
-
-  if (btnUniReload) {
-    btnUniReload.addEventListener("click", (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      uniReloadReportedList(true);
-    });
   }
 
   if (btnUniBack) {
     btnUniBack.addEventListener("click", (e) => {
       e.preventDefault();
       e.stopPropagation();
-      uniBackToList_();
+      backToBehaviorHub_();
     });
   }
 
@@ -14959,21 +18203,103 @@ function uniBindUI_() {
       btn.addEventListener("click", (e) => {
         e.preventDefault();
         e.stopPropagation();
+
         const lvl = Number(btn.getAttribute("data-level") || 0);
-        uniDoMarkLevel(lvl);
+        const student = uniNormalizeStudent_(__uniCurrentStudent);
+        const item = student ? uniFindInCache_(student) : null;
+        const currentMax = behaviorLevelFromItem_(item);
+
+        if (!student) {
+          uniSetHint_("Primero selecciona un estudiante.");
+          return;
+        }
+
+        if (lvl > currentMax + 1) {
+          uniSetHint_(`Debes marcar primero el nivel ${currentMax + 1}.`);
+          uniApplyLevelUI_(currentMax);
+          __uniPendingLevel = 0;
+          return;
+        }
+
+        __uniPendingLevel = lvl;
+        uniApplyLevelUI_(Math.max(currentMax, lvl));
+        uniSetHint_(`Nivel ${lvl} seleccionado. Presiona "Reportar" para guardar.`);
       });
     });
   }
 
-if (uniStudentEl) {
-  uniStudentEl.addEventListener("input", () => {
-    const raw = String(uniStudentEl.value || "");
-    uniOnStudentChange_(raw);
-  });
+  if (uniStudentEl) {
+    uniStudentEl.addEventListener("input", () => {
+      const s = uniNormalizeStudent_(uniStudentEl.value || "");
+      __uniCurrentStudent = s;
+      uniUpdateSelectedBox_(s);
+
+      const item = s ? uniFindInCache_(s) : null;
+      uniApplyLevelUI_(behaviorLevelFromItem_(item));
+      __uniPendingLevel = 0;
+    });
+  }
+
+  if (uniStudentSelectEl) {
+    uniStudentSelectEl.addEventListener("change", () => {
+      const s = uniNormalizeStudent_(uniStudentSelectEl.value || "");
+      if (uniStudentEl) uniStudentEl.value = s;
+      __uniCurrentStudent = s;
+      uniUpdateSelectedBox_(s);
+
+      const item = s ? uniFindInCache_(s) : null;
+      uniApplyLevelUI_(behaviorLevelFromItem_(item));
+      __uniPendingLevel = 0;
+    });
+  }
+
+  if (btnUniReport) {
+    btnUniReport.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      uniSubmitReport_();
+    });
+  }
 }
 
+if (btnBehaviorHubClose) btnBehaviorHubClose.onclick = closeBehaviorHub_;
+if (btnBehaviorOpenReport) btnBehaviorOpenReport.onclick = openBehaviorReport_;
+if (btnBehaviorOpenViewer) btnBehaviorOpenViewer.onclick = openBehaviorViewer_;
+
+if (btnDiscBack) btnDiscBack.onclick = backToBehaviorHub_;
+if (btnPiercBack) btnPiercBack.onclick = backToBehaviorHub_;
+if (btnUniBack) btnUniBack.onclick = backToBehaviorHub_;
+
+function behaviorViewerBack_(kind){
+  let studentEl = null;
+
+  if (kind === "discipline") studentEl = discViewerStudent;
+  if (kind === "piercing") studentEl = piercViewerStudent;
+  if (kind === "uniform") studentEl = uniViewerStudent;
+
+  // Si estoy viendo el detalle de un estudiante, vuelvo a la lista
+  if (studentEl && String(studentEl.value || "").trim()) {
+    studentEl.value = "";
+    renderBehaviorViewer_(kind);
+    return;
+  }
+
+  // Si ya estoy en la lista, vuelvo al hub Reportar / Ver reportes
+  backToBehaviorHub_();
 }
 
+if (btnDiscViewerBack) btnDiscViewerBack.onclick = () => behaviorViewerBack_("discipline");
+if (btnPiercViewerBack) btnPiercViewerBack.onclick = () => behaviorViewerBack_("piercing");
+if (btnUniViewerBack) btnUniViewerBack.onclick = () => behaviorViewerBack_("uniform");
+
+if (discViewerCourse) discViewerCourse.onchange = () => renderBehaviorViewer_("discipline");
+if (discViewerStudent) discViewerStudent.onchange = () => renderBehaviorViewer_("discipline");
+
+if (piercViewerCourse) piercViewerCourse.onchange = () => renderBehaviorViewer_("piercing");
+if (piercViewerStudent) piercViewerStudent.onchange = () => renderBehaviorViewer_("piercing");
+
+if (uniViewerCourse) uniViewerCourse.onchange = () => renderBehaviorViewer_("uniform");
+if (uniViewerStudent) uniViewerStudent.onchange = () => renderBehaviorViewer_("uniform");
 
 /* ======= Poll ======= */
 function uniStartPolling_() {
@@ -14984,25 +18310,11 @@ function uniStartPolling_() {
     const admin = isAdminMode();
     if (!p && !admin) return;
 
-    if (!uniformModal || uniformModal.hidden === true) {
-      try { __uniCacheList = await gsUniformList(uniMonthKey_()); } catch {}
-      return;
-    }
-
     try {
       const items = await gsUniformList(uniMonthKey_());
-      __uniCacheList = items;
 
-      const isTyping = (uniStudentEl && document.activeElement === uniStudentEl);
-
-      if (__uniCurrentStudent && !isTyping) uniUpdateSelectedBox_(__uniCurrentStudent);
-
-      if (__uniView === "detail") {
-        if (__uniCurrentStudent) uniRenderDetailView_();
-        return;
-      }
-
-      uniRenderReportedList_(items);
+      behaviorKindSetCache_("uniform", items);
+      behaviorRefreshOpenUI_("uniform");
 
     } catch {
       // silencioso
@@ -16766,14 +20078,21 @@ function setRecordsOpen(open) {
 setRecordsOpen(false);
 btnToggleRecords.addEventListener("click", () => setRecordsOpen(recordsPanel.hidden));
 
-const APP_BUILD = "2026-04-10-56";
+const APP_BUILD = "2026-04-10-57";
 
 // ======= Reset / Refresh Service Worker + Cache =======
+let __hardRefreshRunning = false;
+
 async function hardRefreshPWA() {
+  if (__hardRefreshRunning) return;
+  __hardRefreshRunning = true;
+
   try {
     setStatus("warn", "Actualizando…", "Borrando caché y reiniciando la app.");
 
-    // 🔥 orden de suicidio al SW activo
+    // ✅ Marca que este reload viene de una actualización controlada
+    sessionStorage.setItem("showRefreshAfterReload", "1");
+
     if ("serviceWorker" in navigator) {
       const reg = await navigator.serviceWorker.getRegistration();
       if (reg && reg.active) {
@@ -16781,35 +20100,28 @@ async function hardRefreshPWA() {
       }
     }
 
-    // 🧹 borrar caches desde la app
     if ("caches" in window) {
       const keys = await caches.keys();
       await Promise.all(keys.map(k => caches.delete(k)));
     }
 
-    // 🔄 romper caché del navegador
     const url = new URL(location.href);
     url.searchParams.set("v", Date.now().toString());
     location.replace(url.toString());
 
   } catch (e) {
+    __hardRefreshRunning = false;
     setStatus("bad", "No se pudo actualizar", "Cierra la app y ábrela de nuevo.");
   }
 }
 
 btnRefreshSW.addEventListener("click", async () => {
   try {
-    // ✅ guardar flag para mostrar animación después del reload
-    sessionStorage.setItem("showRefreshAfterReload", "1");
-
-    // ✅ mostrar animación actual
     showRefreshSpin("Actualizando…");
 
-    // pequeño delay para que se vea antes del reload
     await new Promise(resolve => requestAnimationFrame(() => resolve()));
     await new Promise(resolve => setTimeout(resolve, 60));
 
-    // ✅ refrescar inmediatamente
     await hardRefreshPWA();
 
   } catch (e) {
@@ -16818,7 +20130,7 @@ btnRefreshSW.addEventListener("click", async () => {
   }
 });
 
-// ✅ NUEVO: al abrir la app, ejecutar la misma actualización del botón
+// ✅ Al abrir la app: hace hard refresh UNA sola vez por sesión
 window.addEventListener("load", async () => {
   try {
     const alreadyAutoRefreshed = sessionStorage.getItem("didAutoRefreshOnOpen");
@@ -16826,7 +20138,11 @@ window.addEventListener("load", async () => {
     if (alreadyAutoRefreshed === "1") return;
 
     sessionStorage.setItem("didAutoRefreshOnOpen", "1");
-    sessionStorage.setItem("showRefreshAfterReload", "1");
+
+    showRefreshSpin("Actualizando…");
+
+    await new Promise(resolve => requestAnimationFrame(() => resolve()));
+    await new Promise(resolve => setTimeout(resolve, 60));
 
     await hardRefreshPWA();
   } catch (e) {
@@ -16837,6 +20153,7 @@ window.addEventListener("load", async () => {
 if (btnLogout) {
   btnLogout.addEventListener("click", () => {
     sessionStorage.removeItem("didAutoRefreshOnOpen");
+    sessionStorage.removeItem("showRefreshAfterReload");
     logout();
   });
 }
@@ -16850,13 +20167,11 @@ if ("serviceWorker" in navigator) {
     try {
       const savedBuild = localStorage.getItem("APP_BUILD_INSTALLED") || "";
 
-      // primera vez: solo guardar versión actual
       if (!savedBuild) {
         localStorage.setItem("APP_BUILD_INSTALLED", APP_BUILD);
         return;
       }
 
-      // si cambió el build del HTML, hacer hard refresh una sola vez
       if (savedBuild !== APP_BUILD) {
         if (__autoBuildRefreshRunning) return;
         __autoBuildRefreshRunning = true;
@@ -16867,32 +20182,23 @@ if ("serviceWorker" in navigator) {
     } catch {}
   }
 
-  async function registerAndUpdateSW_() {
-    try {
-      const reg = await navigator.serviceWorker.register(`./sw.js?v=${encodeURIComponent(APP_BUILD)}`);
-      try { await reg.update(); } catch {}
-
-      if (reg.waiting) {
-        reg.waiting.postMessage({ type: "SKIP_WAITING" });
-      }
-
-      reg.addEventListener("updatefound", () => {
-        const newWorker = reg.installing;
-        if (!newWorker) return;
-
-        newWorker.addEventListener("statechange", () => {
-          if (newWorker.state === "installed" && navigator.serviceWorker.controller) {
-            newWorker.postMessage({ type: "SKIP_WAITING" });
-          }
-        });
-      });
-    } catch {}
-  }
-
   navigator.serviceWorker.addEventListener("controllerchange", () => {
     if (__swReloading) return;
+
+    const controlledRefresh =
+      sessionStorage.getItem("showRefreshAfterReload") === "1";
+
+    if (!controlledRefresh) return;
+
     __swReloading = true;
-    location.reload();
+    sessionStorage.removeItem("showRefreshAfterReload");
+
+    // ✅ evita segundo reload inmediato si hardRefreshPWA ya hizo location.replace
+    setTimeout(() => {
+      if (!__hardRefreshRunning) {
+        location.reload();
+      }
+    }, 250);
   });
 
   window.addEventListener("load", async () => {
@@ -16906,6 +20212,621 @@ if ("serviceWorker" in navigator) {
       await checkAppBuildAndRefresh_();
     }
   });
+}
+
+// ======= LLEGADAS TARDE =======
+const btnLlegadasTarde = $("btnLlegadasTarde");
+const lateArrivalModal = $("lateArrivalModal");
+const lateCourseEl = $("lateCourse");
+const lateStudentEl = $("lateStudent");
+const lateStudentSelectEl = $("lateStudentSelect");
+const lateStudentsListEl = $("lateStudentsList");
+const lateObservationEl = $("lateObservation");
+const lateHintEl = $("lateHint");
+const btnLateReport = $("btnLateReport");
+const btnLateBack = $("btnLateBack");
+
+let __lateTimes = 0;
+let __latePollTimer = null;
+
+let __lateSaving = false;
+let __lateLastSubmitKey = "";
+let __lateLastSubmitAt = 0;
+
+function lateSetHint_(msg){
+  if (lateHintEl) lateHintEl.textContent = String(msg || "");
+}
+
+function lateRenderCourses_(courses){
+  if (!lateCourseEl) return;
+
+  const list = (courses || []).map(c => String(c || "").trim()).filter(Boolean);
+  const prev = String(lateCourseEl.value || "").trim();
+
+  lateCourseEl.innerHTML = "";
+
+  const optAll = document.createElement("option");
+  optAll.value = "__ALL__";
+  optAll.textContent = "Todos los cursos";
+  lateCourseEl.appendChild(optAll);
+
+  list.forEach(c => {
+    const opt = document.createElement("option");
+    opt.value = c;
+    opt.textContent = c;
+    lateCourseEl.appendChild(opt);
+  });
+
+  if (prev && (prev === "__ALL__" || list.includes(prev))) {
+    lateCourseEl.value = prev;
+  } else {
+    lateCourseEl.value = "__ALL__";
+  }
+}
+
+function lateRenderStudents_(students){
+  const list = Array.isArray(students) ? students : [];
+
+  if (lateStudentsListEl) {
+    lateStudentsListEl.innerHTML = "";
+    list.forEach(s => {
+      const opt = document.createElement("option");
+      opt.value = String(s || "");
+      lateStudentsListEl.appendChild(opt);
+    });
+  }
+
+  if (lateStudentSelectEl) {
+    lateStudentSelectEl.innerHTML = "";
+
+    const ph = document.createElement("option");
+    ph.value = "";
+    ph.textContent = "";
+    lateStudentSelectEl.appendChild(ph);
+
+    list.forEach(s => {
+      const opt = document.createElement("option");
+      opt.value = String(s || "");
+      opt.textContent = String(s || "");
+      lateStudentSelectEl.appendChild(opt);
+    });
+  }
+}
+
+async function lateLoadCourses_(){
+  const resp = await gsCoursesList_();
+
+  const courses =
+    faltasPickArray_(resp, ["courses", "items", "list"]) ||
+    (Array.isArray(resp) ? resp : null);
+
+  if (!Array.isArray(courses)) {
+    throw new Error("No pude cargar cursos.");
+  }
+
+  lateRenderCourses_(courses);
+
+ const firstCourse = String(lateCourseEl && lateCourseEl.value || "").trim();
+
+if (firstCourse && firstCourse !== "__ALL__") {
+  await lateLoadStudentsForCourse_(firstCourse);
+} else {
+  lateRenderStudents_([]);
+}
+}
+
+async function lateLoadStudentsForCourse_(course){
+  const resp = await gsCourseStudents_(course);
+
+  const students =
+    faltasPickArray_(resp, ["students", "items", "list"]) ||
+    (Array.isArray(resp) ? resp : null);
+
+  if (!Array.isArray(students)) {
+    throw new Error("No pude cargar estudiantes.");
+  }
+
+  lateRenderStudents_(students);
+}
+
+function lateClearTimes_(){
+  document.querySelectorAll("[data-late-times]").forEach(btn => {
+    btn.classList.remove("active");
+  });
+}
+
+function lateApplyTimes_(times){
+  __lateTimes = Number(times || 0);
+  lateClearTimes_();
+
+  document.querySelectorAll("[data-late-times]").forEach(btn => {
+    if (Number(btn.getAttribute("data-late-times")) === __lateTimes) {
+      btn.classList.add("active");
+    }
+  });
+}
+
+function lateMonthKey_(){
+  if (typeof currentMonthKey_ === "function") return currentMonthKey_();
+  if (typeof monthKeyFromDate === "function") return monthKeyFromDate(new Date());
+
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+}
+
+function lateDeviceId_(){
+  if (typeof getDeviceId === "function") return getDeviceId();
+  if (typeof getDeviceId_ === "function") return getDeviceId_();
+  return "";
+}
+
+async function gsLateArrivalReport(payload){ 
+  const res = await fetch(GS_WEBAPP_URL, {
+    method: "POST",
+    body: JSON.stringify({
+      action: "late_arrival_report",
+      month: lateMonthKey_(),
+      ...payload,
+      key: GS_API_KEY
+    })
+  });
+
+  const data = await res.json().catch(() => null);
+  if (!data) throw new Error("Respuesta inválida del servidor");
+  if (!data.ok) throw new Error(data.msg || data.error || "No se pudo guardar la llegada tarde.");
+  return data;
+}
+
+async function gsLateArrivalList(){
+  const res = await fetch(GS_WEBAPP_URL, {
+    method: "POST",
+    body: JSON.stringify({
+      action: "late_arrival_list",
+      month: lateMonthKey_(),
+      key: GS_API_KEY
+    })
+  });
+
+  const data = await res.json().catch(() => null);
+  if (!data) throw new Error("Respuesta inválida del servidor");
+  if (!data.ok) throw new Error(data.msg || data.error || "No se pudo cargar llegadas tarde.");
+  return Array.isArray(data.items) ? data.items : [];
+}
+
+async function gsLateArrivalChangesToken(){
+  const res = await fetch(GS_WEBAPP_URL, {
+    method: "POST",
+    body: JSON.stringify({
+      action: "late_arrival_changes_token",
+      month: lateMonthKey_(),
+      key: GS_API_KEY
+    })
+  });
+
+  const data = await res.json().catch(() => null);
+
+  if (!data) {
+    throw new Error("Respuesta inválida del servidor");
+  }
+
+  if (!data.ok) {
+    throw new Error(data.msg || data.error || "No se pudo consultar cambios de llegadas tarde.");
+  }
+
+  return String(data.token || "");
+}
+
+async function gsLateArrivalAction_(suffix, payload){
+  const res = await fetch(GS_WEBAPP_URL, {
+    method: "POST",
+    body: JSON.stringify({
+      action: `late_arrival_${suffix}`,
+      month: lateMonthKey_(),
+      ...payload,
+      key: GS_API_KEY
+    })
+  });
+
+  const data = await res.json().catch(() => null);
+
+  if (!data) throw new Error("Respuesta inválida del servidor");
+  if (!data.ok) throw new Error(data.msg || data.error || "Error en llegadas tarde");
+
+  return data;
+}
+
+async function lateApplyMutationResp_(resp, student){
+  if (Array.isArray(resp.list)) {
+    __lateCacheList = resp.list;
+  } else {
+    await lateRefreshList_();
+  }
+
+  try {
+    __latePollToken = await gsLateArrivalChangesToken();
+  } catch {}
+
+  if (typeof lateSaveCacheToStorage_ === "function") {
+    lateSaveCacheToStorage_();
+  }
+
+  lateRenderReportedList_();
+  lateUpdateAutoBox_();
+
+  if (student && lateFindInCache_(student)) {
+    lateRenderDetail_(student);
+  } else {
+    lateClearDetail_();
+  }
+}
+
+async function lateDeleteStudent_(student){
+  student = String(student || "").trim();
+  if (!student) return;
+
+  const ok = typeof confirmPro === "function"
+    ? await confirmPro({
+        title: "Eliminar reportes",
+        msg: `¿Seguro que deseas borrar TODOS los reportes de llegada tarde de "${student}" este mes?`,
+        okText: "Sí, eliminar",
+        cancelText: "Cancelar",
+        danger: true
+      })
+    : confirm(`¿Borrar TODOS los reportes de llegada tarde de "${student}" este mes?`);
+
+  if (!ok) return;
+
+  try {
+    setLoading(true, "Eliminando", "Borrando reportes de llegadas tarde...");
+    const resp = await gsLateArrivalAction_("delete_student", { student });
+    await lateApplyMutationResp_(resp, "");
+    lateSetHint_(resp.msg || "Reportes eliminados ✅");
+  } catch (e) {
+    lateSetHint_(String(e && e.message ? e.message : e));
+  } finally {
+    setLoading(false);
+  }
+}
+
+async function lateDeleteOne_(student, row){
+  student = String(student || "").trim();
+  if (!student || !row) return;
+
+  const teacher = String(row.teacher || "").trim();
+  const times = Number(row.times || 0);
+  const dt = String(row.dt || "").trim();
+
+  const ok = typeof confirmPro === "function"
+    ? await confirmPro({
+        title: "Eliminar reporte",
+        msg: `¿Eliminar la ${times}ª llegada tarde de "${student}" reportada por ${teacher}?`,
+        okText: "Sí, eliminar",
+        cancelText: "Cancelar",
+        danger: true
+      })
+    : confirm(`¿Eliminar la ${times}ª llegada tarde de "${student}"?`);
+
+  if (!ok) return;
+
+  try {
+    setLoading(true, "Eliminando", "Borrando reporte individual...");
+    const resp = await gsLateArrivalAction_("delete_one", {
+      student,
+      teacher,
+      times,
+      dt
+    });
+
+    await lateApplyMutationResp_(resp, student);
+    lateSetHint_(resp.msg || "Reporte eliminado ✅");
+  } catch (e) {
+    lateSetHint_(String(e && e.message ? e.message : e));
+  } finally {
+    setLoading(false);
+  }
+}
+
+function latePromptObservationPro_(currentObs){
+  return new Promise(resolve => {
+    const overlay = document.createElement("div");
+    overlay.className = "modal-backdrop";
+    overlay.style.zIndex = "10000001";
+
+    overlay.innerHTML = `
+      <div class="modal-card late-edit-card">
+        <h2 class="modal-title">Editar observación</h2>
+        <p class="modal-sub">Actualiza la observación de esta llegada tarde.</p>
+
+        <label class="modal-label">Observación</label>
+        <textarea id="lateEditObsInput" class="modal-input behavior-observation">${escapeHtml(currentObs || "")}</textarea>
+
+        <div class="modal-actions" style="justify-content:flex-end;">
+          <button type="button" class="btn btn-ghost" id="btnLateEditCancel">Cancelar</button>
+          <button type="button" class="btn btn-primary" id="btnLateEditSave">Guardar</button>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(overlay);
+
+    const input = overlay.querySelector("#lateEditObsInput");
+    const btnCancel = overlay.querySelector("#btnLateEditCancel");
+    const btnSave = overlay.querySelector("#btnLateEditSave");
+
+    setTimeout(() => {
+      input.focus();
+      input.setSelectionRange(input.value.length, input.value.length);
+    }, 50);
+
+    function close(value){
+      overlay.remove();
+      resolve(value);
+    }
+
+    btnCancel.onclick = () => close(null);
+    btnSave.onclick = () => close(input.value);
+
+    overlay.addEventListener("click", e => {
+      if (e.target === overlay) close(null);
+    });
+  });
+}
+
+
+async function lateEditOne_(student, row){
+  student = String(student || "").trim();
+  if (!student || !row) return;
+
+  const teacher = String(row.teacher || "").trim();
+  const times = Number(row.times || 0);
+  const dt = String(row.dt || "").trim();
+  const currentObs = String(row.observation || "").trim();
+
+ const observation = await latePromptObservationPro_(currentObs);
+  if (observation === null) return;
+
+  try {
+    setLoading(true, "Actualizando", "Guardando cambio...");
+    const resp = await gsLateArrivalAction_("update_one", {
+      student,
+      teacher,
+      times,
+      dt,
+      observation
+    });
+
+    await lateApplyMutationResp_(resp, student);
+    lateSetHint_(resp.msg || "Reporte actualizado ✅");
+  } catch (e) {
+    lateSetHint_(String(e && e.message ? e.message : e));
+  } finally {
+    setLoading(false);
+  }
+}
+
+async function openLateArrivalModal_(){ 
+  if (!lateArrivalModal) return;
+
+  lateArrivalModal.hidden = false;
+  lateArrivalModal.removeAttribute("hidden");
+  lateArrivalModal.style.display = "flex";
+
+  lateSetHint_("");
+  lateApplyTimes_(0);
+  lateClearDetail_();
+
+  if (lateObservationEl) lateObservationEl.value = "";
+  if (lateStudentEl) lateStudentEl.value = "";
+
+  /* ✅ Carga instantánea desde localStorage */
+  lateLoadCacheFromStorage_();
+  lateRenderReportedList_();
+  lateUpdateAutoBox_();
+
+  /* ✅ Polling activo */
+  lateStartPolling_();
+
+  /* ✅ Cursos y actualización real en segundo plano */
+  (async () => {
+    try {
+      await lateLoadCourses_();
+
+      const token = await gsLateArrivalChangesToken();
+
+      if (!__latePollToken || token !== __latePollToken) {
+        __latePollToken = token;
+        await lateRefreshList_();
+      }
+    } catch (e) {
+      lateSetHint_(String(e && e.message ? e.message : e));
+    }
+  })();
+}
+
+function closeLateArrivalModal_(){
+  if (!lateArrivalModal) return;
+
+  lateArrivalModal.hidden = true;
+  lateApplyTimes_(0);
+  lateSetHint_("");
+  lateClearDetail_();
+
+  if (lateObservationEl) lateObservationEl.value = "";
+  if (lateStudentEl) lateStudentEl.value = "";
+}
+
+function bindLateArrivalUI_(){
+  if (btnLlegadasTarde) {
+    btnLlegadasTarde.addEventListener("click", async () => {
+      setMenuOpen(false);
+      await openLateArrivalModal_();
+    });
+  }
+
+if (btnLateBack) {
+  btnLateBack.addEventListener("click", () => {
+    if (lateArrivalModal && lateArrivalModal.classList.contains("late-detail-mode")) {
+      lateBackToMonthlyList_();
+      return;
+    }
+
+    closeLateArrivalModal_();
+  });
+}
+
+if (lateCourseEl) {
+  lateCourseEl.addEventListener("change", async () => {
+    const course = String(lateCourseEl.value || "").trim();
+
+    if (lateStudentEl) lateStudentEl.value = "";
+    if (lateStudentSelectEl) lateStudentSelectEl.value = "";
+
+    __lateCurrentStudent = "";
+
+    lateRenderReportedList_();
+    lateUpdateAutoBox_();
+
+    if (!course || course === "__ALL__") {
+      lateRenderStudents_([]);
+      lateSetHint_("Selecciona un curso específico para cargar estudiantes.");
+      return;
+    }
+
+    lateSetHint_("Cargando estudiantes...");
+
+    try {
+      await lateLoadStudentsForCourse_(course);
+      lateSetHint_("");
+    } catch (e) {
+      lateRenderStudents_([]);
+      lateSetHint_(String(e && e.message ? e.message : e));
+    }
+  });
+}
+
+  if (lateStudentSelectEl && lateStudentEl) {
+    lateStudentSelectEl.addEventListener("change", () => {
+      lateStudentEl.value = lateStudentSelectEl.value || "";
+      __lateCurrentStudent = lateStudentEl.value;
+      lateUpdateAutoBox_();
+    });
+  }
+
+  if (lateStudentEl) {
+  lateStudentEl.addEventListener("input", () => {
+  __lateCurrentStudent = lateStudentEl.value || "";
+  lateUpdateAutoBox_();
+  lateRenderDetail_(__lateCurrentStudent);
+});
+  }
+
+if (btnLateReport) {
+  btnLateReport.addEventListener("click", async () => {
+    if (__lateSaving) return;
+
+    const profile = loadProfile();
+    const teacher = String((profile && profile.name) || teacherNameEl.value || "").trim();
+    const email = String(profile?.email || "").trim().toLowerCase();
+
+    const course = String(lateCourseEl && lateCourseEl.value || "").trim();
+    const student = String(lateStudentEl && lateStudentEl.value || "").trim();
+    const observation = String(lateObservationEl && lateObservationEl.value || "").trim();
+
+    const item = lateFindInCache_(student);
+    const current = item ? Number(item.maxTimes || 0) : 0;
+
+    if (!teacher) return lateSetHint_("Falta el docente.");
+
+    if (!course || course === "__ALL__") {
+      return lateSetHint_("Selecciona un curso específico para reportar.");
+    }
+
+    if (!student) return lateSetHint_("Selecciona o escribe el estudiante.");
+
+   if (current >= 4) {
+  await lateShareReachedFour_(student);
+  return;
+}
+
+    const submitKey = [
+      lateMonthKey_(),
+      lateNormalizeCourse_(course),
+      lateNormalizeKey_(student),
+      lateNormalizeKey_(teacher),
+      observation
+    ].join("|");
+
+    const now = Date.now();
+
+    if (__lateLastSubmitKey === submitKey && now - __lateLastSubmitAt < 8000) {
+      return lateSetHint_("Este reporte ya se está guardando. Espera un momento.");
+    }
+
+    __lateSaving = true;
+    __lateLastSubmitKey = submitKey;
+    __lateLastSubmitAt = now;
+
+    btnLateReport.disabled = true;
+    btnLateReport.textContent = "Guardando...";
+
+    try {
+      setLoading(true, "Guardando", "Registrando llegada tarde.");
+
+      const resp = await gsLateArrivalReport({
+        teacher,
+        email,
+        device_id: lateDeviceId_(),
+        course,
+        student,
+        observation
+      });
+
+      if (Array.isArray(resp.list)) {
+        __lateCacheList = resp.list;
+      } else {
+        await lateRefreshList_();
+      }
+
+      try {
+  __latePollToken = await gsLateArrivalChangesToken();
+} catch {}
+
+lateSaveCacheToStorage_();
+
+      lateRenderReportedList_();
+      lateUpdateAutoBox_();
+      lateRenderDetail_(student);
+
+      if (lateObservationEl) lateObservationEl.value = "";
+
+lateSuccessToast_(Number(resp.times || 0));
+
+      if (resp && resp.justReported && String(resp.wa_msg || "").trim()) {
+        const msg = String(resp.wa_msg || "").trim();
+
+        if (typeof confirmAndShareReport_ === "function") {
+          await confirmAndShareReport_({
+            student,
+            msg,
+            title: "Compartir reporte (Llegadas tarde)"
+          });
+        } else if (navigator.share) {
+          await navigator.share({ text: msg });
+        } else {
+          window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, "_blank");
+        }
+      }
+
+    } catch (e) {
+      lateSetHint_(String(e && e.message ? e.message : e));
+    } finally {
+      __lateSaving = false;
+      btnLateReport.disabled = false;
+      btnLateReport.textContent = "Reportar";
+      setLoading(false);
+    }
+  });
+}
 }
 
 // ======= EVENTOS =======
@@ -16930,6 +20851,11 @@ uniBindUI_();
 uniStartPolling_();
 
 bindObservationModal_();
+
+bindLateArrivalUI_();
+
+lateLoadCacheFromStorage_();
+lateStartPolling_();
 
 document.body.classList.toggle("is-admin", isAdminMode());
 
@@ -17008,8 +20934,11 @@ setInterval(async () => {
 
 }, 15000);
 
+
+
+
 </script>
 
 </body>
 </html>
-g
+
