@@ -64,15 +64,16 @@ h1{font-size:18px; margin:0}
 .sub{margin:4px 0 0; color:var(--muted); font-size:12px}
 
 .container{
-  flex: 1 1 auto;      /* ocupa el espacio entre header y footer */
-  min-height: 0;       /* ✅ CLAVE: permite scroll interno */
-  overflow: hidden;    /* NO scroll del main */
-  
-  max-width: 520px;
-  margin: 12px auto;
-  padding: 0 12px 12px;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
 
-  display: flex;       /* ✅ en columna para controlar alturas */
+  max-width: 520px;
+  width: 100%;
+  margin: 12px auto;
+  padding: 0 12px calc(12px + env(safe-area-inset-bottom));
+
+  display: flex;
   flex-direction: column;
   gap: 12px;
 }
@@ -188,9 +189,10 @@ h2{font-size:16px; margin:0 0 12px}
   .container{
     max-width: 900px;
     margin: 18px auto;
-    padding: 0 14px 60px;
+    padding: 0 14px calc(18px + env(safe-area-inset-bottom));
     gap:14px;
   }
+
   .header{padding: 16px 18px;}
   .row{flex-direction: row;}
   .row .btn{width:auto;}
@@ -675,8 +677,11 @@ body.is-loading{
 
 /* que el área principal use el alto visible */
 .container{
-  max-height: calc(100vh - 120px); /* header+footer aprox */
-  overflow: hidden;                 /* ✅ el main NO scrollea */
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+
+  padding-bottom: calc(70px + env(safe-area-inset-bottom)) !important;
 }
 
 /* ✅ Scroll solo en el panel de registros, sin que el footer tape contenido */
@@ -687,8 +692,7 @@ body.is-loading{
   overflow-y: auto;
   overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
-
-  padding-bottom: calc(90px + env(safe-area-inset-bottom)) !important;
+  padding-bottom: calc(18px + env(safe-area-inset-bottom)) !important;
 }
 
 /* cuando registros está oculto, nada scrollea */
@@ -20087,7 +20091,7 @@ function setRecordsOpen(open) {
 setRecordsOpen(false);
 btnToggleRecords.addEventListener("click", () => setRecordsOpen(recordsPanel.hidden));
 
-const APP_BUILD = "2026-04-10-96";
+const APP_BUILD = "2026-04-10-97";
 
 // ======= Reset / Refresh Service Worker + Cache =======
 let __hardRefreshRunning = false;
