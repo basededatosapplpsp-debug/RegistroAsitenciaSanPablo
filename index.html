@@ -2330,12 +2330,19 @@ body.is-admin #registerActions{
   justify-content: stretch !important;
 }
 
+.behavior-full{
+  padding: 0 !important;
+  align-items: stretch !important;
+  justify-content: stretch !important;
+  bottom: 44px !important; /* llega justo hasta el footer */
+}
+
 .behavior-full .modal-card{
   width: 100vw !important;
   max-width: 100vw !important;
 
-  height: calc(100dvh - 46px - env(safe-area-inset-bottom)) !important;
-  max-height: calc(100dvh - 46px - env(safe-area-inset-bottom)) !important;
+  height: 100% !important;
+  max-height: 100% !important;
 
   border-radius: 0 !important;
   border: 0 !important;
@@ -2353,7 +2360,8 @@ body.is-admin #registerActions{
 #lateArrivalModal.behavior-full .modal-card{
   width: 100% !important;
   max-width: 430px !important;
-  height: 100dvh !important;
+  height: 100% !important;
+  max-height: 100% !important;
   margin: 0 auto !important;
   border-radius: 0 !important;
 }
