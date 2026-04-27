@@ -8760,54 +8760,18 @@ function refreshHomeStatus_() {
 const LS_PROFILE_KEY = "asistencia_profile_v1";
 const LS_DEVICE_KEY  = "asistencia_device_id_v1";
 
-function stableHash_(text) {
-  let h = 2166136261;
-  text = String(text || "").trim().toLowerCase();
-
-  for (let i = 0; i < text.length; i++) {
-    h ^= text.charCodeAt(i);
-    h = Math.imul(h, 16777619);
-  }
-
-  return (h >>> 0).toString(16);
-}
-
-function getEmailForDeviceId_() {
-  try {
-    const typedEmail = String(loginEmailEl?.value || "").trim().toLowerCase();
-    if (typedEmail) return typedEmail;
-
-    const p = loadProfile();
-    const savedEmail = String(p?.email || "").trim().toLowerCase();
-    if (savedEmail) return savedEmail;
-  } catch {}
-
-  return "";
-}
-
 function getDeviceId() {
-  const email = getEmailForDeviceId_();
-
-  if (email) {
-    const id = "dev_" + stableHash_(email);
-    localStorage.setItem(LS_DEVICE_KEY, id);
-    localStorage.setItem("device_id", id);
-    return id;
-  }
-
-  let id = localStorage.getItem(LS_DEVICE_KEY) || localStorage.getItem("device_id");
-
+  let id = localStorage.getItem(LS_DEVICE_KEY);
   if (!id) {
-    id = "dev_tmp_" + Math.random().toString(36).slice(2) + Date.now();
+    // UUID seguro: evita ReferenceError si crypto no existe
+    const c = (typeof window !== "undefined") ? window.crypto : null;
+    id = (c && typeof c.randomUUID === "function")
+      ? c.randomUUID()
+      : "dev-" + Math.random().toString(16).slice(2) + Date.now().toString(16);
+
     localStorage.setItem(LS_DEVICE_KEY, id);
-    localStorage.setItem("device_id", id);
   }
-
   return id;
-}
-
-function getDeviceId_(){
-  return getDeviceId();
 }
 
 
@@ -8821,7 +8785,16 @@ function loadProfile() {
 }
 
 
+function getDeviceId_(){
+  let id = localStorage.getItem("device_id");
 
+  if (!id) {
+    id = "dev_" + Math.random().toString(36).slice(2) + Date.now();
+    localStorage.setItem("device_id", id);
+  }
+
+  return id;
+}
 
 function currentMonthKey_(){
   const now = new Date();
@@ -13656,9 +13629,6 @@ function requireLogin() {
 function updateDeviceIdUI() {
   if (!deviceIdTextEl) return;
   deviceIdTextEl.textContent = getDeviceId();
-}
-if (loginEmailEl) {
-  loginEmailEl.addEventListener("input", updateDeviceIdUI);
 }
 
 if (btnCopyDevice) {
@@ -20108,7 +20078,7 @@ function setRecordsOpen(open) {
 setRecordsOpen(false);
 btnToggleRecords.addEventListener("click", () => setRecordsOpen(recordsPanel.hidden));
 
-const APP_BUILD = "2026-04-10-58";
+const APP_BUILD = "2026-04-10-57";
 
 // ======= Reset / Refresh Service Worker + Cache =======
 let __hardRefreshRunning = false;
