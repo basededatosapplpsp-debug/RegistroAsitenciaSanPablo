@@ -64,16 +64,15 @@ h1{font-size:18px; margin:0}
 .sub{margin:4px 0 0; color:var(--muted); font-size:12px}
 
 .container{
-  flex: 1 1 auto;
-  min-height: 0;
-  overflow: hidden;
-
+  flex: 1 1 auto;      /* ocupa el espacio entre header y footer */
+  min-height: 0;       /* ✅ CLAVE: permite scroll interno */
+  overflow: hidden;    /* NO scroll del main */
+  
   max-width: 520px;
-  width: 100%;
   margin: 12px auto;
-  padding: 0 12px calc(12px + env(safe-area-inset-bottom));
+  padding: 0 12px 12px;
 
-  display: flex;
+  display: flex;       /* ✅ en columna para controlar alturas */
   flex-direction: column;
   gap: 12px;
 }
@@ -189,10 +188,9 @@ h2{font-size:16px; margin:0 0 12px}
   .container{
     max-width: 900px;
     margin: 18px auto;
-    padding: 0 14px calc(18px + env(safe-area-inset-bottom));
+    padding: 0 14px 60px;
     gap:14px;
   }
-
   .header{padding: 16px 18px;}
   .row{flex-direction: row;}
   .row .btn{width:auto;}
@@ -677,22 +675,15 @@ body.is-loading{
 
 /* que el área principal use el alto visible */
 .container{
-  flex: 1 1 auto;
-  min-height: 0;
-  overflow: hidden;
-
-  padding-bottom: calc(70px + env(safe-area-inset-bottom)) !important;
+  max-height: calc(100vh - 120px); /* header+footer aprox */
+  overflow: hidden;                 /* ✅ el main NO scrollea */
 }
 
-/* ✅ Scroll solo en el panel de registros, sin que el footer tape contenido */
+/* el panel de registros es el que scrollea */
 #recordsPanel{
-  flex: 1 1 auto;
-  min-height: 0;
-  max-height: none !important;
-  overflow-y: auto;
-  overflow-x: hidden;
+  max-height: calc(100vh - 220px); /* deja espacio para header + tarjeta registrar + footer */
+  overflow: auto;
   -webkit-overflow-scrolling: touch;
-  padding-bottom: calc(18px + env(safe-area-inset-bottom)) !important;
 }
 
 /* cuando registros está oculto, nada scrollea */
@@ -700,6 +691,19 @@ body.is-loading{
   overflow: hidden;
 }
 
+
+/* ✅ Scroll solo en el panel de registros */
+#recordsPanel{
+  flex: 1 1 auto;         /* toma el espacio restante cuando está abierto */
+  min-height: 0;          /* ✅ CLAVE para overflow */
+  overflow: auto;         /* ✅ aquí sí hay scroll */
+  -webkit-overflow-scrolling: touch;
+}
+
+/* si está oculto, no ocupa espacio */
+#recordsPanel[hidden]{
+  overflow: hidden;
+}
 
 
 
@@ -2326,19 +2330,12 @@ body.is-admin #registerActions{
   justify-content: stretch !important;
 }
 
-.behavior-full{
-  padding: 0 !important;
-  align-items: stretch !important;
-  justify-content: stretch !important;
-  bottom: 44px !important; /* llega justo hasta el footer */
-}
-
 .behavior-full .modal-card{
   width: 100vw !important;
   max-width: 100vw !important;
 
-  height: 100% !important;
-  max-height: 100% !important;
+  height: calc(100dvh - 46px - env(safe-area-inset-bottom)) !important;
+  max-height: calc(100dvh - 46px - env(safe-area-inset-bottom)) !important;
 
   border-radius: 0 !important;
   border: 0 !important;
@@ -3493,10 +3490,6 @@ body{
 }
 
 .container{
-  flex: 1 1 auto;
-  min-height: 0;
-  overflow: hidden;
-
   padding-bottom: calc(70px + env(safe-area-inset-bottom)) !important;
 }
 
@@ -20091,7 +20084,7 @@ function setRecordsOpen(open) {
 setRecordsOpen(false);
 btnToggleRecords.addEventListener("click", () => setRecordsOpen(recordsPanel.hidden));
 
-const APP_BUILD = "2026-04-10-97";
+const APP_BUILD = "2026-04-10-95";
 
 // ======= Reset / Refresh Service Worker + Cache =======
 let __hardRefreshRunning = false;
