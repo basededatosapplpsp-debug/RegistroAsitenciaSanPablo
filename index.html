@@ -166,16 +166,19 @@ h2{font-size:16px; margin:0 0 12px}
   bottom: 0;
   z-index: 50;
 
-  height: 44px; /* 👈 importante altura fija */
+  min-height: 42px;
   padding: 8px 16px calc(8px + env(safe-area-inset-bottom));
   border-top: 1px solid var(--line);
   background: rgba(11,18,32,.86);
   backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
 
   display:flex;
   justify-content:center;
   align-items:center;
+  text-align:center;
 }
+
 
 /* ===== Mobile: botones full width ===== */
 @media (max-width: 699px){
@@ -2333,10 +2336,8 @@ body.is-admin #registerActions{
 .behavior-full .modal-card{
   width: 100vw !important;
   max-width: 100vw !important;
-
-  height: calc(100dvh - 46px - env(safe-area-inset-bottom)) !important;
-  max-height: calc(100dvh - 46px - env(safe-area-inset-bottom)) !important;
-
+  height: 100dvh !important;
+  max-height: 100dvh !important;
   border-radius: 0 !important;
   border: 0 !important;
   padding: 0 !important;
@@ -3484,20 +3485,13 @@ button[data-uni-edit] + button[data-uni-del-one]{
   100%{ transform: scale(1); opacity: 1; }
 }
 
-/* ✅ Footer fijo sin tapar contenido en iOS/PWA */
 body{
   padding-bottom: calc(46px + env(safe-area-inset-bottom));
 }
 
 .container{
-  padding-bottom: calc(70px + env(safe-area-inset-bottom)) !important;
+  padding-bottom: calc(58px + env(safe-area-inset-bottom)) !important;
 }
-
-/* ✅ Solo listas de viewer, para que el último reporte no quede debajo del botón/footer */
-.behavior-viewer-list{
-  padding-bottom: calc(90px + env(safe-area-inset-bottom)) !important;
-}
-
 
 #btnBehaviorHubClose{
   position: fixed !important;
@@ -20084,7 +20078,7 @@ function setRecordsOpen(open) {
 setRecordsOpen(false);
 btnToggleRecords.addEventListener("click", () => setRecordsOpen(recordsPanel.hidden));
 
-const APP_BUILD = "2026-04-10-95";
+const APP_BUILD = "2026-04-10-57";
 
 // ======= Reset / Refresh Service Worker + Cache =======
 let __hardRefreshRunning = false;
