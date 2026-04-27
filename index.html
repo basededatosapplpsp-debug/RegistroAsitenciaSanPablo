@@ -679,11 +679,16 @@ body.is-loading{
   overflow: hidden;                 /* ✅ el main NO scrollea */
 }
 
-/* el panel de registros es el que scrollea */
+/* ✅ Scroll solo en el panel de registros, sin que el footer tape contenido */
 #recordsPanel{
-  max-height: calc(100vh - 220px); /* deja espacio para header + tarjeta registrar + footer */
-  overflow: auto;
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: none !important;
+  overflow-y: auto;
+  overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
+
+  padding-bottom: calc(90px + env(safe-area-inset-bottom)) !important;
 }
 
 /* cuando registros está oculto, nada scrollea */
@@ -691,19 +696,6 @@ body.is-loading{
   overflow: hidden;
 }
 
-
-/* ✅ Scroll solo en el panel de registros */
-#recordsPanel{
-  flex: 1 1 auto;         /* toma el espacio restante cuando está abierto */
-  min-height: 0;          /* ✅ CLAVE para overflow */
-  overflow: auto;         /* ✅ aquí sí hay scroll */
-  -webkit-overflow-scrolling: touch;
-}
-
-/* si está oculto, no ocupa espacio */
-#recordsPanel[hidden]{
-  overflow: hidden;
-}
 
 
 
@@ -2360,8 +2352,7 @@ body.is-admin #registerActions{
 #lateArrivalModal.behavior-full .modal-card{
   width: 100% !important;
   max-width: 430px !important;
-  height: 100% !important;
-  max-height: 100% !important;
+  height: 100dvh !important;
   margin: 0 auto !important;
   border-radius: 0 !important;
 }
@@ -3498,6 +3489,10 @@ body{
 }
 
 .container{
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+
   padding-bottom: calc(70px + env(safe-area-inset-bottom)) !important;
 }
 
@@ -20092,7 +20087,7 @@ function setRecordsOpen(open) {
 setRecordsOpen(false);
 btnToggleRecords.addEventListener("click", () => setRecordsOpen(recordsPanel.hidden));
 
-const APP_BUILD = "2026-04-10-95";
+const APP_BUILD = "2026-04-10-96";
 
 // ======= Reset / Refresh Service Worker + Cache =======
 let __hardRefreshRunning = false;
