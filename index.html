@@ -3533,7 +3533,569 @@ body{
   -webkit-backdrop-filter: blur(10px);
 }
 
+/* ===== Footer interactivo + temas ===== */
+.footer-click{
+  cursor: pointer;
+  user-select: none;
+}
 
+.footer-inner{
+  position: relative;
+  width: 100%;
+  max-width: 520px;
+  overflow: visible;
+}
+
+.footer-text,
+.footer-promo{
+  display: block;
+  white-space: nowrap;
+}
+
+.footer-promo{
+  animation: footerSlideLeft 8s linear forwards;
+}
+
+@keyframes footerSlideLeft{
+  from{
+    transform: translateX(100%);
+  }
+  to{
+    transform: translateX(-130%);
+  }
+}
+
+.theme-menu{
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 12px);
+  transform: translateX(-50%);
+  width: min(280px, calc(100vw - 28px));
+  padding: 12px;
+  border-radius: 16px;
+  border: 1px solid var(--line);
+  background: var(--card);
+  box-shadow: var(--shadow);
+  z-index: 999999;
+}
+
+.theme-label{
+  display: block;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+  margin-bottom: 6px;
+  text-align: left;
+}
+
+.theme-select{
+  width: 100%;
+  padding: 12px;
+  border-radius: 14px;
+  border: 1px solid var(--line);
+  background: var(--card);
+  color: var(--text);
+  font-weight: 800;
+  outline: none;
+}
+
+/* ===== TEMAS GLOBALES PRO ===== */
+body[data-theme="dark"]{
+  --bg:#0b1220;
+  --card:#121a2b;
+  --card2:#0f172a;
+  --text:#e9eefc;
+  --muted:#9bb0d0;
+  --primary:#0b5fff;
+  --secondary:#3b82f6;
+  --line:rgba(255,255,255,.10);
+  --shadow:0 8px 30px rgba(0,0,0,.35);
+}
+
+body[data-theme="light"]{
+  --bg:#f4f7fb;
+  --card:#ffffff;
+  --card2:#eef3fb;
+  --text:#111827;
+  --muted:#64748b;
+  --primary:#2563eb;
+  --secondary:#60a5fa;
+  --line:rgba(15,23,42,.12);
+  --shadow:0 8px 28px rgba(15,23,42,.14);
+}
+
+body[data-theme="pink"]{
+  --bg:#24111d;
+  --card:#351827;
+  --card2:#421c31;
+  --text:#fff1f7;
+  --muted:#f9a8d4;
+  --primary:#ec4899;
+  --secondary:#f472b6;
+  --line:rgba(255,255,255,.13);
+  --shadow:0 8px 30px rgba(0,0,0,.35);
+}
+
+body[data-theme="lilac"]{
+  --bg:#17112b;
+  --card:#21183d;
+  --card2:#2b2050;
+  --text:#f4f0ff;
+  --muted:#c4b5fd;
+  --primary:#8b5cf6;
+  --secondary:#a78bfa;
+  --line:rgba(255,255,255,.13);
+  --shadow:0 8px 30px rgba(0,0,0,.35);
+}
+
+body[data-theme="blue"]{
+  --bg:#081827;
+  --card:#10263d;
+  --card2:#12304d;
+  --text:#eaf6ff;
+  --muted:#93c5fd;
+  --primary:#0284c7;
+  --secondary:#38bdf8;
+  --line:rgba(255,255,255,.13);
+  --shadow:0 8px 30px rgba(0,0,0,.35);
+}
+
+body[data-theme="green"]{
+  --bg:#071b14;
+  --card:#102b21;
+  --card2:#15382b;
+  --text:#ecfdf5;
+  --muted:#86efac;
+  --primary:#16a34a;
+  --secondary:#22c55e;
+  --line:rgba(255,255,255,.13);
+  --shadow:0 8px 30px rgba(0,0,0,.35);
+}
+
+body[data-theme="orange"]{
+  --bg:#241509;
+  --card:#37200f;
+  --card2:#472911;
+  --text:#fff7ed;
+  --muted:#fdba74;
+  --primary:#f97316;
+  --secondary:#fb923c;
+  --line:rgba(255,255,255,.13);
+  --shadow:0 8px 30px rgba(0,0,0,.35);
+}
+
+body[data-theme="gray"]{
+  --bg:#111827;
+  --card:#1f2937;
+  --card2:#273449;
+  --text:#f9fafb;
+  --muted:#cbd5e1;
+  --primary:#64748b;
+  --secondary:#94a3b8;
+  --line:rgba(255,255,255,.13);
+  --shadow:0 8px 30px rgba(0,0,0,.35);
+}
+
+/* ===== Aplicar tema a TODA la app ===== */
+body{
+  background:
+    radial-gradient(1200px 800px at 20% 0%, color-mix(in srgb, var(--primary) 18%, transparent), transparent 60%),
+    radial-gradient(900px 600px at 80% 30%, color-mix(in srgb, var(--secondary) 14%, transparent), transparent 55%),
+    var(--bg) !important;
+  color: var(--text) !important;
+}
+
+.header,
+.footer,
+.behavior-full-header{
+  background: color-mix(in srgb, var(--bg) 88%, transparent) !important;
+  border-color: var(--line) !important;
+  color: var(--text) !important;
+}
+
+.card,
+.modal-card,
+.loader-card,
+.menu-panel,
+.menu-subpanel,
+.theme-menu,
+.record-card,
+.admin-welcome-box,
+.behavior-panel-card,
+.behavior-hub-card,
+.behavior-report-card,
+.behavior-detail-row,
+.disc-item,
+.disc-reported-list,
+.late-detail-box,
+.late-detail-item,
+.ubicate-card,
+.admin-device-card,
+.cfg-exception-item,
+.cfg-exceptions-details,
+#ubicateResult,
+#pisosResult,
+#comprasResult,
+#adminAssistList,
+#adminDevicesList,
+#reportesModal .disc-reported-list,
+#reportesViewerModal .disc-reported-list,
+#lateReportedList{
+  background: color-mix(in srgb, var(--card) 92%, transparent) !important;
+  border-color: var(--line) !important;
+  color: var(--text) !important;
+  box-shadow: var(--shadow);
+}
+
+.behavior-full .modal-card{
+  background:
+    radial-gradient(1200px 800px at 15% 0%, color-mix(in srgb, var(--primary) 16%, transparent), transparent 55%),
+    radial-gradient(900px 600px at 85% 20%, color-mix(in srgb, var(--secondary) 12%, transparent), transparent 50%),
+    var(--bg) !important;
+}
+
+.input,
+.modal-input,
+.theme-select,
+.student-select,
+select,
+textarea,
+input{
+  background: color-mix(in srgb, var(--card2) 92%, transparent) !important;
+  color: var(--text) !important;
+  border-color: var(--line) !important;
+}
+
+.input:focus,
+.modal-input:focus,
+.theme-select:focus{
+  border-color: color-mix(in srgb, var(--primary) 65%, white 10%) !important;
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--primary) 22%, transparent) !important;
+}
+
+.input.is-locked{
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--primary) 24%, transparent),
+    color-mix(in srgb, var(--primary) 12%, transparent)
+  ) !important;
+  border-color: color-mix(in srgb, var(--primary) 60%, transparent) !important;
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--primary) 18%, transparent) !important;
+}
+
+.input.is-locked:disabled{
+  -webkit-text-fill-color: var(--text) !important;
+}
+
+.muted,
+.small,
+.sub,
+.label,
+.modal-label,
+.modal-sub,
+.loader-msg,
+.behavior-full-sub,
+.behavior-hub-sub,
+.behavior-report-meta,
+.behavior-detail-meta,
+.late-detail-meta,
+.theme-label{
+  color: var(--muted) !important;
+  -webkit-text-fill-color: var(--muted) !important;
+}
+
+h1,h2,
+.modal-title,
+.card-title,
+.behavior-full-title,
+.behavior-hub-title,
+.behavior-report-name,
+.behavior-detail-title,
+.late-detail-title,
+.admin-welcome-title,
+#statusTitle,
+.name{
+  color: var(--text) !important;
+  -webkit-text-fill-color: var(--text) !important;
+}
+
+.btn-primary,
+.ubicate-day-tab.active,
+.disc-item.selected,
+.behavior-report-card.selected{
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--primary) 95%, white 5%),
+    color-mix(in srgb, var(--primary) 72%, black 8%)
+  ) !important;
+  border-color: color-mix(in srgb, var(--primary) 60%, transparent) !important;
+  color: #fff !important;
+}
+
+.btn-secondary{
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--secondary) 95%, white 5%),
+    color-mix(in srgb, var(--secondary) 70%, black 8%)
+  ) !important;
+  border-color: color-mix(in srgb, var(--secondary) 60%, transparent) !important;
+  color: #fff !important;
+}
+
+.btn,
+.menu-item,
+.cfg-mini-btn,
+.behavior-mini-btn,
+.admin-icon-btn,
+.disc-icon-btn,
+.disc-level,
+.ubicate-day-tab,
+.behavior-full-back,
+#btnDiscBack,
+#btnPiercBack,
+#btnUniBack,
+#btnLateBack,
+#btnBehaviorHubClose,
+#btnCerrarViewerReportes{
+  background: color-mix(in srgb, var(--card2) 82%, transparent) !important;
+  color: var(--text) !important;
+  border-color: var(--line) !important;
+}
+
+.menu-item:hover,
+.btn:hover,
+.disc-level:hover,
+.ubicate-day-tab:hover,
+.behavior-hub-card:hover{
+  background: color-mix(in srgb, var(--primary) 18%, var(--card)) !important;
+  border-color: color-mix(in srgb, var(--primary) 38%, transparent) !important;
+}
+
+.table,
+.table th,
+.table td{
+  background: color-mix(in srgb, var(--card) 86%, transparent) !important;
+  color: var(--text) !important;
+  border-color: var(--line) !important;
+}
+
+.table th{
+  color: var(--muted) !important;
+}
+
+
+.behavior-level-badge{
+  background: color-mix(in srgb, var(--card2) 78%, transparent) !important;
+  color: var(--text) !important;
+  border-color: var(--line) !important;
+}
+
+/* Mantener colores originales de asistencia */
+.badge-ontime{
+  background: rgba(34,197,94,.15) !important;
+  color:#22c55e !important;
+  border-color: rgba(34,197,94,.35) !important;
+}
+
+.badge-late{
+  background: rgba(239,68,68,.15) !important;
+  color:#ef4444 !important;
+  border-color: rgba(239,68,68,.35) !important;
+}
+
+.badge-soft{
+  background: rgba(245,158,11,.15) !important;
+  color:#f59e0b !important;
+  border-color: rgba(245,158,11,.35) !important;
+}
+
+.badge-extra{
+  background: rgba(96,165,250,.15) !important;
+  color:#60a5fa !important;
+  border-color: rgba(96,165,250,.35) !important;
+}
+
+.record-card.ontime{
+  border-color: rgba(34,197,94,.45) !important;
+  background: rgba(34,197,94,.10) !important;
+}
+
+.record-card.late{
+  border-color: rgba(239,68,68,.45) !important;
+  background: rgba(239,68,68,.10) !important;
+}
+
+.record-card.soft{
+  border-color: rgba(245,158,11,.45) !important;
+  background: rgba(245,158,11,.10) !important;
+}
+
+.record-card.extra{
+  border-color: rgba(96,165,250,.45) !important;
+  background: rgba(96,165,250,.10) !important;
+}
+
+.table tr.soft td{
+  background: rgba(245,158,11,.08) !important;
+}
+
+.table tr.extra td{
+  background: rgba(96,165,250,.08) !important;
+}
+.modal-actions{
+  background: transparent !important;
+}
+
+#adminConfigModal .modal-actions,
+#lateArrivalModal.late-detail-mode .modal-actions{
+  background: color-mix(in srgb, var(--card) 96%, transparent) !important;
+  border-color: var(--line) !important;
+}
+
+.ubicate-days-wrap{
+  background: var(--bg) !important;
+  border-color: var(--line) !important;
+}
+
+#pisosResult .pisos-table th:first-child,
+#pisosResult .pisos-table td:first-child{
+  background: var(--card2) !important;
+}
+
+.menu-btn{
+  background: color-mix(in srgb, var(--card2) 88%, transparent) !important;
+  color: var(--text) !important;
+  border-color: var(--line) !important;
+}
+
+/* Footer: evitar que se vean dos líneas al mismo tiempo */
+.footer-inner{
+  position: relative;
+  width: 100%;
+  max-width: 520px;
+  min-height: 22px;
+  overflow: visible !important;
+}
+
+.footer-text[hidden],
+.footer-promo[hidden]{
+  display: none !important;
+}
+
+/* ===== FIX: mantener colores de niveles en llamados de atención ===== */
+.disc-level.active[data-level="1"]{
+  border-color: rgba(34,197,94,.45) !important;
+  background: rgba(34,197,94,.16) !important;
+  color: var(--text) !important;
+}
+
+.disc-level.active[data-level="2"]{
+  border-color: rgba(248,244,5,.55) !important;
+  background: rgba(248,244,5,.20) !important;
+  color: var(--text) !important;
+}
+
+.disc-level.active[data-level="3"]{
+  border-color: rgba(245,158,11,.60) !important;
+  background: rgba(245,158,11,.28) !important;
+  color: var(--text) !important;
+}
+
+.disc-level.active[data-level="4"],
+.disc-level.danger.active{
+  border-color: rgba(239,68,68,.50) !important;
+  background: rgba(239,68,68,.18) !important;
+  color: var(--text) !important;
+}
+
+
+
+/* ===== FIX: texto visible al seleccionar reportados en cualquier tema ===== */
+.disc-item.selected,
+.behavior-report-card.selected{
+  background: color-mix(in srgb, var(--primary) 22%, var(--card)) !important;
+  border-color: color-mix(in srgb, var(--primary) 70%, transparent) !important;
+}
+
+.disc-item.selected *,
+.behavior-report-card.selected *,
+.disc-item.selected .name,
+.disc-item.selected .right,
+.disc-item.selected .muted,
+.behavior-report-card.selected .behavior-report-name,
+.behavior-report-card.selected .behavior-report-meta,
+.behavior-report-card.selected .behavior-report-obs{
+  color: var(--text) !important;
+  -webkit-text-fill-color: var(--text) !important;
+}
+
+/* ===== FIX: botón atrás visible en todos los temas ===== */
+#btnDiscBack,
+#btnPiercBack,
+#btnUniBack,
+#btnLateBack,
+#btnDiscViewerBack,
+#btnPiercViewerBack,
+#btnUniViewerBack,
+#btnBehaviorHubClose,
+#btnCerrarViewerReportes{
+  background: color-mix(in srgb, var(--card) 94%, black 6%) !important;
+  border-color: color-mix(in srgb, var(--primary) 28%, var(--line)) !important;
+  color: var(--text) !important;
+  box-shadow:
+    0 10px 24px rgba(0,0,0,.28),
+    inset 0 1px 0 rgba(255,255,255,.12) !important;
+}
+
+#btnDiscBack i,
+#btnPiercBack i,
+#btnUniBack i,
+#btnLateBack i,
+#btnDiscViewerBack i,
+#btnPiercViewerBack i,
+#btnUniViewerBack i,
+#btnBehaviorHubClose i{
+  color: var(--text) !important;
+  -webkit-text-fill-color: var(--text) !important;
+}
+
+#btnCerrarViewerReportes::before{
+  color: var(--text) !important;
+}
+
+
+
+.footer{
+  overflow: visible !important;
+}
+
+.footer-inner{
+  min-height: 28px !important;
+  height: 28px !important;
+  overflow: visible !important;
+}
+
+.footer-promo{
+  display: block;
+  white-space: nowrap;
+  line-height: 24px;
+}
+
+.footer-promo-content{
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.footer-img{
+  width: 22px;
+  height: 22px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  object-fit: cover;
+  vertical-align: middle;
+  box-shadow: 0 0 0 2px rgba(255,255,255,.15);
+}
 </style>
 </head>
 
@@ -3746,9 +4308,37 @@ body{
     </section>
   </main>
 
-  <footer class="footer">
-    <span class="muted small">APP • Desarrollada por: Deimer Herrera • v.Beta</span>
-  </footer>
+ <footer class="footer footer-click" id="appFooter">
+  <div class="footer-inner">
+    <span id="footerNormal" class="muted small footer-text">
+      APP • Desarrollada por: Deimer Herrera • v.Beta
+    </span>
+
+<span id="footerPromo" class="muted small footer-promo" hidden>
+  <span class="footer-promo-content">
+    Ahora puedes cambiar el fondo de tu app al que mejor se adapte a ti haciendo clic aquí.
+    <img src="./logo.png?v=1" class="footer-img" alt="icono">
+    &nbsp;&nbsp;&nbsp;
+    Ahora puedes cambiar el fondo de tu app al que mejor se adapte a ti haciendo clic aquí.
+    <img src="./logo.png?v=1" class="footer-img" alt="icono">
+  </span>
+</span>
+
+    <div id="themeMenu" class="theme-menu" hidden>
+      <label class="theme-label" for="themeSelect">Tema</label>
+      <select id="themeSelect" class="theme-select">
+        <option value="dark">Oscuro</option>
+        <option value="light">Claro</option>
+        <option value="pink">Rosa</option>
+        <option value="lilac">Lila</option>
+        <option value="blue">Azul</option>
+        <option value="green">Verde</option>
+        <option value="orange">Naranja</option>
+        <option value="gray">Gris</option>
+      </select>
+    </div>
+  </div>
+</footer>
 
 <!-- ======= MODAL QR SCAN ======= -->
 <div id="qrModal" class="modal-backdrop" hidden>
@@ -20094,7 +20684,7 @@ function setRecordsOpen(open) {
 setRecordsOpen(false);
 btnToggleRecords.addEventListener("click", () => setRecordsOpen(recordsPanel.hidden));
 
-const APP_BUILD = "2026-04-10-60";
+const APP_BUILD = "2026-04-10-61";
 
 // ======= Reset / Refresh Service Worker + Cache =======
 let __hardRefreshRunning = false;
@@ -20951,6 +21541,64 @@ setInterval(async () => {
 }, 15000);
 
 
+
+(function(){
+  const footer = document.getElementById("appFooter");
+  const normal = document.getElementById("footerNormal");
+  const promo = document.getElementById("footerPromo");
+  const menu = document.getElementById("themeMenu");
+  const select = document.getElementById("themeSelect");
+
+  if(!footer || !normal || !promo || !menu || !select) return;
+
+  const savedTheme = localStorage.getItem("appTheme") || "dark";
+
+  document.documentElement.style.setProperty("color-scheme", savedTheme === "light" ? "light" : "dark");
+
+  document.body.setAttribute("data-theme", savedTheme);
+  select.value = savedTheme;
+
+select.addEventListener("change", function(){
+  document.body.setAttribute("data-theme", this.value);
+  document.documentElement.style.setProperty("color-scheme", this.value === "light" ? "light" : "dark");
+  localStorage.setItem("appTheme", this.value);
+});
+
+  footer.addEventListener("click", function(e){
+    e.stopPropagation();
+    menu.hidden = !menu.hidden;
+  });
+
+  menu.addEventListener("click", function(e){
+    e.stopPropagation();
+  });
+
+  document.addEventListener("click", function(){
+    menu.hidden = true;
+  });
+
+  function runFooterPromo(){
+    normal.hidden = false;
+    promo.hidden = true;
+
+    setTimeout(function(){
+      normal.hidden = true;
+      promo.hidden = false;
+      promo.style.animation = "none";
+      promo.offsetHeight;
+      promo.style.animation = "footerSlideLeft 8s linear forwards";
+
+      setTimeout(function(){
+        promo.hidden = true;
+        normal.hidden = false;
+
+        setTimeout(runFooterPromo, 10000);
+      }, 8000);
+    }, 5000);
+  }
+
+  runFooterPromo();
+})();
 
 
 </script>
