@@ -1660,9 +1660,11 @@ input[list]::-moz-list-dropdown {
 }
 
 .admin-device-card.pending{
-  border-color: rgba(239,68,68,.45);
-  background: rgba(239,68,68,.10);
-  box-shadow: inset 0 0 0 1px rgba(239,68,68,.10);
+  border-color: rgba(239,68,68,.55) !important;
+  background: rgba(239,68,68,.16) !important;
+  box-shadow:
+    inset 0 0 0 1px rgba(239,68,68,.18),
+    0 10px 24px rgba(239,68,68,.10) !important;
 }
 
 .admin-device-card.approved{
@@ -3625,15 +3627,15 @@ body[data-theme="light"]{
 }
 
 body[data-theme="pink"]{
-  --bg:#24111d;
-  --card:#351827;
-  --card2:#421c31;
-  --text:#fff1f7;
-  --muted:#f9a8d4;
-  --primary:#ec4899;
-  --secondary:#f472b6;
-  --line:rgba(255,255,255,.13);
-  --shadow:0 8px 30px rgba(0,0,0,.35);
+  --bg:#2a1624;            /* más claro y con tinte rosado */
+  --card:#3a1f33;          /* tarjetas visibles */
+  --card2:#46263d;         /* capas internas */
+  --text:#fff4fa;
+  --muted:#f1c6da;         /* más suave y femenino */
+  --primary:#e05a9d;       /* rosa elegante (no neón) */
+  --secondary:#f4a7c8;     /* rosado claro agradable */
+  --line:rgba(255,255,255,.14);
+  --shadow:0 8px 28px rgba(0,0,0,.28);
 }
 
 body[data-theme="lilac"]{
@@ -4383,10 +4385,10 @@ h1,h2,
 
 <span id="footerPromo" class="muted small footer-promo" hidden>
   <span class="footer-promo-content">
-    Ahora puedes cambiar el fondo de tu app al que mejor se adapte a ti haciendo clic aquí.
+    Ahora puedes cambiar el color del tema de tu app al que mejor se adapte a ti haciendo clic aquí.
     <img src="./logo.png?v=1" class="footer-img" alt="icono">
     &nbsp;&nbsp;&nbsp;
-    Ahora puedes cambiar el fondo de tu app al que mejor se adapte a ti haciendo clic aquí.
+    Ahora puedes cambiar el color del tema de tu app al que mejor se adapte a ti haciendo clic aquí.
     <img src="./logo.png?v=1" class="footer-img" alt="icono">
   </span>
 </span>
