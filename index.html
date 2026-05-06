@@ -13391,8 +13391,7 @@ async function initAdminRecordsPanelUI() {
 
   const on = isAdminMode();
 
-  if (btnExportXlsx) btnExportXlsx.hidden = !on;
-  if (btnExport) btnExport.hidden = !!on;
+if (btnExport) btnExport.hidden = false;
 
   // ✅ SOLO ADMIN ve filtros
   adminRecordsFilters.hidden = !on;
@@ -18363,7 +18362,15 @@ Total Cog.<br>
     </div>
   ` : "";
 
-  notasGridEl.innerHTML = headerHtml + __notasEstudiantes.map((student, sIdx) => {
+ __notasEstudiantes.sort((a, b) =>
+  notasNombreVista_(a.estudiante).localeCompare(
+    notasNombreVista_(b.estudiante),
+    "es",
+    { sensitivity: "base" }
+  )
+);
+
+notasGridEl.innerHTML = headerHtml + __notasEstudiantes.map((student, sIdx) => {
     if (!student.notas) student.notas = {};
 
     const calc = notasCalcStudent_(student);
@@ -19578,9 +19585,11 @@ async function notasGuardarPlanilla_(){
       return;
     }
 
-    setLoading(true, "Sincronizando…", "Enviando planilla a Supabase.");
+  if (loaderTitleEl) loaderTitleEl.textContent = "Sincronizando…";
+if (loaderMsgEl) loaderMsgEl.textContent = "Enviando planilla a Supabase.";
+setStatus("warn", "Sincronizando…", "Enviando planilla a Supabase.");
 
-    const data = await notasEnviarPayloadSupabase_(payload);
+const data = await notasEnviarPayloadSupabase_(payload);
 
     // 3) Si subió bien, marca como sincronizada
     await notasGuardarLocalSeguro_(payload, { pending: false });
@@ -27268,7 +27277,9 @@ async function downloadAdminExcel() {
     url.searchParams.set("action", "export_xlsx_link");
     url.searchParams.set("key", GS_API_KEY);
     if (month) url.searchParams.set("month", month);
-    if (teacher) url.searchParams.set("teacher", teacher);
+    if (teacher && teacher !== "__ALL__") {
+  url.searchParams.set("teacher", teacher);
+}
 
     const res = await fetch(url.toString(), { method: "GET" });
 
@@ -27308,7 +27319,7 @@ async function downloadAdminExcel() {
 }
 
 
-if (btnExportXlsx) btnExportXlsx.addEventListener("click", downloadAdminExcel);
+
 
 
 // ======= INSTALL (A2HS) =======
@@ -27335,7 +27346,7 @@ function setRecordsOpen(open) {
 setRecordsOpen(false);
 btnToggleRecords.addEventListener("click", () => setRecordsOpen(recordsPanel.hidden));
 
-const APP_BUILD = "2026-04-10-64";
+const APP_BUILD = "2026-04-10-63";
 
 
 function shouldSkipAutoRefreshForPcMode_(){
@@ -28115,7 +28126,15 @@ lateSuccessToast_(Number(resp.times || 0));
 btnEntrada.addEventListener("click", () => register("ENTRADA"));
 btnSalida.addEventListener("click",  () => register("SALIDA"));
 
-btnExport.addEventListener("click", downloadUserExcel);
+if (btnExport) {
+  btnExport.addEventListener("click", () => {
+    if (isAdminMode()) {
+      downloadAdminExcel();
+    } else {
+      downloadUserExcel();
+    }
+  });
+}
 
 
 
