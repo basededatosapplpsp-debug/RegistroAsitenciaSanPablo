@@ -4403,10 +4403,11 @@ h1,h2,
 .notas-header-row .notas-cell{
   font-weight: 950;
   color: var(--muted);
-  background: rgba(255,255,255,.06);
+  background: color-mix(in srgb, var(--primary) 14%, var(--card)) !important;
   position: sticky;
   top: 0;
-  z-index: 2;
+  z-index: 30;
+  box-shadow: 0 1px 0 var(--line);
 }
 
 
@@ -4656,7 +4657,7 @@ h1,h2,
   min-height: 0 !important;
   overflow: auto !important;
   -webkit-overflow-scrolling: touch;
-  padding: 12px 16px;
+  padding: 0 16px 12px;
 }
 
 /* El grid queda libre para ser table-mode */
@@ -6667,17 +6668,17 @@ body.is-pc-mode .single-action-wrap{
   }
 }
 
-/* ===== FIX: confirmación encima del modal de actividad ===== */
-#appConfirm{
-  z-index: 100010 !important;
-}
-
+/* ===== FIX GLOBAL: confirmación siempre encima de cualquier modal ===== */
+#appConfirm,
 #appConfirm.modal-backdrop{
-  z-index: 100010 !important;
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 2147483646 !important;
 }
 
 #appConfirm .modal-card{
-  z-index: 100011 !important;
+  position: relative !important;
+  z-index: 2147483647 !important;
 }
 
 
@@ -7147,6 +7148,26 @@ body[data-theme="light"] #parqueResult .parque-badge{
 
 
 
+/* ===== ALERTAS DE NOTAS: pantalla completa ===== */
+/* ===== ALERTAS: ocupar casi todo el ancho ===== */
+#notasAlertasModal .modal-card{
+  width: calc(100vw - 32px) !important;
+  max-width: calc(100vw - 32px) !important;
+  height: calc(100dvh - 32px) !important;
+  max-height: calc(100dvh - 32px) !important;
+}
+
+#notasAlertasModal .notas-alertas-layout{
+  height: 100% !important;
+}
+
+#notasAlertasModal #notasAlertasList,
+#notasAlertasModal #notasAlertasDetalle{
+  min-height: 0 !important;
+}
+
+
+
 
 </style>
 </head>
@@ -7207,19 +7228,7 @@ body[data-theme="light"] #parqueResult .parque-badge{
   <button id="btnFaltaTipo3" class="menu-item" type="button" role="menuitem">Tipo 3</button>
 </div>
 
-<!-- ✅ NUEVO: Botón que abre el submenú "Reportes" -->
-<button id="btnReportesMenu" class="menu-item" type="button" role="menuitem" aria-haspopup="true" aria-expanded="false">
-  Reportes <span class="muted small" aria-hidden="true">›</span>
-</button>
 
-<!-- ✅ Submenú "Reportes" -->
-<div id="reportesSubMenu" class="menu-subpanel" hidden>
-  <div class="muted small" style="padding:6px 8px;">Reportes</div>
-
-  <button id="btnReportePendientes" class="menu-item" type="button" role="menuitem">Actividades pendientes</button>
-  <button id="btnReporteEjemplo2" class="menu-item" type="button" role="menuitem">Ejemplo 2</button>
-  <button id="btnReporteEjemplo3" class="menu-item" type="button" role="menuitem">Ejemplo 3</button>
-</div>
 <!-- ✅ NUEVO: Botón que abre el submenú "Horarios" -->
 <button id="btnHorariosMenu" class="menu-item" type="button" role="menuitem" aria-haspopup="true" aria-expanded="false">
   Horarios <span class="muted small" aria-hidden="true">›</span>
@@ -12016,8 +12025,13 @@ function confirmPro({
     btnOk.classList.toggle("btn-danger", danger);
     btnOk.classList.toggle("btn-primary", !danger);
 
-    modal.hidden = false;
-    document.body.classList.add("is-loading"); // bloquea fondo
+   if (modal.parentElement !== document.body) {
+  document.body.appendChild(modal);
+}
+
+modal.style.zIndex = "2147483646";
+modal.hidden = false;
+document.body.classList.add("is-loading"); // bloquea fondo
 
     __confirmResolve = (val) => {
       modal.hidden = true;
@@ -18327,35 +18341,12 @@ notasProgramarAutoGuardado_();
 
 
 function notasNombreApellidoPrimero_(nombre){
-  const parts = String(nombre || "")
-    .trim()
-    .replace(/\s+/g, " ")
-    .split(" ")
-    .filter(Boolean);
-
-  if (parts.length < 3) return parts.join(" ");
-
-  const apellidos = parts.slice(-2).join(" ");
-  const nombres = parts.slice(0, -2).join(" ");
-
-  return `${apellidos} ${nombres}`.trim();
+  return String(nombre || "").trim().replace(/\s+/g, " ");
 }
-
 
 function notasNombreVista_(nombre){
-  const clean = String(nombre || "").trim().replace(/\s+/g, " ");
-  if (!clean) return "";
-
-  const parts = clean.split(" ");
-  if (parts.length < 3) return clean;
-
-  const apellidos = parts.slice(-2).join(" ");
-  const nombres = parts.slice(0, -2).join(" ");
-
-  return `${apellidos} ${nombres}`.trim();
+  return String(nombre || "").trim().replace(/\s+/g, " ");
 }
-
-
 
 
 function notasRenderGrid_(){
@@ -19678,14 +19669,16 @@ const data = await notasEnviarPayloadSupabase_(payload);
 }
 
 btnNotasPlanilla?.addEventListener("click", async () => {
-  if (notasSubMenu) notasSubMenu.hidden = true;
-  if (userMenu) userMenu.hidden = true;
+  if (userMenu) userMenu.hidden = false;
+  if (notasSubMenu) notasSubMenu.hidden = false;
   await notasOpenPlanilla_();
 });
 
 btnNotasCerrar?.addEventListener("click", () => {
   if (notasPlanillaModal) notasPlanillaModal.hidden = true;
+  mantenerMenuNotasAbierto_();
 });
+
 
 btnNotasCargarEstudiantes?.addEventListener("click", () => notasLoadStudents_());
 
@@ -19758,6 +19751,8 @@ btnNotasStudentsBack?.addEventListener("click", async () => {
   // 6. Cerrar vistas
   if (notasStudentsModal) notasStudentsModal.hidden = true;
   if (notasPlanillaModal) notasPlanillaModal.hidden = true;
+
+  mantenerMenuNotasAbierto_();
 });
 
 
@@ -20478,8 +20473,8 @@ async function notasAlertasCompartirTodos_(){
 
 
 btnNotasAlertas?.addEventListener("click", async () => {
-  if (notasSubMenu) notasSubMenu.hidden = true;
-  if (userMenu) userMenu.hidden = true;
+  if (userMenu) userMenu.hidden = false;
+  if (notasSubMenu) notasSubMenu.hidden = false;
   await notasAlertasOpen_();
 });
 
@@ -20504,6 +20499,7 @@ notasAlertasAsignaturaEl?.addEventListener("change", async () => {
 
 btnNotasAlertasCerrar?.addEventListener("click", () => {
   if (notasAlertasModal) notasAlertasModal.hidden = true;
+  mantenerMenuNotasAbierto_();
 });
 
 btnNotasAlertasCompartir?.addEventListener("click", notasAlertasCompartir_);
@@ -20524,11 +20520,27 @@ function getInitials(name) {
   return (first + last).toUpperCase();
 }
 
+
+
 function setMenuOpen(open) {
   if (!btnUserMenu || !userMenu) return;
+
   userMenu.hidden = !open;
   btnUserMenu.setAttribute("aria-expanded", String(open));
+
+  if (!open) {
+    if (notasSubMenu) notasSubMenu.hidden = true;
+    if (btnNotasMenu) btnNotasMenu.setAttribute("aria-expanded", "false");
+  }
 }
+
+function mantenerMenuNotasAbierto_(){
+  setMenuOpen(true);
+
+  if (notasSubMenu) notasSubMenu.hidden = false;
+  if (btnNotasMenu) btnNotasMenu.setAttribute("aria-expanded", "true");
+}
+
 
 function isHorariosModalTarget_(target) {
   if (!target) return false;
@@ -20541,15 +20553,31 @@ function isHorariosModalTarget_(target) {
   );
 }
 
+function isNotasModalTarget_(target) {
+  if (!target) return false;
+
+  return (
+    (notasPlanillaModal && notasPlanillaModal.contains(target)) ||
+    (notasStudentsModal && notasStudentsModal.contains(target)) ||
+    (notasAlertasModal && notasAlertasModal.contains(target)) ||
+    (notasAlertasDetalleMobileModal && notasAlertasDetalleMobileModal.contains(target))
+  );
+}
+
 function shouldKeepMenuOpenForTarget_(target) {
   if (!target) return false;
 
   return (
     (userMenu && userMenu.contains(target)) ||
     (btnUserMenu && btnUserMenu.contains(target)) ||
+
     (horariosSubMenu && horariosSubMenu.contains(target)) ||
     (btnHorariosMenu && btnHorariosMenu.contains(target)) ||
-    isHorariosModalTarget_(target)
+    isHorariosModalTarget_(target) ||
+
+    (notasSubMenu && notasSubMenu.contains(target)) ||
+    (btnNotasMenu && btnNotasMenu.contains(target)) ||
+    isNotasModalTarget_(target)
   );
 }
 
@@ -22833,7 +22861,13 @@ const studentPlanillaCtx_ = {
         return;
       }
 
-      const ok = confirm(`¿Eliminar del curso a "${oldName}"? No se borran notas históricas.`);
+     const ok = await confirmPro({
+  title: "Eliminar estudiante",
+  msg: `¿Eliminar del curso a "${oldName}"?\n\nNo se borran notas históricas.`,
+  okText: "Sí, eliminar",
+  cancelText: "Cancelar",
+  danger: true
+});
       if (!ok) return;
 
      await gsAdminStudentSave({
