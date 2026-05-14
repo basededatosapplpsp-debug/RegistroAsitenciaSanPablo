@@ -7167,7 +7167,60 @@ body[data-theme="light"] #parqueResult .parque-badge{
 }
 
 
+/* ===== ALERTAS DE NOTAS MÓVIL: evitar que el badge tape curso/asignatura/periodo ===== */
+@media (max-width: 699px){
+  #notasAlertasList .disc-item{
+    position: relative !important;
+    align-items: flex-start !important;
+    min-height: 118px !important;
+    padding: 16px 16px 18px 48px !important;
+  }
 
+  #notasAlertasList .disc-item .left{
+    width: 100% !important;
+    min-width: 0 !important;
+    padding-right: 128px !important;
+    align-items: flex-start !important;
+  }
+
+#notasAlertasList .disc-item .name{
+  white-space: normal !important;
+  overflow: visible !important;
+  text-overflow: clip !important;
+  line-height: 1.12 !important;
+  max-width: 100% !important;
+  word-break: break-word !important;
+}
+
+ #notasAlertasList .disc-item .muted,
+#notasAlertasList .disc-item .small{
+  display: block !important;
+  white-space: normal !important;
+  overflow-wrap: anywhere !important;
+  word-break: break-word !important;
+  line-height: 1.22 !important;
+  max-width: 100% !important;
+}
+
+  #notasAlertasList .disc-item .right{
+    position: absolute !important;
+    right: 12px !important;
+    top: 14px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: flex-end !important;
+    gap: 8px !important;
+    max-width: 118px !important;
+  }
+
+  #notasAlertasList .disc-item .badge,
+  #notasAlertasList .disc-item .notas-alerta-badge{
+    max-width: 118px !important;
+    white-space: normal !important;
+    text-align: center !important;
+    line-height: 1.1 !important;
+  }
+}
 
 </style>
 </head>
@@ -19256,12 +19309,12 @@ async function notasSyncPendientes_({ silent = true } = {}){
           notasAlertasBuscar_({ silent: true, useCache: false });
         }
       } catch (e) {
-        await notasIdbPut_(NOTAS_IDB_QUEUE, {
-          ...item,
-          attempts: Number(item.attempts || 0) + 1,
-          lastError: String(e?.message || e),
-          lastAttempt: Date.now()
-        });
+await notasIdbPut_(NOTAS_IDB_QUEUE, {
+  ...item,
+  attempts: Number(item.attempts || 0) + 1,
+  lastError: String(e?.message || e),
+  lastAttempt: Date.now()
+});
       }
     }
   } finally {
