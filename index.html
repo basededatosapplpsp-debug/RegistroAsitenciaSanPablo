@@ -19241,7 +19241,7 @@ function notasRenderGrid_(){
               ${notasFormatoDetallesAgrupadosHtml_(calc.detalles)}
             </div>
             <button class="btn btn-secondary notas-share-student-btn" type="button" data-nota-share="${sIdx}">
-              Compartir reporte
+              Compartir notas
             </button>
           ` : ""}
         ` : ""}
@@ -19326,17 +19326,10 @@ function notasRenderGrid_(){
       const periodo = String(notasPeriodoEl?.value || "1").trim();
       const estudianteVista = notasNombreVista_(student.estudiante);
 
-      const msg = `Reporte académico\n\n` +
-                  `Estudiante: ${estudianteVista}\n` +
-                  `Curso: ${curso}\n` +
-                  `Asignatura: ${asignatura}\n` +
-                  `Periodo: ${periodo}\n` +
-                  `Definitiva: ${calc.definitiva}\n` +
-                  `Estado: ${calc.estado}\n\n` +
-                  `Detalles:\n${notasFormatoDetallesAgrupadosTexto_(calc.detalles)}`;
+      const msg = notasConstruirMensajeNotasActualesEstudiante_(student);
 
       if (navigator.share) {
-        await navigator.share({ title: "Reporte académico", text: msg });
+        await navigator.share({ title: "Notas actuales", text: msg });
         return;
       }
       window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, "_blank");
@@ -19374,15 +19367,7 @@ function notasOpenDetallePc_(sIdx){
     });
   }
 
-  const msg =
-    `Reporte académico\n\n` +
-    `Estudiante: ${estudianteVista}\n` +
-    `Curso: ${curso}\n` +
-    `Asignatura: ${asignatura}\n` +
-    `Periodo: ${periodo}\n` +
-    `Definitiva: ${calc.definitiva}\n` +
-    `Estado: ${calc.estado}\n\n` +
-    `Detalles:\n${notasFormatoDetallesAgrupadosTexto_(calc.detalles)}`;
+  const msg = notasConstruirMensajeNotasActualesEstudiante_(student);
 
   modal.innerHTML = `
     <div class="modal-card notas-pc-detail-card">
@@ -19406,7 +19391,7 @@ function notasOpenDetallePc_(sIdx){
 
       <div class="modal-actions">
         <button class="btn btn-secondary" type="button" id="btnNotasPcDetalleCompartir">
-          Compartir reporte
+          Compartir notas
         </button>
       </div>
     </div>
@@ -19421,7 +19406,7 @@ function notasOpenDetallePc_(sIdx){
   document.getElementById("btnNotasPcDetalleCompartir")?.addEventListener("click", async () => {
     if (navigator.share) {
       await navigator.share({
-        title: "Reporte académico",
+        title: "Notas actuales",
         text: msg
       });
       return;
@@ -19591,7 +19576,7 @@ if (actions) {
     btnNotasCompartirDebe.type = "button";
     btnNotasCompartirDebe.id = "btnNotasCompartirDebe";
     btnNotasCompartirDebe.className = "btn notas-share-all-btn";
-    btnNotasCompartirDebe.title = "Compartir todos los estudiantes que deben notas";
+    btnNotasCompartirDebe.title = "Compartir las notas actuales de la planilla";
     btnNotasCompartirDebe.innerHTML = `<i class="fa-solid fa-share-nodes"></i>`;
     btnNotasCompartirDebe.addEventListener("click", notasCompartirDebeTodos_);
   }
@@ -20255,6 +20240,87 @@ async function notasCargarPlanillaGuardada_(){
 }
 
 
+function notasFormatoValorActual_(valor){
+  const nota = notasParseNota_(valor);
+  return nota === null ? null : Number(nota).toFixed(1);
+}
+
+function notasNotasActualesComponente_(student, componente){
+  return notasColumnasPorComponente_(componente)
+    .map(col => {
+      const valor = notasFormatoValorActual_(student?.notas?.[String(col.orden)]);
+      if (valor === null) return null;
+
+      return {
+        nombre: String(col.nombre || `Actividad ${col.orden}`).trim(),
+        valor
+      };
+    })
+    .filter(Boolean);
+}
+
+function notasTieneNotasActuales_(student){
+  return notasNotasActualesComponente_(student, "procedimental").length > 0 ||
+         notasNotasActualesComponente_(student, "cognitivo").length > 0 ||
+         notasFormatoValorActual_(student?.notas?.actitudinal) !== null;
+}
+
+function notasConstruirBloqueNotasActuales_(student, incluirContexto = false){
+  const curso = String(notasCursoEl?.value || "").trim();
+  const asignatura = String(notasAsignaturaEl?.value || "").trim();
+  const periodo = String(notasPeriodoEl?.value || "1").trim();
+  const estudianteVista = notasNombreVista_(student?.estudiante);
+  const calc = notasCalcStudent_(student || {});
+
+  const procedimentales = notasNotasActualesComponente_(student, "procedimental");
+  const cognitivos = notasNotasActualesComponente_(student, "cognitivo");
+  const actitudinal = notasFormatoValorActual_(student?.notas?.actitudinal);
+
+  const lineas = [`Estudiante: ${estudianteVista || "—"}`];
+
+  if (incluirContexto) {
+    lineas.push(
+      `Curso: ${curso || "—"}`,
+      `Asignatura: ${asignatura || "—"}`,
+      `Periodo: ${periodo || "—"}`
+    );
+  }
+
+  if (procedimentales.length) {
+    lineas.push("", "Procedimental (40%):");
+    procedimentales.forEach(item => lineas.push(`• ${item.nombre}: ${item.valor}`));
+    if (calc.procTotal !== "—") {
+      lineas.push(`Promedio procedimental: ${Number(calc.procTotal).toFixed(1)}`);
+    }
+  }
+
+  if (cognitivos.length) {
+    lineas.push("", "Cognitivo (40%):");
+    cognitivos.forEach(item => lineas.push(`• ${item.nombre}: ${item.valor}`));
+    if (calc.cogTotal !== "—") {
+      lineas.push(`Promedio cognitivo: ${Number(calc.cogTotal).toFixed(1)}`);
+    }
+  }
+
+  if (actitudinal !== null) {
+    lineas.push("", `Actitudinal (20%): ${actitudinal}`);
+  }
+
+  if (calc.definitiva !== "—") {
+    lineas.push("", `Definitiva actual: ${Number(calc.definitiva).toFixed(1)}`);
+  }
+
+  if (!procedimentales.length && !cognitivos.length && actitudinal === null) {
+    lineas.push("", "Sin notas registradas actualmente.");
+  }
+
+  return lineas.join("\n");
+}
+
+function notasConstruirMensajeNotasActualesEstudiante_(student){
+  return `Notas actuales\n\n${notasConstruirBloqueNotasActuales_(student, true)}`;
+}
+
 async function notasCompartirDebeTodos_(){
   const curso = String(notasCursoEl?.value || "").trim();
   const asignatura = String(notasAsignaturaEl?.value || "").trim();
@@ -20264,31 +20330,31 @@ async function notasCompartirDebeTodos_(){
     return notasSetHint_("No hay estudiantes cargados para compartir.");
   }
 
-  const pendientes = __notasEstudiantes
-    .map(student => {
-      const calc = notasCalcStudent_(student);
-      return { student, calc };
-    })
-    .filter(x => String(x.calc.estado || "").trim() === "DEBE_NOTAS");
+  const estudiantesConNotas = __notasEstudiantes
+    .filter(notasTieneNotasActuales_)
+    .slice()
+    .sort((a, b) => notasNombreVista_(a.estudiante).localeCompare(
+      notasNombreVista_(b.estudiante),
+      "es",
+      { sensitivity: "base" }
+    ));
 
-  if (!pendientes.length) {
-    return notasSetHint_("No hay estudiantes que deban notas en esta planilla.");
+  if (!estudiantesConNotas.length) {
+    return notasSetHint_("No hay notas registradas actualmente para compartir.");
   }
 
   const msg =
-    `Reporte de estudiantes que deben notas\n\n` +
+    `Planilla de notas actuales\n\n` +
     `Curso: ${curso || "—"}\n` +
     `Asignatura: ${asignatura || "—"}\n` +
     `Periodo: ${periodo || "—"}\n\n` +
-    pendientes.map((x, idx) =>
-      `${idx + 1}. ${x.student.estudiante}\n` +
-      `Definitiva: ${x.calc.definitiva ?? "—"}\n` +
-      `Detalles:\n${notasFormatoDetallesAgrupados_(x.calc.detalles)}`
-    ).join("\n\n");
+    estudiantesConNotas
+      .map(student => notasConstruirBloqueNotasActuales_(student, false))
+      .join("\n\n------------------------------\n\n");
 
   if (navigator.share) {
     await navigator.share({
-      title: "Reporte de estudiantes que deben notas",
+      title: "Planilla de notas actuales",
       text: msg
     });
     return;
