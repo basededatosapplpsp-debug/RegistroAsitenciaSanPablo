@@ -22500,27 +22500,68 @@ if (btnAdminViewAssist) {
     openAdminAssistModal();
 setLoading(true, "Cargando…", "Leyendo docentes del mes seleccionado.");
 
-// ✅ AQUI VA ESTO:
+// ✅ Cargar meses reales para el modal Ver asistencias
 if (adminMonthSelect) {
-  const months = await gsAdminListMonths();
 
-adminMonthSelect.innerHTML = (months.length ? months : [{ key: "", label: "(Sin meses)" }])
-  .map(m => {
-    const year = String(m.key || "").split("-")[0] || "";
-    const label = year ? `${formatMonthLabel(m.key)}` : String(m.label || "");
-    return `<option value="${escapeHtml(m.key)}">${escapeHtml(label)}</option>`;
-  })
-  .join("");
+  let months = [];
 
-// ✅ por defecto: mes actual
-const currentMonth = monthKeyFromDate(new Date());
-const hasCurrentMonth = (months || []).some(m => String(m.key || "").trim() === currentMonth);
+  try {
+    months = await gsAdminListMonths();
+  } catch (e) {
+    months = [];
+  }
 
-if (hasCurrentMonth) {
-  adminMonthSelect.value = currentMonth;
-} else if ((months || []).length) {
-  adminMonthSelect.value = String(months[0].key || "").trim();
-}
+  // ✅ asegurar siempre el mes actual
+  const currentMonth = monthKeyFromDate(new Date());
+
+  const existsCurrent = (months || []).some(
+    m => String(m.key || "").trim() === currentMonth
+  );
+
+  if (!existsCurrent) {
+    months.unshift({
+      key: currentMonth,
+      label: formatMonthLabel(currentMonth)
+    });
+  }
+
+  // ✅ quitar duplicados
+  const seen = new Set();
+
+  months = months.filter(m => {
+    const key = String(m.key || "").trim();
+
+    if (!key || seen.has(key)) return false;
+
+    seen.add(key);
+    return true;
+  });
+
+  // ✅ ordenar más reciente primero
+  months.sort((a,b) =>
+    String(b.key || "").localeCompare(String(a.key || ""))
+  );
+
+  adminMonthSelect.innerHTML = months
+    .map(m => {
+
+      const key = String(m.key || "").trim();
+
+      return `
+        <option value="${escapeHtml(key)}">
+          ${escapeHtml(formatMonthLabel(key))}
+        </option>
+      `;
+
+    })
+    .join("");
+
+  // ✅ seleccionar julio (mes actual)
+  if (months.some(m => String(m.key) === currentMonth)) {
+    adminMonthSelect.value = currentMonth;
+  } else if (months.length) {
+    adminMonthSelect.value = months[0].key;
+  }
 }
 
 // y después:
