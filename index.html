@@ -12153,6 +12153,10 @@ function showSuccessCheck(message = "¡Registro guardado!", ms = 3200, opts = {}
 
 function mostrarImagenRegistroExitoso_(){
 
+  if(!window.imagenRegistroActual){
+    return;
+  }
+
   const existe = document.getElementById("registroImagenOverlay");
 
   if (existe) {
@@ -30298,11 +30302,15 @@ async function cargarImagenRegistroSupabase_(){
     }
 
 
-    if(r.url){
+if(r.activo && r.url){
 
-      window.imagenRegistroActual = r.url;
+  window.imagenRegistroActual = r.url;
 
-    }
+}else{
+
+  window.imagenRegistroActual = "";
+
+}
 
 
   } catch(e){
@@ -30341,11 +30349,13 @@ function configurarCambioImagenRegistro_(){
   }
 
 
+
   boton.onclick = () => {
 
-    selector.click();
+    mostrarModalImagenRegistro_();
 
   };
+
 
 
   selector.onchange = async () => {
@@ -30369,6 +30379,7 @@ function configurarCambioImagenRegistro_(){
         const res = await fetch(
           GS_WEBAPP_URL,
           {
+
             method:"POST",
 
             body:JSON.stringify({
@@ -30386,12 +30397,15 @@ function configurarCambioImagenRegistro_(){
               archivo.name
 
             })
+
           }
         );
 
 
-        const r = await res.json()
-          .catch(() => null);
+
+        const r =
+        await res.json()
+        .catch(()=>null);
 
 
 
@@ -30406,19 +30420,19 @@ function configurarCambioImagenRegistro_(){
 
 
 
-      showSuccessCheck(
-  "Imagen de registro actualizada correctamente",
-  2500
-);
-
-
-        // Actualiza la imagen sin cerrar la app
         if(r.url){
 
           window.imagenRegistroActual =
           r.url;
 
         }
+
+
+
+        showSuccessCheck(
+          "Imagen actualizada correctamente",
+          2500
+        );
 
 
       };
@@ -30429,13 +30443,10 @@ function configurarCambioImagenRegistro_(){
       );
 
 
-    } catch(e){
+    }catch(e){
 
 
-      console.error(
-        "Error cambiando imagen:",
-        e
-      );
+      console.error(e);
 
 
       alert(
@@ -30448,6 +30459,266 @@ function configurarCambioImagenRegistro_(){
 
   };
 
+
+}
+
+
+function mostrarModalImagenRegistro_(){
+
+  const existe =
+  document.getElementById(
+    "modalImagenRegistro"
+  );
+
+
+  if(existe){
+    existe.remove();
+  }
+
+
+
+  const modal =
+  document.createElement("div");
+
+
+  modal.id =
+  "modalImagenRegistro";
+
+
+  modal.innerHTML = `
+
+  <div style="
+    background:white;
+    width:320px;
+    border-radius:18px;
+    padding:25px;
+    text-align:center;
+    box-shadow:0 10px 40px rgba(0,0,0,.3);
+  ">
+
+
+    <h3>
+      Imagen registro exitoso
+    </h3>
+
+
+    <button id="btnSeleccionarImagenRegistro"
+      class="menu-item"
+      style="width:100%;margin-bottom:12px;">
+      🖼️ Cambiar imagen
+    </button>
+
+
+    <button id="btnActivarRegistroImagen"
+      class="menu-item"
+      style="width:100%;margin-bottom:12px;">
+      🟢 Activar imagen
+    </button>
+
+
+    <button id="btnDesactivarRegistroImagen"
+      class="menu-item"
+      style="width:100%;margin-bottom:12px;">
+      ⚪ Desactivar imagen
+    </button>
+
+
+    <button id="btnCerrarModalImagen"
+      class="menu-item"
+      style="width:100%;">
+      ❌ Cerrar
+    </button>
+
+
+  </div>
+
+  `;
+
+
+
+  Object.assign(modal.style,{
+
+    position:"fixed",
+    inset:"0",
+    background:"rgba(0,0,0,.6)",
+    zIndex:"9999999",
+    display:"flex",
+    alignItems:"center",
+    justifyContent:"center"
+
+  });
+
+
+
+  document.body.appendChild(modal);
+
+
+
+  document
+  .getElementById(
+    "btnSeleccionarImagenRegistro"
+  )
+  .onclick = () => {
+
+    document
+    .getElementById(
+      "selectorImagenRegistro"
+    )
+    .click();
+
+  };
+
+
+
+  document
+  .getElementById(
+    "btnActivarRegistroImagen"
+  )
+  .onclick = () => {
+
+    cambiarEstadoImagenRegistro_(true);
+
+  };
+
+
+
+  document
+  .getElementById(
+    "btnDesactivarRegistroImagen"
+  )
+  .onclick = () => {
+
+    cambiarEstadoImagenRegistro_(false);
+
+  };
+
+
+
+  document
+  .getElementById(
+    "btnCerrarModalImagen"
+  )
+  .onclick = () => {
+
+    modal.remove();
+
+  };
+
+}
+
+
+
+async function cambiarEstadoImagenRegistro_(estado){
+
+  try {
+
+
+    const res = await fetch(
+      GS_WEBAPP_URL,
+      {
+        method:"POST",
+
+        body:JSON.stringify({
+
+          action:
+          "toggle_imagen_registro",
+
+          key:
+          GS_API_KEY,
+
+          activo:
+          estado
+
+        })
+      }
+    );
+
+
+    const r =
+    await res.json();
+
+
+
+    if(!r.ok){
+
+      throw new Error(
+        r.msg ||
+        "Error actualizando estado"
+      );
+
+    }
+
+
+
+    showSuccessCheck(
+      estado
+      ?
+      "Imagen activada"
+      :
+      "Imagen desactivada",
+      2500
+    );
+
+
+    document
+    .getElementById(
+      "modalImagenRegistro"
+    )
+    ?.remove();
+
+
+
+  }catch(e){
+
+    console.error(e);
+
+    alert(
+      "No se pudo cambiar el estado"
+    );
+
+  }
+
+}
+
+
+
+
+async function cambiarEstadoImagenRegistro_(estado){
+
+  const res = await fetch(
+    GS_WEBAPP_URL,
+    {
+      method:"POST",
+      body:JSON.stringify({
+
+        action:
+        "toggle_imagen_registro",
+
+        key:
+        GS_API_KEY,
+
+        activo:
+        estado
+
+      })
+    }
+  );
+
+
+  const r =
+  await res.json();
+
+
+  if(r.ok){
+
+    showSuccessCheck(
+      estado
+      ? "Imagen activada"
+      : "Imagen desactivada",
+      2500
+    );
+
+  }
 
 }
 
