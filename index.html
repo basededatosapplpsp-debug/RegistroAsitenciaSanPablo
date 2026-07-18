@@ -30851,14 +30851,15 @@ async function cambiarEstadoImagenRegistro_(estado){
 
 
     const r =
-    await res.json();
+    await res.json()
+    .catch(()=>null);
 
 
 
-    if(!r.ok){
+    if(!r || !r.ok){
 
       throw new Error(
-        r.msg ||
+        r?.msg ||
         "Error actualizando estado"
       );
 
@@ -30866,73 +30867,56 @@ async function cambiarEstadoImagenRegistro_(estado){
 
 
 
-    showSuccessCheck(
-      estado
-      ?
-      "Imagen activada"
-      :
-      "Imagen desactivada",
-      2500
+    // Actualizar botón inmediatamente
+    const botonEstado =
+    document.getElementById(
+      "btnEstadoImagenRegistro"
     );
 
 
-    document
-    .getElementById(
-      "modalImagenRegistro"
-    )
-    ?.remove();
+    if(botonEstado){
+
+      botonEstado.textContent =
+      estado
+        ?
+        "⚪ Desactivar imagen"
+        :
+        "🟢 Activar imagen";
+
+    }
+
+
+
+    // Mantener estado actualizado en memoria
+    window.imagenRegistroActiva =
+    estado;
+
+
+
+    showSuccessCheck(
+      estado
+        ?
+        "Imagen activada"
+        :
+        "Imagen desactivada",
+      2500
+    );
 
 
 
   }catch(e){
 
-    console.error(e);
+
+    console.error(
+      "Error cambiando estado imagen:",
+      e
+    );
+
 
     alert(
       "No se pudo cambiar el estado"
     );
 
-  }
-
-}
-
-
-
-
-async function cambiarEstadoImagenRegistro_(estado){
-
-  const res = await fetch(
-    GS_WEBAPP_URL,
-    {
-      method:"POST",
-      body:JSON.stringify({
-
-        action:
-        "toggle_imagen_registro",
-
-        key:
-        GS_API_KEY,
-
-        activo:
-        estado
-
-      })
-    }
-  );
-
-
-  const r =
-  await res.json();
-
-
-  if(r.ok){
-
-    showSuccessCheck(
-      estado
-      ? "Imagen activada"
-      : "Imagen desactivada",
-      2500
-    );
 
   }
 
