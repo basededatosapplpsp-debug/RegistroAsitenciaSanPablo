@@ -30463,7 +30463,7 @@ function configurarCambioImagenRegistro_(){
 }
 
 
-function mostrarModalImagenRegistro_(){
+async function mostrarModalImagenRegistro_(){
 
   const existe =
   document.getElementById(
@@ -30473,6 +30473,52 @@ function mostrarModalImagenRegistro_(){
 
   if(existe){
     existe.remove();
+  }
+
+
+  let activoActual = false;
+
+
+  // Consultar estado real desde Supabase
+
+  try {
+
+    const res = await fetch(
+      GS_WEBAPP_URL,
+      {
+        method:"POST",
+        body:JSON.stringify({
+
+          action:
+          "get_imagen_registro",
+
+          key:
+          GS_API_KEY
+
+        })
+      }
+    );
+
+
+    const r =
+    await res.json();
+
+
+    if(r.ok){
+
+      activoActual =
+      Boolean(r.activo);
+
+    }
+
+
+  }catch(e){
+
+    console.warn(
+      "No se pudo consultar estado imagen",
+      e
+    );
+
   }
 
 
@@ -30489,7 +30535,7 @@ function mostrarModalImagenRegistro_(){
 
   <div style="
     background:white;
-    width:320px;
+    width:330px;
     border-radius:18px;
     padding:25px;
     text-align:center;
@@ -30509,18 +30555,19 @@ function mostrarModalImagenRegistro_(){
     </button>
 
 
-    <button id="btnActivarRegistroImagen"
+
+    <button id="btnEstadoImagenRegistro"
       class="menu-item"
       style="width:100%;margin-bottom:12px;">
-      🟢 Activar imagen
+      ${
+        activoActual
+        ?
+        "⚪ Desactivar imagen"
+        :
+        "🟢 Activar imagen"
+      }
     </button>
 
-
-    <button id="btnDesactivarRegistroImagen"
-      class="menu-item"
-      style="width:100%;margin-bottom:12px;">
-      ⚪ Desactivar imagen
-    </button>
 
 
     <button id="btnCerrarModalImagen"
@@ -30572,23 +30619,13 @@ function mostrarModalImagenRegistro_(){
 
   document
   .getElementById(
-    "btnActivarRegistroImagen"
+    "btnEstadoImagenRegistro"
   )
   .onclick = () => {
 
-    cambiarEstadoImagenRegistro_(true);
-
-  };
-
-
-
-  document
-  .getElementById(
-    "btnDesactivarRegistroImagen"
-  )
-  .onclick = () => {
-
-    cambiarEstadoImagenRegistro_(false);
+    cambiarEstadoImagenRegistro_(
+      !activoActual
+    );
 
   };
 
