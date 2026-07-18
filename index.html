@@ -9143,10 +9143,9 @@ body[data-theme="light"] #parqueResult .parque-badge{
   Filtrar por
   <select id="notasAlertasTipo" class="modal-input">
     <option value="">Todas</option>
-<option value="procedimental">Procedimental</option>
-<option value="reporte_periodo_actual">Reporte periodo actual</option>
-<option value="definitiva">Nota definitiva</option>
-<option value="debe">Debe actividad</option>
+    <option value="procedimental">Procedimental</option>
+    <option value="definitiva">Nota definitiva</option>
+    <option value="debe">Debe actividad</option>
   </select>
 </label>
 
@@ -12131,7 +12130,6 @@ function showSuccessCheck(message = "¡Registro guardado!", ms = 3200, opts = {}
   }, duration);
 }
 
-
 function mostrarImagenRegistroExitoso_(){
 
   const existe = document.getElementById("registroImagenOverlay");
@@ -13196,7 +13194,7 @@ function getExitVisualState_(r) {
   const t = timeToMinutes(r.time);
   const schedule = getEffectiveScheduleForTeacher_(r.teacher);
   const limit = timeToMinutes(schedule.exitOk);
-  const extraStart = timeToMinutes("15:20");
+  const extraStart = timeToMinutes("15:30");
 
   if (t == null || limit == null) return "normal";
 
@@ -19310,7 +19308,7 @@ function notasRenderGrid_(){
               ${notasFormatoDetallesAgrupadosHtml_(calc.detalles)}
             </div>
             <button class="btn btn-secondary notas-share-student-btn" type="button" data-nota-share="${sIdx}">
-              Compartir notas
+              Compartir reporte
             </button>
           ` : ""}
         ` : ""}
@@ -19395,10 +19393,17 @@ function notasRenderGrid_(){
       const periodo = String(notasPeriodoEl?.value || "1").trim();
       const estudianteVista = notasNombreVista_(student.estudiante);
 
-      const msg = notasConstruirMensajeNotasActualesEstudiante_(student);
+      const msg = `Reporte académico\n\n` +
+                  `Estudiante: ${estudianteVista}\n` +
+                  `Curso: ${curso}\n` +
+                  `Asignatura: ${asignatura}\n` +
+                  `Periodo: ${periodo}\n` +
+                  `Definitiva: ${calc.definitiva}\n` +
+                  `Estado: ${calc.estado}\n\n` +
+                  `Detalles:\n${notasFormatoDetallesAgrupadosTexto_(calc.detalles)}`;
 
       if (navigator.share) {
-        await navigator.share({ title: "Notas actuales", text: msg });
+        await navigator.share({ title: "Reporte académico", text: msg });
         return;
       }
       window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, "_blank");
@@ -19436,7 +19441,15 @@ function notasOpenDetallePc_(sIdx){
     });
   }
 
-  const msg = notasConstruirMensajeNotasActualesEstudiante_(student);
+  const msg =
+    `Reporte académico\n\n` +
+    `Estudiante: ${estudianteVista}\n` +
+    `Curso: ${curso}\n` +
+    `Asignatura: ${asignatura}\n` +
+    `Periodo: ${periodo}\n` +
+    `Definitiva: ${calc.definitiva}\n` +
+    `Estado: ${calc.estado}\n\n` +
+    `Detalles:\n${notasFormatoDetallesAgrupadosTexto_(calc.detalles)}`;
 
   modal.innerHTML = `
     <div class="modal-card notas-pc-detail-card">
@@ -19460,7 +19473,7 @@ function notasOpenDetallePc_(sIdx){
 
       <div class="modal-actions">
         <button class="btn btn-secondary" type="button" id="btnNotasPcDetalleCompartir">
-          Compartir notas
+          Compartir reporte
         </button>
       </div>
     </div>
@@ -19475,7 +19488,7 @@ function notasOpenDetallePc_(sIdx){
   document.getElementById("btnNotasPcDetalleCompartir")?.addEventListener("click", async () => {
     if (navigator.share) {
       await navigator.share({
-        title: "Notas actuales",
+        title: "Reporte académico",
         text: msg
       });
       return;
@@ -19645,7 +19658,7 @@ if (actions) {
     btnNotasCompartirDebe.type = "button";
     btnNotasCompartirDebe.id = "btnNotasCompartirDebe";
     btnNotasCompartirDebe.className = "btn notas-share-all-btn";
-    btnNotasCompartirDebe.title = "Compartir las notas actuales de la planilla";
+    btnNotasCompartirDebe.title = "Compartir todos los estudiantes que deben notas";
     btnNotasCompartirDebe.innerHTML = `<i class="fa-solid fa-share-nodes"></i>`;
     btnNotasCompartirDebe.addEventListener("click", notasCompartirDebeTodos_);
   }
@@ -20309,144 +20322,46 @@ async function notasCargarPlanillaGuardada_(){
 }
 
 
-function notasFormatoValorActual_(valor){
-  const nota = notasParseNota_(valor);
-  return nota === null ? null : Number(nota).toFixed(1);
-}
-
-function notasNotasActualesComponente_(student, componente){
-  return notasColumnasPorComponente_(componente)
-    .map(col => {
-      const valor = notasFormatoValorActual_(student?.notas?.[String(col.orden)]);
-      if (valor === null) return null;
-
-      return {
-        nombre: String(col.nombre || `Actividad ${col.orden}`).trim(),
-        valor
-      };
-    })
-    .filter(Boolean);
-}
-
-function notasTieneNotasActuales_(student){
-  return notasNotasActualesComponente_(student, "procedimental").length > 0 ||
-         notasNotasActualesComponente_(student, "cognitivo").length > 0 ||
-         notasFormatoValorActual_(student?.notas?.actitudinal) !== null;
-}
-
-function notasConstruirBloqueNotasActuales_(student, incluirContexto = false){
+async function notasCompartirDebeTodos_(){
   const curso = String(notasCursoEl?.value || "").trim();
   const asignatura = String(notasAsignaturaEl?.value || "").trim();
   const periodo = String(notasPeriodoEl?.value || "1").trim();
-  const estudianteVista = notasNombreVista_(student?.estudiante);
-  const calc = notasCalcStudent_(student || {});
 
-  const procedimentales = notasNotasActualesComponente_(student, "procedimental");
-  const cognitivos = notasNotasActualesComponente_(student, "cognitivo");
-  const actitudinal = notasFormatoValorActual_(student?.notas?.actitudinal);
-
-  const lineas = [`Estudiante: ${estudianteVista || "—"}`];
-
-  if (incluirContexto) {
-    lineas.push(
-      `Curso: ${curso || "—"}`,
-      `Asignatura: ${asignatura || "—"}`,
-      `Periodo: ${periodo || "—"}`
-    );
-  }
-
-  if (procedimentales.length) {
-    lineas.push("", "Procedimental (40%):");
-    procedimentales.forEach(item => lineas.push(`• ${item.nombre}: ${item.valor}`));
-    if (calc.procTotal !== "—") {
-      lineas.push(`Promedio procedimental: ${Number(calc.procTotal).toFixed(1)}`);
-    }
-  }
-
-  if (cognitivos.length) {
-    lineas.push("", "Cognitivo (40%):");
-    cognitivos.forEach(item => lineas.push(`• ${item.nombre}: ${item.valor}`));
-    if (calc.cogTotal !== "—") {
-      lineas.push(`Promedio cognitivo: ${Number(calc.cogTotal).toFixed(1)}`);
-    }
-  }
-
-  if (actitudinal !== null) {
-    lineas.push("", `Actitudinal (20%): ${actitudinal}`);
-  }
-
-  if (calc.definitiva !== "—") {
-    lineas.push("", `Definitiva actual: ${Number(calc.definitiva).toFixed(1)}`);
-  }
-
-  if (!procedimentales.length && !cognitivos.length && actitudinal === null) {
-    lineas.push("", "Sin notas registradas actualmente.");
-  }
-
-  return lineas.join("\n");
-}
-
-function notasConstruirMensajeNotasActualesEstudiante_(student){
-  return `Notas actuales\n\n${notasConstruirBloqueNotasActuales_(student, true)}`;
-}
-
-async function notasCompartirDebeTodos_(){
   if (!__notasEstudiantes.length) {
     return notasSetHint_("No hay estudiantes cargados para compartir.");
   }
 
-  const estudiantes = __notasEstudiantes
-    .filter(notasTieneNotasActuales_)
-    .slice()
-    .sort((a,b)=>notasNombreVista_(a.estudiante).localeCompare(notasNombreVista_(b.estudiante), "es", {sensitivity:"base"}));
+  const pendientes = __notasEstudiantes
+    .map(student => {
+      const calc = notasCalcStudent_(student);
+      return { student, calc };
+    })
+    .filter(x => String(x.calc.estado || "").trim() === "DEBE_NOTAS");
 
-  if (!estudiantes.length) {
-    return notasSetHint_("No hay notas registradas actualmente para compartir.");
+  if (!pendientes.length) {
+    return notasSetHint_("No hay estudiantes que deban notas en esta planilla.");
   }
 
-  let modal = document.getElementById("notasCompartirEstudianteModal");
+  const msg =
+    `Reporte de estudiantes que deben notas\n\n` +
+    `Curso: ${curso || "—"}\n` +
+    `Asignatura: ${asignatura || "—"}\n` +
+    `Periodo: ${periodo || "—"}\n\n` +
+    pendientes.map((x, idx) =>
+      `${idx + 1}. ${x.student.estudiante}\n` +
+      `Definitiva: ${x.calc.definitiva ?? "—"}\n` +
+      `Detalles:\n${notasFormatoDetallesAgrupados_(x.calc.detalles)}`
+    ).join("\n\n");
 
-  if (!modal) {
-    modal = document.createElement("div");
-    modal.id = "notasCompartirEstudianteModal";
-    modal.className = "modal-backdrop";
-    document.body.appendChild(modal);
+  if (navigator.share) {
+    await navigator.share({
+      title: "Reporte de estudiantes que deben notas",
+      text: msg
+    });
+    return;
   }
 
-  modal.innerHTML = `
-    <div class="modal-card">
-      <h2 style="margin:0 0 8px">Compartir notas</h2>
-      <p class="muted small">Seleccione el estudiante que desea enviar por WhatsApp.</p>
-      <select id="notasCompartirEstudianteSelect" class="modal-input">
-        ${estudiantes.map((s,i)=>`<option value="${i}">${escapeHtml(notasNombreVista_(s.estudiante))}</option>`).join("")}
-      </select>
-      <div class="modal-actions">
-        <button class="btn btn-ghost" id="notasCompartirCancelar">Cancelar</button>
-        <button class="btn btn-secondary" id="notasCompartirEnviar">Compartir notas</button>
-      </div>
-    </div>
-  `;
-
-  modal.hidden = false;
-
-  const cerrar = ()=>{ modal.hidden = true; };
-  document.getElementById("notasCompartirCancelar")?.addEventListener("click", cerrar);
-
-  document.getElementById("notasCompartirEnviar")?.addEventListener("click", async ()=>{
-    const idx = Number(document.getElementById("notasCompartirEstudianteSelect")?.value || 0);
-    const student = estudiantes[idx];
-    if (!student) return;
-
-    const msg = notasConstruirMensajeNotasActualesEstudiante_(student);
-    cerrar();
-
-    if (navigator.share) {
-      await navigator.share({ title:"Notas actuales", text:msg });
-      return;
-    }
-
-    window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, "_blank");
-  });
+  window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, "_blank");
 }
 
 function notasExcelSafe_(v){
@@ -20873,52 +20788,6 @@ function notasAlertasHint_(msg){
 const NOTAS_ALERTAS_COURSES_CACHE = "notas_alertas_courses_cache_v1";
 const NOTAS_ALERTAS_DATA_CACHE = "notas_alertas_data_cache_v1";
 
-
-const NOTAS_ALERTAS_FILTROS_CACHE = "notas_alertas_filtros_cache_v1";
-
-
-function notasAlertasGuardarFiltros_(){
-  try {
-    localStorage.setItem(
-      NOTAS_ALERTAS_FILTROS_CACHE,
-      JSON.stringify({
-        curso: notasAlertasCursoEl?.value || "",
-        asignatura: notasAlertasAsignaturaEl?.value || "",
-        tipo: notasAlertasTipoEl?.value || "",
-        periodo: notasAlertasPeriodoEl?.value || ""
-      })
-    );
-  } catch {}
-}
-
-
-function notasAlertasRestaurarFiltros_(){
-  try {
-    const data = JSON.parse(
-      localStorage.getItem(NOTAS_ALERTAS_FILTROS_CACHE) || "null"
-    );
-
-    if (!data) return;
-
-    if (notasAlertasCursoEl) {
-      notasAlertasCursoEl.value = data.curso || "";
-    }
-
-    if (notasAlertasAsignaturaEl) {
-      notasAlertasAsignaturaEl.value = data.asignatura || "";
-    }
-
-    if (notasAlertasTipoEl) {
-      notasAlertasTipoEl.value = data.tipo || "";
-    }
-
-    if (notasAlertasPeriodoEl) {
-      notasAlertasPeriodoEl.value = data.periodo || "";
-    }
-
-  } catch {}
-}
-
 function notasCacheRead_(key){
   try {
     return JSON.parse(localStorage.getItem(key) || "null");
@@ -21067,28 +20936,9 @@ function notasAlertasFiltrarPorTipo_(items){
     const cogTotal = notasAlertasNum_(item.cog_total);
 
     switch(tipo){
-case "procedimental":
-  return procTotal !== null && procTotal < 3.5;
-
-case "reporte_periodo_actual": {
-  const partes = String(item.detalles || "")
-    .split(";")
-    .map(x => x.trim())
-    .filter(Boolean);
-
-  return partes.some(parte => {
-    const texto = parte.toLowerCase();
-
-    return texto.startsWith("procedimental") &&
-           (
-             texto.includes("vacía") ||
-             texto.includes("vacia") ||
-             texto.includes("igual a 1")
-           );
-  });
-}
-
-case "cognitivo":
+      case "procedimental":
+        return procTotal !== null && procTotal < 3.5;
+      case "cognitivo":
         return cogTotal !== null && cogTotal < 3.5;
       case "definitiva":
         return definitiva !== null && definitiva < 3.5;
@@ -21323,29 +21173,11 @@ function notasAlertasDetallesPorFiltroTexto_(a){
   const detallesRaw = String(a.detalles || "");
   const partes = detallesRaw.split(";").map(x => x.trim()).filter(Boolean);
 
-if (tipo === "procedimental") {
-  return `Nota procedimental: ${notasAlertasFmtNota_(a.proc_total)}`;
-}
+  if (tipo === "procedimental") {
+    return `Nota procedimental: ${notasAlertasFmtNota_(a.proc_total)}`;
+  }
 
-if (tipo === "reporte_periodo_actual") {
-  const pendientesProcedimentales = partes.filter(parte => {
-    const texto = parte.toLowerCase();
-
-    return texto.startsWith("procedimental") &&
-           (
-             texto.includes("vacía") ||
-             texto.includes("vacia") ||
-             texto.includes("igual a 1")
-           );
-  });
-
-  return pendientesProcedimentales.length
-    ? `Actividades procedimentales pendientes:
-${notasFormatoDetallesAgrupadosTexto_(pendientesProcedimentales.join("; "))}`
-    : "Actividades procedimentales pendientes: —";
-}
-
-if (tipo === "cognitivo") {
+  if (tipo === "cognitivo") {
     return `Nota cognitiva: ${notasAlertasFmtNota_(a.cog_total)}`;
   }
 
@@ -21383,7 +21215,7 @@ function notasAlertasDetallesPorFiltroHtml_(a){
   .replace(/\*/g, "");
 
       html = html.replace(
-        /^(Nota procedimental:|Nota cognitiva:|Nota definitiva:|Actividades procedimentales pendientes:|Actividades pendientes:|Notas bajas:|Detalles:)/,
+        /^(Nota procedimental:|Nota cognitiva:|Nota definitiva:|Actividades pendientes:|Notas bajas:|Detalles:)/,
         `<strong class="notas-detalle-grupo">$1</strong>`
       );
 
@@ -21561,9 +21393,7 @@ async function notasAlertasOpen_(){
   notasAlertasHint_("Cargando alertas…");
 
   try {
-   await notasAlertasLoadCourses_();
-
-notasAlertasRestaurarFiltros_();
+    await notasAlertasLoadCourses_();
 
     // Muestra cache de inmediato si existe, y luego actualiza desde Supabase.
     await notasAlertasBuscar_({
@@ -21649,20 +21479,14 @@ notasAlertasCursoEl?.addEventListener("change", async () => {
     notasAlertasAsignaturaEl.value = "";
   }
 
-  notasAlertasGuardarFiltros_();
-
   await notasAlertasBuscar_();
 });
 
 notasAlertasTipoEl?.addEventListener("change", async () => {
-  notasAlertasGuardarFiltros_();
-
   await notasAlertasBuscar_();
 });
 
 notasAlertasAsignaturaEl?.addEventListener("change", async () => {
-  notasAlertasGuardarFiltros_();
-
   await notasAlertasBuscar_();
 });
 
@@ -21670,14 +21494,6 @@ btnNotasAlertasCerrar?.addEventListener("click", () => {
   if (notasAlertasModal) notasAlertasModal.hidden = true;
   mantenerMenuNotasAbierto_();
 });
-
-
-notasAlertasPeriodoEl?.addEventListener("change", async () => {
-  notasAlertasGuardarFiltros_();
-
-  await notasAlertasBuscar_();
-});
-
 
 btnNotasAlertasCompartir?.addEventListener("click", notasAlertasCompartir_);
 
@@ -22668,68 +22484,27 @@ if (btnAdminViewAssist) {
     openAdminAssistModal();
 setLoading(true, "Cargando…", "Leyendo docentes del mes seleccionado.");
 
-// ✅ Cargar meses reales para el modal Ver asistencias
+// ✅ AQUI VA ESTO:
 if (adminMonthSelect) {
+  const months = await gsAdminListMonths();
 
-  let months = [];
+adminMonthSelect.innerHTML = (months.length ? months : [{ key: "", label: "(Sin meses)" }])
+  .map(m => {
+    const year = String(m.key || "").split("-")[0] || "";
+    const label = year ? `${formatMonthLabel(m.key)}` : String(m.label || "");
+    return `<option value="${escapeHtml(m.key)}">${escapeHtml(label)}</option>`;
+  })
+  .join("");
 
-  try {
-    months = await gsAdminListMonths();
-  } catch (e) {
-    months = [];
-  }
+// ✅ por defecto: mes actual
+const currentMonth = monthKeyFromDate(new Date());
+const hasCurrentMonth = (months || []).some(m => String(m.key || "").trim() === currentMonth);
 
-  // ✅ asegurar siempre el mes actual
-  const currentMonth = monthKeyFromDate(new Date());
-
-  const existsCurrent = (months || []).some(
-    m => String(m.key || "").trim() === currentMonth
-  );
-
-  if (!existsCurrent) {
-    months.unshift({
-      key: currentMonth,
-      label: formatMonthLabel(currentMonth)
-    });
-  }
-
-  // ✅ quitar duplicados
-  const seen = new Set();
-
-  months = months.filter(m => {
-    const key = String(m.key || "").trim();
-
-    if (!key || seen.has(key)) return false;
-
-    seen.add(key);
-    return true;
-  });
-
-  // ✅ ordenar más reciente primero
-  months.sort((a,b) =>
-    String(b.key || "").localeCompare(String(a.key || ""))
-  );
-
-  adminMonthSelect.innerHTML = months
-    .map(m => {
-
-      const key = String(m.key || "").trim();
-
-      return `
-        <option value="${escapeHtml(key)}">
-          ${escapeHtml(formatMonthLabel(key))}
-        </option>
-      `;
-
-    })
-    .join("");
-
-  // ✅ seleccionar julio (mes actual)
-  if (months.some(m => String(m.key) === currentMonth)) {
-    adminMonthSelect.value = currentMonth;
-  } else if (months.length) {
-    adminMonthSelect.value = months[0].key;
-  }
+if (hasCurrentMonth) {
+  adminMonthSelect.value = currentMonth;
+} else if ((months || []).length) {
+  adminMonthSelect.value = String(months[0].key || "").trim();
+}
 }
 
 // y después:
@@ -27548,6 +27323,17 @@ async function checkLocation() {
   const { latitude, longitude, accuracy } = pos.coords;
   const dist = distanceMeters(latitude, longitude, SCHOOL_LAT, SCHOOL_LNG);
 
+alert(
+  "UBICACIÓN:\n" +
+  "Lat: " + latitude.toFixed(6) + "\n" +
+  "Lng: " + longitude.toFixed(6) + "\n\n" +
+  "COLEGIO:\n" +
+  "Lat: " + SCHOOL_LAT + "\n" +
+  "Lng: " + SCHOOL_LNG + "\n\n" +
+  "Precisión: " + Math.round(accuracy) + " m\n" +
+  "Distancia: " + Math.round(dist) + " m"
+);
+
   distEl.textContent = `${Math.round(dist)} m`;
   accEl.textContent = `${Math.round(accuracy)} m`;
   coordsEl.textContent = `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`;
@@ -28931,7 +28717,7 @@ async function register(type) {
     try { setLoading(false); } catch (e) {}
 
     // ✅ mostrar chulito grande automático
-  showSuccessCheck(`${type} registrada correctamente`, 3200);
+showSuccessCheck(`${type} registrada correctamente`, 3200);
 
 setTimeout(() => {
   mostrarImagenRegistroExitoso_();
