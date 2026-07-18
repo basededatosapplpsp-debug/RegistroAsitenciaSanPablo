@@ -12159,8 +12159,10 @@ function mostrarImagenRegistroExitoso_(){
     existe.remove();
   }
 
+
   const overlay = document.createElement("div");
   overlay.id = "registroImagenOverlay";
+
 
   overlay.innerHTML = `
     <button id="cerrarRegistroImagen"
@@ -12178,46 +12180,63 @@ function mostrarImagenRegistroExitoso_(){
         font-weight:900;
         cursor:pointer;
         z-index:2;
+        backdrop-filter:blur(4px);
       ">
       ×
     </button>
 
+
     <img 
-    src="${window.imagenRegistroActual || 'imagen_registro_exitoso.png'}"
+      src="${window.imagenRegistroActual || 'imagen_registro_exitoso.png'}"
       alt="Registro exitoso"
       style="
         width:100vw;
         height:100vh;
-        object-fit:cover;
+        object-fit:contain;
         display:block;
       "
     >
   `;
 
+
   Object.assign(overlay.style,{
+
     position:"fixed",
+
     inset:"0",
+
     width:"100vw",
+
     height:"100vh",
-    background:"#000",
+
+    background:
+      "linear-gradient(135deg,#000,#151515)",
+
     zIndex:"999999",
+
     display:"flex",
+
     alignItems:"center",
+
     justifyContent:"center"
+
   });
+
 
 
   document.body.appendChild(overlay);
 
 
+
   document
     .getElementById("cerrarRegistroImagen")
     .onclick = () => {
+
       overlay.remove();
+
     };
 
 }
-
 /**
  * Alert moderno tipo modal (Promise-based)
  * Uso: await alertPro({title, msg, okText, danger})
@@ -30387,9 +30406,10 @@ function configurarCambioImagenRegistro_(){
 
 
 
-        alert(
-          "Imagen de registro actualizada correctamente"
-        );
+      showSuccessCheck(
+  "Imagen de registro actualizada correctamente",
+  2500
+);
 
 
         // Actualiza la imagen sin cerrar la app
