@@ -9143,9 +9143,10 @@ body[data-theme="light"] #parqueResult .parque-badge{
   Filtrar por
   <select id="notasAlertasTipo" class="modal-input">
     <option value="">Todas</option>
-    <option value="procedimental">Procedimental</option>
-    <option value="definitiva">Nota definitiva</option>
-    <option value="debe">Debe actividad</option>
+<option value="procedimental">Procedimental</option>
+<option value="reporte_periodo_actual">Reporte periodo actual</option>
+<option value="definitiva">Nota definitiva</option>
+<option value="debe">Debe actividad</option>
   </select>
 </label>
 
@@ -20952,9 +20953,28 @@ function notasAlertasFiltrarPorTipo_(items){
     const cogTotal = notasAlertasNum_(item.cog_total);
 
     switch(tipo){
-      case "procedimental":
-        return procTotal !== null && procTotal < 3.5;
-      case "cognitivo":
+case "procedimental":
+  return procTotal !== null && procTotal < 3.5;
+
+case "reporte_periodo_actual": {
+  const partes = String(item.detalles || "")
+    .split(";")
+    .map(x => x.trim())
+    .filter(Boolean);
+
+  return partes.some(parte => {
+    const texto = parte.toLowerCase();
+
+    return texto.startsWith("procedimental") &&
+           (
+             texto.includes("vacía") ||
+             texto.includes("vacia") ||
+             texto.includes("igual a 1")
+           );
+  });
+}
+
+case "cognitivo":
         return cogTotal !== null && cogTotal < 3.5;
       case "definitiva":
         return definitiva !== null && definitiva < 3.5;
@@ -21189,11 +21209,29 @@ function notasAlertasDetallesPorFiltroTexto_(a){
   const detallesRaw = String(a.detalles || "");
   const partes = detallesRaw.split(";").map(x => x.trim()).filter(Boolean);
 
-  if (tipo === "procedimental") {
-    return `Nota procedimental: ${notasAlertasFmtNota_(a.proc_total)}`;
-  }
+if (tipo === "procedimental") {
+  return `Nota procedimental: ${notasAlertasFmtNota_(a.proc_total)}`;
+}
 
-  if (tipo === "cognitivo") {
+if (tipo === "reporte_periodo_actual") {
+  const pendientesProcedimentales = partes.filter(parte => {
+    const texto = parte.toLowerCase();
+
+    return texto.startsWith("procedimental") &&
+           (
+             texto.includes("vacía") ||
+             texto.includes("vacia") ||
+             texto.includes("igual a 1")
+           );
+  });
+
+  return pendientesProcedimentales.length
+    ? `Actividades procedimentales pendientes:
+${notasFormatoDetallesAgrupadosTexto_(pendientesProcedimentales.join("; "))}`
+    : "Actividades procedimentales pendientes: —";
+}
+
+if (tipo === "cognitivo") {
     return `Nota cognitiva: ${notasAlertasFmtNota_(a.cog_total)}`;
   }
 
@@ -21231,7 +21269,7 @@ function notasAlertasDetallesPorFiltroHtml_(a){
   .replace(/\*/g, "");
 
       html = html.replace(
-        /^(Nota procedimental:|Nota cognitiva:|Nota definitiva:|Actividades pendientes:|Notas bajas:|Detalles:)/,
+        /^(Nota procedimental:|Nota cognitiva:|Nota definitiva:|Actividades procedimentales pendientes:|Actividades pendientes:|Notas bajas:|Detalles:)/,
         `<strong class="notas-detalle-grupo">$1</strong>`
       );
 
