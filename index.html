@@ -20805,6 +20805,52 @@ function notasAlertasHint_(msg){
 const NOTAS_ALERTAS_COURSES_CACHE = "notas_alertas_courses_cache_v1";
 const NOTAS_ALERTAS_DATA_CACHE = "notas_alertas_data_cache_v1";
 
+
+const NOTAS_ALERTAS_FILTROS_CACHE = "notas_alertas_filtros_cache_v1";
+
+
+function notasAlertasGuardarFiltros_(){
+  try {
+    localStorage.setItem(
+      NOTAS_ALERTAS_FILTROS_CACHE,
+      JSON.stringify({
+        curso: notasAlertasCursoEl?.value || "",
+        asignatura: notasAlertasAsignaturaEl?.value || "",
+        tipo: notasAlertasTipoEl?.value || "",
+        periodo: notasAlertasPeriodoEl?.value || ""
+      })
+    );
+  } catch {}
+}
+
+
+function notasAlertasRestaurarFiltros_(){
+  try {
+    const data = JSON.parse(
+      localStorage.getItem(NOTAS_ALERTAS_FILTROS_CACHE) || "null"
+    );
+
+    if (!data) return;
+
+    if (notasAlertasCursoEl) {
+      notasAlertasCursoEl.value = data.curso || "";
+    }
+
+    if (notasAlertasAsignaturaEl) {
+      notasAlertasAsignaturaEl.value = data.asignatura || "";
+    }
+
+    if (notasAlertasTipoEl) {
+      notasAlertasTipoEl.value = data.tipo || "";
+    }
+
+    if (notasAlertasPeriodoEl) {
+      notasAlertasPeriodoEl.value = data.periodo || "";
+    }
+
+  } catch {}
+}
+
 function notasCacheRead_(key){
   try {
     return JSON.parse(localStorage.getItem(key) || "null");
@@ -21447,7 +21493,9 @@ async function notasAlertasOpen_(){
   notasAlertasHint_("Cargando alertas…");
 
   try {
-    await notasAlertasLoadCourses_();
+   await notasAlertasLoadCourses_();
+
+notasAlertasRestaurarFiltros_();
 
     // Muestra cache de inmediato si existe, y luego actualiza desde Supabase.
     await notasAlertasBuscar_({
@@ -21533,14 +21581,20 @@ notasAlertasCursoEl?.addEventListener("change", async () => {
     notasAlertasAsignaturaEl.value = "";
   }
 
+  notasAlertasGuardarFiltros_();
+
   await notasAlertasBuscar_();
 });
 
 notasAlertasTipoEl?.addEventListener("change", async () => {
+  notasAlertasGuardarFiltros_();
+
   await notasAlertasBuscar_();
 });
 
 notasAlertasAsignaturaEl?.addEventListener("change", async () => {
+  notasAlertasGuardarFiltros_();
+
   await notasAlertasBuscar_();
 });
 
@@ -21548,6 +21602,14 @@ btnNotasAlertasCerrar?.addEventListener("click", () => {
   if (notasAlertasModal) notasAlertasModal.hidden = true;
   mantenerMenuNotasAbierto_();
 });
+
+
+notasAlertasPeriodoEl?.addEventListener("change", async () => {
+  notasAlertasGuardarFiltros_();
+
+  await notasAlertasBuscar_();
+});
+
 
 btnNotasAlertasCompartir?.addEventListener("click", notasAlertasCompartir_);
 
