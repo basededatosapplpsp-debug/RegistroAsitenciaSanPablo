@@ -11177,6 +11177,8 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   initQrUi_();
 
+  await cargarImagenRegistroSupabase_();
+
   try {
     configurarCambioImagenRegistro_();
   } catch (e) {}
@@ -12181,7 +12183,7 @@ function mostrarImagenRegistroExitoso_(){
     </button>
 
     <img 
-     src="${localStorage.getItem('imagenRegistroExitoso') || 'imagen_registro_exitoso.png'}"
+    src="${window.imagenRegistroActual || 'imagen_registro_exitoso.png'}"
       alt="Registro exitoso"
       style="
         width:100vw;
@@ -30249,7 +30251,7 @@ select.addEventListener("change", function(){
 })();
 
 
-function configurarCambioImagenRegistro_(){
+async function configurarCambioImagenRegistro_(){
 
   const boton = document.getElementById(
     "btnCambiarImagenRegistro"
@@ -30274,32 +30276,139 @@ function configurarCambioImagenRegistro_(){
   };
 
 
-  selector.onchange = () => {
+  selector.onchange = async () => {
 
     const archivo = selector.files[0];
 
     if(!archivo) return;
 
-    const lector = new FileReader();
 
-    lector.onload = e => {
+    try {
 
-      localStorage.setItem(
-        "imagenRegistroExitoso",
-        e.target.result
-      );
+      const nombreArchivo =
+        "registro_exitoso.png";
+
+
+      // 1. Subir imagen al Storage
+      const { data: uploadData, error: uploadError } =
+        await supabase.storage
+          .from("imagenes_app")
+          .upload(
+            nombreArchivo,
+            archivo,
+            {
+              cacheControl: "3600",
+              upsert: true
+            }
+          );
+
+
+      if(uploadError){
+        throw uploadError;
+      }
+
+
+      // 2. Obtener URL pública
+
+      const { data: publicData } =
+        supabase.storage
+          .from("imagenes_app")
+          .getPublicUrl(nombreArchivo);
+
+
+      const urlImagen =
+        publicData.publicUrl;
+
+
+
+      // 3. Guardar URL en tabla
+
+      const { error: dbError } =
+        await supabase
+          .from("configuracion_imagenes")
+          .update({
+            url_imagen: urlImagen,
+            actualizado_por:
+              loadProfile()?.name || "Administrador",
+            fecha_actualizacion:
+              new Date().toISOString()
+          })
+          .eq(
+            "nombre",
+            "imagen_registro"
+          );
+
+
+      if(dbError){
+        throw dbError;
+      }
+
 
       alert(
-        "Imagen de registro exitoso actualizada correctamente"
+        "Imagen de registro actualizada correctamente"
       );
 
-    };
 
-    lector.readAsDataURL(archivo);
+    } catch(e){
+
+      console.error(
+        "Error cambiando imagen:",
+        e
+      );
+
+
+      alert(
+        "No se pudo actualizar la imagen"
+      );
+
+    }
 
   };
 
 }
+
+
+async function cargarImagenRegistroSupabase_(){
+
+  try {
+
+    const { data, error } =
+      await supabase
+        .from("configuracion_imagenes")
+        .select("url_imagen")
+        .eq(
+          "nombre",
+          "imagen_registro"
+        )
+        .single();
+
+
+    if(error){
+      console.warn(error);
+      return;
+    }
+
+
+    if(data?.url_imagen){
+
+      window.imagenRegistroActual =
+        data.url_imagen;
+
+    }
+
+
+  } catch(e){
+
+    console.warn(
+      "No se pudo cargar imagen registro",
+      e
+    );
+
+  }
+
+}
+
+
 
 </script>
 
