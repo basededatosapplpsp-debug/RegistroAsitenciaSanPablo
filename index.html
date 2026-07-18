@@ -30250,12 +30250,60 @@ select.addEventListener("change", function(){
   runFooterPromo();
 })();
 
+async function cargarImagenRegistroSupabase_(){
 
-async function configurarCambioImagenRegistro_(){
+  try {
+
+    const res = await fetch(
+      GS_WEBAPP_URL,
+      {
+        method: "POST",
+        body: JSON.stringify({
+          action: "get_imagen_registro",
+          key: GS_API_KEY
+        })
+      }
+    );
+
+
+    const r = await res.json()
+      .catch(() => null);
+
+
+    if(!r || !r.ok){
+      console.warn(
+        "No se pudo cargar imagen registro:",
+        r?.msg
+      );
+      return;
+    }
+
+
+    if(r.url){
+
+      window.imagenRegistroActual = r.url;
+
+    }
+
+
+  } catch(e){
+
+    console.warn(
+      "Error cargando imagen registro:",
+      e
+    );
+
+  }
+
+}
+
+
+function configurarCambioImagenRegistro_(){
 
   const boton = document.getElementById(
     "btnCambiarImagenRegistro"
   );
+
 
   const selector = document.getElementById(
     "selectorImagenRegistro"
@@ -30265,91 +30313,104 @@ async function configurarCambioImagenRegistro_(){
   if(!boton || !selector) return;
 
 
-  if(!isAdminMode()) {
+  if(!isAdminMode()){
+
     boton.style.display = "none";
+
     return;
+
   }
 
 
   boton.onclick = () => {
+
     selector.click();
+
   };
 
 
   selector.onchange = async () => {
 
+
     const archivo = selector.files[0];
+
 
     if(!archivo) return;
 
 
     try {
 
-      const nombreArchivo =
-        "registro_exitoso.png";
+
+      const reader = new FileReader();
 
 
-      // 1. Subir imagen al Storage
-      const { data: uploadData, error: uploadError } =
-        await supabase.storage
-          .from("imagenes_app")
-          .upload(
-            nombreArchivo,
-            archivo,
-            {
-              cacheControl: "3600",
-              upsert: true
-            }
+      reader.onload = async () => {
+
+
+        const res = await fetch(
+          GS_WEBAPP_URL,
+          {
+            method:"POST",
+
+            body:JSON.stringify({
+
+              action:
+              "upload_imagen_registro",
+
+              key:
+              GS_API_KEY,
+
+              imagen:
+              reader.result,
+
+              nombre:
+              archivo.name
+
+            })
+          }
+        );
+
+
+        const r = await res.json()
+          .catch(() => null);
+
+
+
+        if(!r || !r.ok){
+
+          throw new Error(
+            r?.msg ||
+            "No se pudo subir imagen"
           );
 
-
-      if(uploadError){
-        throw uploadError;
-      }
-
-
-      // 2. Obtener URL pública
-
-      const { data: publicData } =
-        supabase.storage
-          .from("imagenes_app")
-          .getPublicUrl(nombreArchivo);
-
-
-      const urlImagen =
-        publicData.publicUrl;
+        }
 
 
 
-      // 3. Guardar URL en tabla
-
-      const { error: dbError } =
-        await supabase
-          .from("configuracion_imagenes")
-          .update({
-            url_imagen: urlImagen,
-            actualizado_por:
-              loadProfile()?.name || "Administrador",
-            fecha_actualizacion:
-              new Date().toISOString()
-          })
-          .eq(
-            "nombre",
-            "imagen_registro"
-          );
+        alert(
+          "Imagen de registro actualizada correctamente"
+        );
 
 
-      if(dbError){
-        throw dbError;
-      }
+        // Actualiza la imagen sin cerrar la app
+        if(r.url){
+
+          window.imagenRegistroActual =
+          r.url;
+
+        }
 
 
-      alert(
-        "Imagen de registro actualizada correctamente"
+      };
+
+
+      reader.readAsDataURL(
+        archivo
       );
 
 
     } catch(e){
+
 
       console.error(
         "Error cambiando imagen:",
@@ -30361,54 +30422,14 @@ async function configurarCambioImagenRegistro_(){
         "No se pudo actualizar la imagen"
       );
 
+
     }
+
 
   };
 
-}
-
-
-async function cargarImagenRegistroSupabase_(){
-
-  try {
-
-    const { data, error } =
-      await supabase
-        .from("configuracion_imagenes")
-        .select("url_imagen")
-        .eq(
-          "nombre",
-          "imagen_registro"
-        )
-        .single();
-
-
-    if(error){
-      console.warn(error);
-      return;
-    }
-
-
-    if(data?.url_imagen){
-
-      window.imagenRegistroActual =
-        data.url_imagen;
-
-    }
-
-
-  } catch(e){
-
-    console.warn(
-      "No se pudo cargar imagen registro",
-      e
-    );
-
-  }
 
 }
-
-
 
 </script>
 
