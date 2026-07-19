@@ -3170,6 +3170,98 @@ button[data-uni-edit] + button[data-uni-del-one]{
   margin-top: 10px;
 }
 
+#lateArrivalModal #lateAutoBox{
+  padding: 16px 14px;
+  cursor: default;
+}
+
+#lateArrivalModal #lateAutoBox .left{
+  width: 100%;
+  align-items: flex-start;
+}
+
+#lateArrivalModal #lateAutoDot{
+  margin-top: 7px;
+}
+
+#lateArrivalModal #lateAutoBox .late-auto-copy{
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+#lateArrivalModal #lateAutoTitle{
+  font-size: 22px;
+  line-height: 1.15;
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
+}
+
+#lateArrivalModal #lateAutoSub{
+  display: grid;
+  gap: 5px;
+  margin-top: 7px;
+}
+
+#lateArrivalModal .late-auto-student{
+  color: var(--muted) !important;
+  -webkit-text-fill-color: var(--muted) !important;
+  font-size: 12px;
+  line-height: 1.35;
+  word-break: break-word;
+}
+
+#lateArrivalModal .late-current-count{
+  color: var(--text) !important;
+  -webkit-text-fill-color: var(--text) !important;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+#lateArrivalModal .late-next-report{
+  display: grid;
+  gap: 3px;
+  margin-top: 6px;
+  padding: 10px 11px;
+  border-radius: 12px;
+  border: 1px solid rgba(245,158,11,.55);
+  background: rgba(245,158,11,.15);
+  color: var(--text) !important;
+  -webkit-text-fill-color: var(--text) !important;
+  line-height: 1.35;
+}
+
+#lateArrivalModal .late-next-kicker{
+  color: #fbbf24 !important;
+  -webkit-text-fill-color: #fbbf24 !important;
+  font-size: 10px;
+  font-weight: 950;
+  letter-spacing: .8px;
+  text-transform: uppercase;
+}
+
+#lateArrivalModal .late-next-report strong{
+  color: #fbbf24 !important;
+  -webkit-text-fill-color: #fbbf24 !important;
+  font-size: 15px;
+  font-weight: 950;
+}
+
+#lateArrivalModal .late-next-report.is-limit{
+  border-color: rgba(239,68,68,.5);
+  background: rgba(239,68,68,.13);
+}
+
+#lateArrivalModal .late-next-report.is-limit .late-next-kicker{
+  color: #f87171 !important;
+  -webkit-text-fill-color: #f87171 !important;
+}
+
+#lateArrivalModal .late-dot-empty{
+  background: #64748b;
+  box-shadow: 0 0 0 8px rgba(100,116,139,.15);
+}
+
 #lateArrivalModal .behavior-observation{
   min-height: 78px;
 }
@@ -8221,14 +8313,31 @@ body[data-theme="light"] #parqueResult .parque-badge{
   </div>
 </div>
 
-    <div class="behavior-levels-wrap">
-  <label class="modal-label">Conteo automático</label>
-  <div id="lateAutoBox" class="disc-item" style="cursor:default;">
-    <div class="left">
-      <span id="lateAutoDot" class="lvl-dot lvl-1"></span>
-      <div>
-        <div id="lateAutoTitle" class="name">Selecciona un estudiante</div>
-        <div id="lateAutoSub" class="muted small">La app calculará automáticamente la próxima llegada tarde.</div>
+<div class="behavior-levels-wrap">
+  <label class="modal-label">Reporte actual</label>
+
+  <div id="lateAutoBox" class="disc-item" style="cursor:default; padding:16px 14px;">
+    <div class="left" style="width:100%; align-items:flex-start;">
+      <span id="lateAutoDot" class="lvl-dot lvl-1" style="margin-top:7px;"></span>
+
+      <div style="flex:1; min-width:0;">
+        <div
+          id="lateAutoTitle"
+          class="name"
+          style="font-size:22px; line-height:1.15; white-space:normal;"
+        >
+          Selecciona un estudiante
+        </div>
+
+        <div
+          id="lateAutoSub"
+          style="display:grid; gap:6px; margin-top:7px;"
+          aria-live="polite"
+        >
+          <span style="font-size:13px; color:var(--muted);">
+            La app mostrará el reporte actual y calculará el siguiente.
+          </span>
+        </div>
       </div>
     </div>
   </div>
@@ -8261,7 +8370,7 @@ body[data-theme="light"] #parqueResult .parque-badge{
           </div>
 
           <div class="disc-reported" style="margin-top:18px;">
-  <div class="muted small" style="margin-bottom:8px;">Llegadas tarde del mes</div>
+  <div class="muted small" style="margin-bottom:8px;">Llegadas tarde</div>
   <div id="lateReportedList" class="disc-reported-list">
     <div class="muted small">Cargando...</div>
   </div>
@@ -9632,18 +9741,36 @@ async function lateShareReachedFour_(student){
 }
 
 function lateUpdateAutoBox_(){
-  const student = String(lateStudentEl?.value || __lateCurrentStudent || "").trim();
+  const student = String(
+    lateStudentEl?.value || __lateCurrentStudent || ""
+  ).trim();
+
   const item = student ? lateFindInCache_(student) : null;
-  const current = item ? Number(item.maxTimes || 0) : 0;
-  const next = Math.min(current + 1, 4);
+  const rawCurrent = item ? Number(item.maxTimes || 0) : 0;
+
+  const current = Number.isFinite(rawCurrent)
+    ? Math.max(0, Math.min(rawCurrent, 4))
+    : 0;
+
+  const labels = [
+    "Sin reportes todavía",
+    "Primera vez",
+    "Segunda vez",
+    "Tercera vez",
+    "Cuarta vez"
+  ];
 
   if (!lateAutoTitleEl || !lateAutoSubEl || !lateAutoDotEl) return;
 
-  lateAutoDotEl.className = `lvl-dot lvl-${Math.max(1, Math.min(next, 4))}`;
-
   if (!student) {
+    lateAutoDotEl.className = "lvl-dot lvl-1";
     lateAutoTitleEl.textContent = "Selecciona un estudiante";
-    lateAutoSubEl.textContent = "La app calculará automáticamente la próxima llegada tarde.";
+
+    lateAutoSubEl.innerHTML = `
+      <span style="font-size:13px; color:var(--muted);">
+        La app mostrará el reporte actual y calculará el siguiente.
+      </span>
+    `;
 
     if (btnLateReport) {
       btnLateReport.textContent = "Reportar";
@@ -9654,9 +9781,58 @@ function lateUpdateAutoBox_(){
     return;
   }
 
+  lateAutoDotEl.className =
+    `lvl-dot lvl-${Math.max(1, current)}`;
+
+  lateAutoTitleEl.textContent = labels[current];
+
+  const countText = current === 1
+    ? "1 llegada tarde registrada este mes"
+    : `${current} llegadas tarde registradas este mes`;
+
   if (current >= 4) {
-    lateAutoTitleEl.textContent = "Ya alcanzó 4 llegadas tarde";
-    lateAutoSubEl.textContent = "Puedes reenviar el reporte para compartirlo nuevamente.";
+    lateAutoSubEl.innerHTML = `
+      <span style="
+        font-size:12px;
+        color:var(--muted);
+        word-break:break-word;
+      ">
+        ${escapeHtml(student)}
+      </span>
+
+      <span style="
+        font-size:13px;
+        font-weight:800;
+        color:var(--text);
+      ">
+        ${countText}
+      </span>
+
+      <span style="
+        display:grid;
+        gap:3px;
+        margin-top:5px;
+        padding:10px 11px;
+        border-radius:12px;
+        border:1px solid rgba(239,68,68,.50);
+        background:rgba(239,68,68,.13);
+        color:var(--text);
+      ">
+        <strong style="
+          color:#f87171;
+          -webkit-text-fill-color:#f87171;
+          font-size:11px;
+          text-transform:uppercase;
+          letter-spacing:.6px;
+        ">
+          Límite alcanzado
+        </strong>
+
+        <span style="font-size:13px;">
+          No se guardará una quinta llegada. Puedes reenviar el reporte.
+        </span>
+      </span>
+    `;
 
     if (btnLateReport) {
       btnLateReport.textContent = "Reenviar";
@@ -9667,9 +9843,57 @@ function lateUpdateAutoBox_(){
     return;
   }
 
-  const labels = ["", "Primera vez", "Segunda vez", "Tercera vez", "Cuarta vez"];
-  lateAutoTitleEl.textContent = labels[next];
-  lateAutoSubEl.textContent = `${student} tiene ${current} registrada(s) este mes. Se guardará como ${labels[next].toLowerCase()}.`;
+  const next = current + 1;
+
+  lateAutoSubEl.innerHTML = `
+    <span style="
+      font-size:12px;
+      color:var(--muted);
+      word-break:break-word;
+    ">
+      ${escapeHtml(student)}
+    </span>
+
+    <span style="
+      font-size:13px;
+      font-weight:800;
+      color:var(--text);
+    ">
+      ${countText}
+    </span>
+
+    <span style="
+      display:grid;
+      gap:3px;
+      margin-top:5px;
+      padding:10px 11px;
+      border-radius:12px;
+      border:1px solid rgba(245,158,11,.55);
+      background:rgba(245,158,11,.15);
+      color:var(--text);
+    ">
+      <strong style="
+        color:#fbbf24;
+        -webkit-text-fill-color:#fbbf24;
+        font-size:11px;
+        text-transform:uppercase;
+        letter-spacing:.6px;
+      ">
+        Próxima llegada tarde
+      </strong>
+
+      <span style="font-size:13px;">
+        Se guardará como
+        <strong style="
+          color:#fbbf24;
+          -webkit-text-fill-color:#fbbf24;
+          font-size:15px;
+        ">
+          ${labels[next]}
+        </strong>
+      </span>
+    </span>
+  `;
 
   if (btnLateReport) {
     btnLateReport.textContent = "Reportar";
