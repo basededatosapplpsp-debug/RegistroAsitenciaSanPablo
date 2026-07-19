@@ -2368,34 +2368,30 @@ body.is-admin #registerActions{
     #0b1220 !important;
 }
 
-/* ===== Llegadas tarde: mismo diseño de los demás reportes ===== */
-#lateArrivalModal .modal-card{
-  position: relative !important;
+/* ✅ Ajuste solo para Llegadas tarde en celular */
+#lateArrivalModal.behavior-full .modal-card{
+  width: 100% !important;
+  max-width: 430px !important;
+  height: 100dvh !important;
+  margin: 0 auto !important;
+  border-radius: 0 !important;
 }
 
 #lateArrivalModal .behavior-panel{
-  width: min(920px, 100%) !important;
-  max-width: none !important;
+  width: 100% !important;
+  max-width: 430px !important;
 }
 
 #lateArrivalModal .behavior-full-body{
-  padding: 16px !important;
-  padding-bottom: 90px !important;
+  padding-left: 14px !important;
+  padding-right: 14px !important;
   overflow-x: hidden !important;
 }
 
 #lateArrivalModal .behavior-panel-card{
   width: 100% !important;
-  max-width: none !important;
-}
-
-#btnLateBack:hover{
-  transform: translateY(-1px);
-  background: rgba(30,41,59,.95) !important;
-}
-
-#btnLateBack:active{
-  transform: scale(.95);
+  max-width: 100% !important;
+  overflow: hidden !important;
 }
 
 .behavior-full-header{
@@ -3145,22 +3141,62 @@ button[data-uni-edit] + button[data-uni-del-one]{
   white-space: nowrap;
 }
 
-/* ===== Llegadas tarde: campos iguales a los demás reportes ===== */
-#lateArrivalModal .behavior-observation{
-  min-height: 110px;
-  resize: vertical;
+/* ===== Llegadas tarde: fila compacta curso + estudiante ===== */
+#lateArrivalModal .late-compact-row{
+  display: grid;
+  grid-template-columns: 80px 1fr;
+  gap: 8px;
+  align-items: end;
+}
+
+#lateArrivalModal .late-course-box,
+#lateArrivalModal .late-student-box{
+  min-width: 0;
+}
+
+#lateArrivalModal #lateCourse{
+  min-height: 44px;
+  font-size: 13px;
+  padding-left: 8px;
+  padding-right: 24px;
+}
+
+#lateArrivalModal #lateStudent{
+  min-height: 50px;
+  font-size: 14px;
 }
 
 #lateArrivalModal .behavior-levels-wrap{
-  margin-top: 6px;
+  margin-top: 10px;
+}
+
+#lateArrivalModal .behavior-observation{
+  min-height: 78px;
 }
 
 #lateArrivalModal .modal-actions{
-  margin-top: 14px !important;
+  margin-top: 10px !important;
 }
 
 #lateArrivalModal .disc-reported{
-  margin-top: 18px !important;
+  margin-top: 12px !important;
+}
+
+@media (max-width: 360px){
+  #lateArrivalModal .late-compact-row{
+    grid-template-columns: 72px 1fr;
+    gap: 6px;
+  }
+
+  #lateArrivalModal #lateCourse{
+    font-size: 12px;
+    padding-left: 6px;
+    padding-right: 20px;
+  }
+
+  #lateArrivalModal #lateStudent{
+    font-size: 13px;
+  }
 }
 
 /* ===== Scroll interno reportados ===== */
@@ -8149,22 +8185,21 @@ body[data-theme="light"] #parqueResult .parque-badge{
       <div class="behavior-panel">
         <div class="behavior-panel-card">
 
-<div class="behavior-form-grid two">
-  <div>
-    <label class="modal-label" for="lateMonth">Mes</label>
-    <select id="lateMonth" class="modal-input behavior-big-select">
-      <option value="">Cargando meses...</option>
-    </select>
-  </div>
+          <div style="margin-bottom:10px;">
+  <label class="modal-label" for="lateMonth">Mes</label>
+  <select id="lateMonth" class="modal-input behavior-big-select">
+    <option value="">Cargando meses...</option>
+  </select>
+</div>
 
-  <div>
+        <div class="late-compact-row">
+  <div class="late-course-box">
     <label class="modal-label" for="lateCourse">Curso</label>
     <select id="lateCourse" class="modal-input behavior-big-select"></select>
   </div>
 
-  <div>
+  <div class="late-student-box">
     <datalist id="lateStudentsList"></datalist>
-
     <label class="modal-label" for="lateStudent">Estudiante</label>
 
     <div class="input-with-select">
@@ -8173,7 +8208,7 @@ body[data-theme="light"] #parqueResult .parque-badge{
         class="modal-input input-real behavior-big-select"
         type="text"
         list="lateStudentsList"
-        placeholder="Escribe el nombre del estudiante..."
+        placeholder="Escribe o selecciona estudiante..."
         autocomplete="off"
       />
 
@@ -8186,21 +8221,14 @@ body[data-theme="light"] #parqueResult .parque-badge{
   </div>
 </div>
 
-<div class="behavior-levels-wrap">
+    <div class="behavior-levels-wrap">
   <label class="modal-label">Conteo automático</label>
-
   <div id="lateAutoBox" class="disc-item" style="cursor:default;">
     <div class="left">
       <span id="lateAutoDot" class="lvl-dot lvl-1"></span>
-
       <div>
-        <div id="lateAutoTitle" class="name">
-          Selecciona un estudiante
-        </div>
-
-        <div id="lateAutoSub" class="muted small">
-          La app calculará automáticamente la próxima llegada tarde.
-        </div>
+        <div id="lateAutoTitle" class="name">Selecciona un estudiante</div>
+        <div id="lateAutoSub" class="muted small">La app calculará automáticamente la próxima llegada tarde.</div>
       </div>
     </div>
   </div>
