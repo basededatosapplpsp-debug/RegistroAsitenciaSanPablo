@@ -7425,6 +7425,42 @@ body[data-theme="light"] #parqueResult .parque-badge{
 
 
 
+/* =========================================================
+   AJUSTE TARJETAS INDIVIDUALES LLEGADAS TARDE
+   Evita que los reportes se monten entre sí
+   ========================================================= */
+
+#lateArrivalModal:not(.late-detail-mode) #lateReportedList{
+  grid-auto-rows: minmax(74px, auto);
+}
+
+
+/* Cada tarjeta de reporte debe ocupar su propia fila */
+#lateArrivalModal:not(.late-detail-mode) #lateReportedList > *{
+  position: relative;
+  min-height: 74px !important;
+  height: auto !important;
+
+  box-sizing: border-box;
+
+  overflow: hidden;
+}
+
+
+/* Evita que nombres largos dañen la tarjeta */
+#lateArrivalModal:not(.late-detail-mode) #lateReportedList .disc-name,
+#lateArrivalModal:not(.late-detail-mode) #lateReportedList strong{
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+
+/* Mantiene separación real entre tarjetas */
+#lateArrivalModal:not(.late-detail-mode) #lateReportedList{
+  row-gap: 12px !important;
+}
+
 
 </style>
 </head>
