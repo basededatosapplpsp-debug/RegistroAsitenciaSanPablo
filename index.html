@@ -7332,6 +7332,100 @@ body[data-theme="light"] #parqueResult .parque-badge{
 }
 
 
+
+/* =========================================================
+   LLEGADAS TARDE:
+   listado mensual ocupa todo el espacio disponible
+   ========================================================= */
+
+#lateArrivalModal:not(.late-detail-mode) .behavior-full-body{
+  overflow: hidden !important;
+}
+
+#lateArrivalModal:not(.late-detail-mode) .behavior-panel{
+  height: 100%;
+  min-height: 0;
+}
+
+#lateArrivalModal:not(.late-detail-mode) .behavior-panel-card{
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+
+  display: flex;
+  flex-direction: column;
+  overflow: hidden !important;
+}
+
+/* El listado comienza donde antes estaba Observación */
+#lateArrivalModal:not(.late-detail-mode) .disc-reported{
+  flex: 1 1 auto;
+  min-height: 0;
+
+  display: flex;
+  flex-direction: column;
+
+  margin-top: 14px !important;
+  overflow: hidden;
+}
+
+/* Este es ahora el único scroll de la pantalla principal */
+#lateArrivalModal:not(.late-detail-mode) #lateReportedList{
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: none !important;
+
+  display: grid;
+  align-content: start;
+  gap: 8px;
+
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+
+  padding: 10px 6px 12px 10px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,255,255,.22) transparent;
+}
+
+#lateArrivalModal:not(.late-detail-mode) #lateReportedList::-webkit-scrollbar{
+  width: 6px;
+}
+
+#lateArrivalModal:not(.late-detail-mode) #lateReportedList::-webkit-scrollbar-thumb{
+  background: rgba(255,255,255,.22);
+  border-radius: 999px;
+}
+
+#lateArrivalModal:not(.late-detail-mode) #lateHint{
+  flex: 0 0 auto;
+  margin-top: 8px;
+}
+
+/* Mantiene Reportar abajo y evita choque con el botón Atrás */
+#lateArrivalModal:not(.late-detail-mode) .modal-actions{
+  flex: 0 0 auto;
+
+  margin-top: 10px !important;
+  padding: 10px 0 0 72px;
+
+  border-top: 1px solid var(--line);
+}
+
+/* El botón permanece a la derecha */
+#lateArrivalModal:not(.late-detail-mode) #btnLateReport{
+  min-height: 50px;
+  padding-left: 22px;
+  padding-right: 22px;
+}
+
+
+
+
 </style>
 </head>
 
@@ -8343,14 +8437,15 @@ body[data-theme="light"] #parqueResult .parque-badge{
   </div>
 </div>
 
-          <div>
-            <label class="modal-label" for="lateObservation">Observación</label>
-            <textarea
-              id="lateObservation"
-              class="modal-input behavior-observation"
-              placeholder="Ej: El estudiante llegó tarde al inicio de la jornada."
-            ></textarea>
-          </div>
+<div class="disc-reported">
+  <div class="muted small" style="margin-bottom:8px;">
+    Llegadas tarde del mes
+  </div>
+
+  <div id="lateReportedList" class="disc-reported-list">
+    <div class="muted small">Cargando...</div>
+  </div>
+</div>
 
           <div id="lateHint" class="modal-hint muted small"></div>
 
@@ -8369,12 +8464,7 @@ body[data-theme="light"] #parqueResult .parque-badge{
             <button id="btnLateReport" type="button" class="btn btn-primary">Reportar</button>
           </div>
 
-          <div class="disc-reported" style="margin-top:18px;">
-  <div class="muted small" style="margin-bottom:8px;">Llegadas tarde</div>
-  <div id="lateReportedList" class="disc-reported-list">
-    <div class="muted small">Cargando...</div>
-  </div>
-</div>
+
         </div>
       </div>
     </div>
@@ -12588,23 +12678,51 @@ function openObservationModal_({
   title = "Observación",
   sub = "Escribe la observación para guardar el reporte.",
   placeholder = "Escribe la observación...",
-  initialValue = ""
+  initialValue = "",
+  saveText = "Guardar",
+  cancelText = "Cancelar"
 } = {}) {
   return new Promise((resolve) => {
     __obsModalResolver = resolve;
 
-    if (obsModalTitle) obsModalTitle.textContent = title;
-    if (obsModalSub) obsModalSub.textContent = sub;
+    if (obsModalTitle) {
+      obsModalTitle.textContent = title;
+    }
+
+    if (obsModalSub) {
+      obsModalSub.textContent = sub;
+    }
+
     if (obsModalInput) {
       obsModalInput.value = String(initialValue || "");
       obsModalInput.placeholder = placeholder;
     }
-    if (obsModalHint) obsModalHint.textContent = "";
 
-    if (obsModal) obsModal.hidden = false;
+    if (btnObsSave) {
+      btnObsSave.textContent = String(saveText || "Guardar");
+    }
+
+    if (btnObsCancel) {
+      btnObsCancel.textContent = String(cancelText || "Cancelar");
+    }
+
+    if (obsModalHint) {
+      obsModalHint.textContent = "";
+    }
+
+    if (obsModal) {
+      obsModal.hidden = false;
+    }
 
     setTimeout(() => {
-      try { obsModalInput && obsModalInput.focus(); } catch {}
+      try {
+        if (obsModalInput) {
+          obsModalInput.focus();
+
+          const end = obsModalInput.value.length;
+          obsModalInput.setSelectionRange(end, end);
+        }
+      } catch {}
     }, 20);
   });
 }
@@ -30213,28 +30331,74 @@ if (btnLateReport) {
     if (__lateSaving) return;
 
     const profile = loadProfile();
-    const teacher = String((profile && profile.name) || teacherNameEl.value || "").trim();
-    const email = String(profile?.email || "").trim().toLowerCase();
 
-    const course = String(lateCourseEl && lateCourseEl.value || "").trim();
-    const student = String(lateStudentEl && lateStudentEl.value || "").trim();
-    const observation = String(lateObservationEl && lateObservationEl.value || "").trim();
+    const teacher = String(
+      (profile && profile.name) || teacherNameEl.value || ""
+    ).trim();
+
+    const email = String(
+      profile?.email || ""
+    ).trim().toLowerCase();
+
+    const course = String(
+      (lateCourseEl && lateCourseEl.value) || ""
+    ).trim();
+
+    const student = String(
+      (lateStudentEl && lateStudentEl.value) || ""
+    ).trim();
 
     const item = lateFindInCache_(student);
     const current = item ? Number(item.maxTimes || 0) : 0;
 
-    if (!teacher) return lateSetHint_("Falta el docente.");
 
-    if (!course || course === "__ALL__") {
-      return lateSetHint_("Selecciona un curso específico para reportar.");
+    if (!teacher) {
+      return lateSetHint_("Falta el docente.");
     }
 
-    if (!student) return lateSetHint_("Selecciona o escribe el estudiante.");
 
-   if (current >= 4) {
-  await lateShareReachedFour_(student);
-  return;
-}
+    if (!course || course === "__ALL__") {
+      return lateSetHint_(
+        "Selecciona un curso específico para reportar."
+      );
+    }
+
+
+    if (!student) {
+      return lateSetHint_(
+        "Selecciona o escribe el estudiante."
+      );
+    }
+
+
+    if (current >= 4) {
+      await lateShareReachedFour_(student);
+      return;
+    }
+
+
+    /*
+      NUEVO:
+      La observación ahora sale en el modal.
+      Cancelar = no guarda nada.
+      Aceptar = continúa el proceso normal.
+    */
+
+    const observation = await openObservationModal_({
+      title: "Observación de llegada tarde",
+      sub: `${student} • ${course}`,
+      placeholder:
+        "Ej: El estudiante llegó tarde al inicio de la jornada.",
+      initialValue: "",
+      saveText: "Aceptar",
+      cancelText: "Cancelar"
+    });
+
+
+    if (observation === null) {
+      return;
+    }
+
 
     const submitKey = [
       lateMonthKey_(),
@@ -30244,21 +30408,38 @@ if (btnLateReport) {
       observation
     ].join("|");
 
+
     const now = Date.now();
 
-    if (__lateLastSubmitKey === submitKey && now - __lateLastSubmitAt < 8000) {
-      return lateSetHint_("Este reporte ya se está guardando. Espera un momento.");
+
+    if (
+      __lateLastSubmitKey === submitKey &&
+      now - __lateLastSubmitAt < 8000
+    ) {
+      return lateSetHint_(
+        "Este reporte ya se está guardando. Espera un momento."
+      );
     }
 
+
     __lateSaving = true;
+
     __lateLastSubmitKey = submitKey;
     __lateLastSubmitAt = now;
+
 
     btnLateReport.disabled = true;
     btnLateReport.textContent = "Guardando...";
 
+
     try {
-      setLoading(true, "Guardando", "Registrando llegada tarde.");
+
+      setLoading(
+        true,
+        "Guardando",
+        "Registrando llegada tarde."
+      );
+
 
       const resp = await gsLateArrivalReport({
         teacher,
@@ -30269,50 +30450,113 @@ if (btnLateReport) {
         observation
       });
 
+
       if (Array.isArray(resp.list)) {
+
         __lateCacheList = resp.list;
+
       } else {
+
         await lateRefreshList_();
+
       }
 
-      try {
-  __latePollToken = await gsLateArrivalChangesToken();
-} catch {}
 
-lateSaveCacheToStorage_();
+      try {
+
+        __latePollToken =
+          await gsLateArrivalChangesToken();
+
+      } catch {}
+
+
+      lateSaveCacheToStorage_();
+
 
       lateRenderReportedList_();
+
       lateUpdateAutoBox_();
+
       lateRenderDetail_(student);
 
-      if (lateObservationEl) lateObservationEl.value = "";
 
-lateSuccessToast_(Number(resp.times || 0));
 
-      if (resp && resp.justReported && String(resp.wa_msg || "").trim()) {
-        const msg = String(resp.wa_msg || "").trim();
+      lateSuccessToast_(
+        Number(resp.times || 0)
+      );
 
-        if (typeof confirmAndShareReport_ === "function") {
+
+
+      if (
+        resp &&
+        resp.justReported &&
+        String(resp.wa_msg || "").trim()
+      ) {
+
+        const msg =
+          String(resp.wa_msg || "").trim();
+
+
+        if (
+          typeof confirmAndShareReport_ === "function"
+        ) {
+
           await confirmAndShareReport_({
             student,
             msg,
-            title: "Compartir reporte (Llegadas tarde)"
+            title:
+              "Compartir reporte (Llegadas tarde)"
           });
+
+
         } else if (navigator.share) {
-          await navigator.share({ text: msg });
+
+
+          await navigator.share({
+            text: msg
+          });
+
+
         } else {
-          window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, "_blank");
+
+
+          window.open(
+            `https://wa.me/?text=${encodeURIComponent(msg)}`,
+            "_blank"
+          );
+
+
         }
+
       }
 
+
     } catch (e) {
-      lateSetHint_(String(e && e.message ? e.message : e));
+
+
+      lateSetHint_(
+        String(
+          e && e.message
+            ? e.message
+            : e
+        )
+      );
+
+
     } finally {
+
+
       __lateSaving = false;
+
       btnLateReport.disabled = false;
+
       btnLateReport.textContent = "Reportar";
+
       setLoading(false);
+
+
     }
+
   });
 }
 }
