@@ -6722,6 +6722,59 @@ body.is-pc-mode .single-action-wrap{
   }
 }
 
+
+/* ===== NOTAS CELULAR: spinner visible para puntos +/- ===== */
+@media (max-width: 899px){
+  #notasStudentsModal .notas-input-row.notas-puntos-row{
+    grid-template-columns: minmax(0, 1fr) 132px !important;
+  }
+
+  #notasStudentsModal .notas-puntos-spinner{
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 34px;
+    gap: 5px;
+    align-items: stretch;
+    width: 100%;
+    min-width: 0;
+  }
+
+  #notasStudentsModal .notas-puntos-spinner > input{
+    width: 100% !important;
+    min-width: 0 !important;
+    text-align: center !important;
+  }
+
+  #notasStudentsModal .notas-puntos-spinner-controls{
+    display: grid;
+    grid-template-rows: 1fr 1fr;
+    gap: 4px;
+  }
+
+  #notasStudentsModal .notas-puntos-spin-btn{
+    width: 34px;
+    min-width: 34px;
+    height: 24px;
+    min-height: 24px;
+    padding: 0;
+    border-radius: 9px;
+    border: 1px solid var(--line);
+    background: color-mix(in srgb, var(--card2) 88%, transparent);
+    color: var(--text);
+    font-size: 13px;
+    font-weight: 950;
+    line-height: 1;
+    display: grid;
+    place-items: center;
+    cursor: pointer;
+    touch-action: manipulation;
+  }
+
+  #notasStudentsModal .notas-puntos-spin-btn:active{
+    transform: scale(.94);
+    background: color-mix(in srgb, var(--primary) 20%, var(--card2));
+  }
+}
+
 /* ===== NOTAS: modal pro crear/editar actividad ===== */
 .notas-activity-modal{
   z-index: 100000 !important;
@@ -19079,6 +19132,29 @@ function notasParseNota_(v){
   return Math.round(n * 10) / 10;
 }
 
+
+function notasSanitizarEntradaNota_(valor){
+  const raw = String(valor ?? "");
+
+  // F/f es el único valor alfabético permitido y debe ir solo.
+  if (/^\s*[fF]\s*$/.test(raw)) {
+    return raw.includes("f") ? "f" : "F";
+  }
+
+  // Para notas numéricas solo se conservan dígitos y un único separador decimal.
+  // Se mantienen punto o coma porque la planilla ya acepta ambos formatos.
+  let limpio = raw.replace(/[^0-9.,]/g, "");
+  const primerSeparador = limpio.search(/[.,]/);
+
+  if (primerSeparador >= 0) {
+    limpio =
+      limpio.slice(0, primerSeparador + 1) +
+      limpio.slice(primerSeparador + 1).replace(/[.,]/g, "");
+  }
+
+  return limpio;
+}
+
 function notasPuntosProcedimental_(student){
   const raw = String(student?.notas?.puntos_procedimental ?? "").trim().replace(",", ".");
   if (!raw) return 0;
@@ -19763,9 +19839,15 @@ function notasRenderGrid_(){
               `;
             }).join("")}
 
-            <div class="notas-input-row">
+            <div class="notas-input-row notas-puntos-row">
               <label>Puntos ± <span class="notas-mobile-pill">1 punto = 0,1</span></label>
-              <input class="modal-input" data-nota-input="${sIdx}" data-nota-key="puntos_procedimental" data-nota-puntos="1" type="number" step="1" value="${escapeHtml(student.notas?.puntos_procedimental ?? "")}" placeholder="0" title="Usa valores positivos o negativos" />
+              <div class="notas-puntos-spinner">
+                <input class="modal-input" data-nota-input="${sIdx}" data-nota-key="puntos_procedimental" data-nota-puntos="1" type="number" step="1" inputmode="numeric" value="${escapeHtml(student.notas?.puntos_procedimental ?? "")}" placeholder="0" title="Usa las flechas para sumar o restar puntos" />
+                <div class="notas-puntos-spinner-controls" aria-label="Ajustar puntos">
+                  <button class="notas-puntos-spin-btn" type="button" data-nota-puntos-step="1" data-nota-input="${sIdx}" aria-label="Subir un punto" title="Subir un punto">▲</button>
+                  <button class="notas-puntos-spin-btn" type="button" data-nota-puntos-step="-1" data-nota-input="${sIdx}" aria-label="Bajar un punto" title="Bajar un punto">▼</button>
+                </div>
+              </div>
             </div>
 
             <div class="notas-input-row notas-total-row ${alertaProcClass}">
@@ -19843,6 +19925,12 @@ function notasRenderGrid_(){
     input.addEventListener("input", () => {
       const sIdx = Number(input.dataset.notaInput);
       const key = String(input.dataset.notaKey || "");
+
+      if (input.dataset.notaGrade === "1") {
+        const limpio = notasSanitizarEntradaNota_(input.value);
+        if (input.value !== limpio) input.value = limpio;
+      }
+
       if (!__notasEstudiantes[sIdx]) return;
       if (!__notasEstudiantes[sIdx].notas) __notasEstudiantes[sIdx].notas = {};
       __notasEstudiantes[sIdx].notas[key] = input.value;
@@ -19868,6 +19956,29 @@ function notasRenderGrid_(){
         if (active && active.matches("#notasStudentsModal [data-nota-input]")) return;
         notasRenderGrid_();
       }, 180);
+    });
+  });
+
+  notasGridEl.querySelectorAll("[data-nota-puntos-step]").forEach(btn => {
+    btn.addEventListener("pointerdown", (e) => { e.stopPropagation(); });
+    btn.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+
+      const sIdx = Number(btn.dataset.notaInput);
+      const paso = Number(btn.dataset.notaPuntosStep || 0);
+      const student = __notasEstudiantes[sIdx];
+      if (!student || !Number.isFinite(paso) || paso === 0) return;
+
+      if (!student.notas) student.notas = {};
+
+      const actualRaw = String(student.notas.puntos_procedimental ?? "").trim().replace(",", ".");
+      const actualNum = Number(actualRaw);
+      const actual = Number.isFinite(actualNum) ? Math.trunc(actualNum) : 0;
+      student.notas.puntos_procedimental = String(actual + paso);
+
+      notasProgramarAutoGuardado_();
+      notasRenderGrid_();
     });
   });
 
