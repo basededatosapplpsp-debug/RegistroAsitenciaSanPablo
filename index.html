@@ -6698,6 +6698,30 @@ body.is-pc-mode .single-action-wrap{
 
 
 
+/* ===== NOTAS: F = 1.0 + puntos procedimentales ===== */
+#notasStudentsModal [data-nota-grade="1"]{
+  text-transform: uppercase;
+}
+
+#notasStudentsModal [data-nota-puntos="1"]{
+  text-align: center !important;
+  font-weight: 900 !important;
+}
+
+@media (min-width: 900px){
+  #notasStudentsModal #notasGrid.notas-grid.table-mode .notas-cell.notas-puntos-cell{
+    width: 90px !important;
+    min-width: 90px !important;
+    max-width: 90px !important;
+    text-align: center !important;
+  }
+
+  #notasStudentsModal .notas-puntos-cell input{
+    width: 64px !important;
+    max-width: 64px !important;
+  }
+}
+
 /* ===== NOTAS: modal pro crear/editar actividad ===== */
 .notas-activity-modal{
   z-index: 100000 !important;
@@ -19045,10 +19069,35 @@ function notasSetHint_(msg){
 function notasParseNota_(v){
   const s = String(v ?? "").trim().replace(",", ".");
   if (!s) return null;
+
+  // Permite registrar F/f como falla y la toma como 1.0 en todos los cálculos.
+  if (s.toLowerCase() === "f") return 1;
+
   const n = Number(s);
   if (!Number.isFinite(n)) return null;
   if (n < 0 || n > 5) return null;
   return Math.round(n * 10) / 10;
+}
+
+function notasPuntosProcedimental_(student){
+  const raw = String(student?.notas?.puntos_procedimental ?? "").trim().replace(",", ".");
+  if (!raw) return 0;
+
+  const puntos = Number(raw);
+  if (!Number.isFinite(puntos)) return 0;
+
+  return puntos;
+}
+
+function notasAjustarProcedimental_(promedioBase, student){
+  if (promedioBase === null || !Number.isFinite(Number(promedioBase))) return null;
+
+  // Cada punto equivale a una décima: +1 => +0.1, -1 => -0.1.
+  const ajuste = notasPuntosProcedimental_(student) * 0.1;
+  const total = Number(promedioBase) + ajuste;
+
+  // Mantener la escala de notas de la planilla entre 0.0 y 5.0.
+  return Math.round(Math.min(5, Math.max(0, total)) * 10) / 10;
 }
 
 function notasAvg_(arr){
@@ -19101,7 +19150,8 @@ const notaLimite = nivelCursoActual === "PRIMARIA" ? 3.3 : 3.5;
     detalles.push("Actitudinal: igual a 1");
   }
 
-  const procTotal = notasAvg_(procNotas);
+  const procBase = notasAvg_(procNotas);
+  const procTotal = notasAjustarProcedimental_(procBase, student);
   const cogTotal = notasAvg_(cogNotas);
 
   const definitiva =
@@ -19313,20 +19363,23 @@ function notasColumnasOrdenadas_(){
 
 
 function notasPromedioComponente_(student, componente){
+  const comp = String(componente || "").trim().toLowerCase();
   const cols = notasColumnasOrdenadas_().filter(c =>
-    String(c.componente || "").trim().toLowerCase() === componente
+    String(c.componente || "").trim().toLowerCase() === comp
   );
 
   const vals = cols
-    .map(col => String(student.notas?.[String(col.orden)] ?? "").trim())
-    .filter(v => v !== "")
-    .map(v => Number(v.replace(",", ".")))
-    .filter(n => Number.isFinite(n));
+    .map(col => notasParseNota_(student.notas?.[String(col.orden)]))
+    .filter(n => n !== null);
 
   if (!vals.length) return "—";
 
   const avg = vals.reduce((a, b) => a + b, 0) / vals.length;
-  return Number(avg.toFixed(1));
+  const base = Math.round(avg * 10) / 10;
+
+  return comp === "procedimental"
+    ? notasAjustarProcedimental_(base, student)
+    : base;
 }
 
 function notasColumnasPorComponente_(componente){
@@ -19564,6 +19617,11 @@ function notasRenderGrid_(){
         </div>
       `).join("")}
 
+      <div class="notas-cell notas-puntos-cell">
+        Puntos ±<br>
+        <span class="muted small">1 = 0,1</span>
+      </div>
+
       <div class="notas-cell notas-total-cell">
         Total Proc.<br>
         <span class="muted small notas-total-percent">40%</span>
@@ -19632,10 +19690,14 @@ function notasRenderGrid_(){
               const key = String(col.orden);
               return `
                 <div class="notas-cell">
-                  <input class="modal-input" data-nota-input="${sIdx}" data-nota-key="${key}" type="number" min="0" max="5" step="0.1" value="${escapeHtml(student.notas?.[key] ?? "")}" placeholder="${escapeHtml(col.nombre || key)}" />
+                  <input class="modal-input" data-nota-input="${sIdx}" data-nota-key="${key}" type="text" autocomplete="off" data-nota-grade="1" value="${escapeHtml(student.notas?.[key] ?? "")}" placeholder="${escapeHtml(col.nombre || key)}" />
                 </div>
               `;
             }).join("")}
+
+            <div class="notas-cell notas-puntos-cell">
+              <input class="modal-input" data-nota-input="${sIdx}" data-nota-key="puntos_procedimental" data-nota-puntos="1" type="number" step="1" value="${escapeHtml(student.notas?.puntos_procedimental ?? "")}" placeholder="±" title="Cada punto suma o resta 0,1 al promedio procedimental" />
+            </div>
 
             <div class="notas-cell notas-total-cell ${alertaProcClass}">
               <strong>${promProcNum.toFixed(1)}</strong>
@@ -19645,7 +19707,7 @@ function notasRenderGrid_(){
               const key = String(col.orden);
               return `
                 <div class="notas-cell">
-                  <input class="modal-input" data-nota-input="${sIdx}" data-nota-key="${key}" type="number" min="0" max="5" step="0.1" value="${escapeHtml(student.notas?.[key] ?? "")}" placeholder="${escapeHtml(col.nombre || key)}" />
+                  <input class="modal-input" data-nota-input="${sIdx}" data-nota-key="${key}" type="text" autocomplete="off" data-nota-grade="1" value="${escapeHtml(student.notas?.[key] ?? "")}" placeholder="${escapeHtml(col.nombre || key)}" />
                 </div>
               `;
             }).join("")}
@@ -19655,7 +19717,7 @@ function notasRenderGrid_(){
             </div>
 
             <div class="notas-cell">
-              <input class="modal-input" data-nota-input="${sIdx}" data-nota-key="actitudinal" type="number" min="0" max="5" step="0.1" value="${escapeHtml(student.notas?.actitudinal ?? "")}" placeholder="Actitudinal" />
+              <input class="modal-input" data-nota-input="${sIdx}" data-nota-key="actitudinal" type="text" autocomplete="off" data-nota-grade="1" value="${escapeHtml(student.notas?.actitudinal ?? "")}" placeholder="Actitudinal" />
             </div>
           </div>
 
@@ -19696,10 +19758,15 @@ function notasRenderGrid_(){
               return `
                 <div class="notas-input-row">
                   <label class="notas-col-editable" data-nota-col-edit="${__notasColumnas.findIndex(c => c.orden === col.orden)}" title="${escapeHtml(col.nombre || key)}">${escapeHtml(col.nombre || key)}</label>
-                  <input class="modal-input" data-nota-input="${sIdx}" data-nota-key="${key}" type="number" min="0" max="5" step="0.1" value="${escapeHtml(student.notas?.[key] ?? "")}" />
+                  <input class="modal-input" data-nota-input="${sIdx}" data-nota-key="${key}" type="text" autocomplete="off" data-nota-grade="1" value="${escapeHtml(student.notas?.[key] ?? "")}" />
                 </div>
               `;
             }).join("")}
+
+            <div class="notas-input-row">
+              <label>Puntos ± <span class="notas-mobile-pill">1 punto = 0,1</span></label>
+              <input class="modal-input" data-nota-input="${sIdx}" data-nota-key="puntos_procedimental" data-nota-puntos="1" type="number" step="1" value="${escapeHtml(student.notas?.puntos_procedimental ?? "")}" placeholder="0" title="Usa valores positivos o negativos" />
+            </div>
 
             <div class="notas-input-row notas-total-row ${alertaProcClass}">
               <label>Total Procedimental <span class="notas-mobile-pill">40%</span></label>
@@ -19711,7 +19778,7 @@ function notasRenderGrid_(){
               return `
                 <div class="notas-input-row">
                   <label class="notas-col-editable" data-nota-col-edit="${__notasColumnas.findIndex(c => c.orden === col.orden)}" title="${escapeHtml(col.nombre || key)}">${escapeHtml(col.nombre || key)}</label>
-                  <input class="modal-input" data-nota-input="${sIdx}" data-nota-key="${key}" type="number" min="0" max="5" step="0.1" value="${escapeHtml(student.notas?.[key] ?? "")}" />
+                  <input class="modal-input" data-nota-input="${sIdx}" data-nota-key="${key}" type="text" autocomplete="off" data-nota-grade="1" value="${escapeHtml(student.notas?.[key] ?? "")}" />
                 </div>
               `;
             }).join("")}
@@ -19723,7 +19790,7 @@ function notasRenderGrid_(){
 
             <div class="notas-input-row">
               <label>Actitudinal <span class="notas-mobile-pill">20%</span></label>
-              <input class="modal-input" data-nota-input="${sIdx}" data-nota-key="actitudinal" type="number" min="0" max="5" step="0.1" value="${escapeHtml(student.notas?.actitudinal ?? "")}" />
+              <input class="modal-input" data-nota-input="${sIdx}" data-nota-key="actitudinal" type="text" autocomplete="off" data-nota-grade="1" value="${escapeHtml(student.notas?.actitudinal ?? "")}" />
             </div>
           </div>
 
@@ -19783,6 +19850,19 @@ function notasRenderGrid_(){
     });
     input.addEventListener("change", () => { notasProgramarAutoGuardado_(); });
     input.addEventListener("blur", () => {
+      if (input.dataset.notaGrade === "1") {
+        const raw = String(input.value || "").trim();
+        if (raw.toLowerCase() === "f") {
+          input.value = "F";
+          const sIdx = Number(input.dataset.notaInput);
+          const key = String(input.dataset.notaKey || "");
+          if (__notasEstudiantes[sIdx]) {
+            if (!__notasEstudiantes[sIdx].notas) __notasEstudiantes[sIdx].notas = {};
+            __notasEstudiantes[sIdx].notas[key] = "F";
+          }
+        }
+      }
+
       setTimeout(() => {
         const active = document.activeElement;
         if (active && active.matches("#notasStudentsModal [data-nota-input]")) return;
@@ -20784,6 +20864,13 @@ function notasConstruirBloqueNotasActuales_(student, incluirContexto = false){
   if (procedimentales.length) {
     lineas.push("", "Procedimental (40%):");
     procedimentales.forEach(item => lineas.push(`• ${item.nombre}: ${item.valor}`));
+
+    const puntosProc = notasPuntosProcedimental_(student);
+    if (puntosProc !== 0) {
+      const signo = puntosProc > 0 ? "+" : "";
+      lineas.push(`Puntos procedimentales: ${signo}${puntosProc} (${signo}${(puntosProc * 0.1).toFixed(1)} en la nota)`);
+    }
+
     if (calc.procTotal !== "—") {
       lineas.push(`Promedio procedimental: ${Number(calc.procTotal).toFixed(1)}`);
     }
@@ -20906,6 +20993,7 @@ function notasDescargarExcel_(){
   const headers = [
     "Estudiante",
     ...procCols.map(c => c.nombre || `Actividad ${c.orden}`),
+    "Puntos +/- (1 punto = 0,1)",
     "Total Procedimental 40%",
     ...cogCols.map(c => c.nombre || `Cognitivo ${c.orden}`),
     "Total Cognitivo 40%",
@@ -20928,6 +21016,7 @@ function notasDescargarExcel_(){
       return [
         notasNombreVista_(student.estudiante),
         ...procCols.map(c => student.notas?.[String(c.orden)] ?? ""),
+        student.notas?.puntos_procedimental ?? "",
         calc.procTotal ?? "—",
         ...cogCols.map(c => student.notas?.[String(c.orden)] ?? ""),
         calc.cogTotal ?? "—",
