@@ -20786,6 +20786,34 @@ if (!navigator.onLine) {
         notas: r.notas || {}
       })).filter(x => x.estudiante);
 
+      // ✅ Asegura que la planilla siempre muestre la lista TOTAL de estudiantes
+      // del curso (evita el problema de asignaturas con 29 vs 32, por ejemplo).
+      // Si un estudiante fue agregado al curso después de haberse guardado esta
+      // planilla, se incorpora aquí con notas vacías, SIN tocar ni perder las
+      // notas de los estudiantes que ya estaban guardados.
+      try {
+        const totalCurso = await gsCourseStudentsCached(curso);
+
+        if (Array.isArray(totalCurso) && totalCurso.length) {
+          const yaEnPlanilla = new Set(
+            __notasEstudiantes.map(x => normalizeText(x.estudiante))
+          );
+
+          totalCurso.forEach(nombre => {
+            const limpio = String(nombre || "").trim();
+            if (!limpio) return;
+
+            const clave = normalizeText(limpio);
+            if (!yaEnPlanilla.has(clave)) {
+              __notasEstudiantes.push({ estudiante: limpio, notas: {} });
+              yaEnPlanilla.add(clave);
+            }
+          });
+        }
+      } catch (e) {
+        console.warn("No se pudo completar la planilla con la lista total del curso:", e);
+      }
+
       notasPlanillaCacheWrite_(cacheKey, {
         columnas: __notasColumnas,
         estudiantes: __notasEstudiantes
@@ -25041,12 +25069,24 @@ const studentPlanillaCtx_ = {
     setLoading(true, "Guardando…", "Actualizando estudiante.");
 
     if (mode === "add") {
-   await gsAdminStudentSave({
-  mode: "add",
-  course,
-  new_name: newName,
-  ...studentPlanillaCtx_
-});
+      // ✅ Evita duplicados: si ya existe un estudiante con ese nombre
+      // (ignorando mayúsculas/tildes/espacios), no se envía al servidor.
+      const yaExiste = __notasEstudiantes.some(x =>
+        normalizeText(String(x.estudiante || "")) === normalizeText(newName)
+      );
+
+      if (yaExiste) {
+        alert(`El estudiante "${newName}" ya está en la lista de este curso.`);
+        setLoading(false);
+        return;
+      }
+
+      await gsAdminStudentSave({
+        mode: "add",
+        course,
+        new_name: newName,
+        ...studentPlanillaCtx_
+      });
 
       if (!__notasEstudiantes.some(x =>
         normalizeText(String(x.estudiante || "")) === normalizeText(newName)
@@ -25064,13 +25104,28 @@ const studentPlanillaCtx_ = {
         return;
       }
 
- await gsAdminStudentSave({
-  mode: "edit",
-  course,
-  old_name: oldName,
-  new_name: newName,
-  ...studentPlanillaCtx_
-});
+      // ✅ Si el nombre cambió, evita que choque con otro estudiante ya existente.
+      const cambioNombre = normalizeText(newName) !== normalizeText(oldName);
+
+      if (cambioNombre) {
+        const chocaConOtro = __notasEstudiantes.some(x =>
+          normalizeText(String(x.estudiante || "")) === normalizeText(newName)
+        );
+
+        if (chocaConOtro) {
+          alert(`Ya existe un estudiante llamado "${newName}" en este curso.`);
+          setLoading(false);
+          return;
+        }
+      }
+
+      await gsAdminStudentSave({
+        mode: "edit",
+        course,
+        old_name: oldName,
+        new_name: newName,
+        ...studentPlanillaCtx_
+      });
 
       const found = __notasEstudiantes.find(x =>
         normalizeText(String(x.estudiante || "")) === normalizeText(oldName)
