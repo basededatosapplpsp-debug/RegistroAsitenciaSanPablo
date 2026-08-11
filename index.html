@@ -20686,27 +20686,100 @@ async function notasGuardarLocalSeguro_(payload, { pending = true } = {}) {
 }
 
 async function notasEnviarPayloadSupabase_(payload) {
-    const res = await fetch(GS_WEBAPP_URL, {
-        method: "POST",
-        body: JSON.stringify(payload)
+
+    console.group("📝 NOTAS → ENVÍO A SUPABASE");
+
+    console.log("PAYLOAD:", {
+        curso: payload?.curso,
+        asignatura: payload?.asignatura,
+        periodo: payload?.periodo,
+        year: payload?.year,
+        save_version: payload?.save_version,
+        columnas: payload?.columnas?.length,
+        estudiantes: payload?.estudiantes?.length
     });
 
-    const data = await res.json();
+    console.log("COLUMNAS:", payload?.columnas);
+    console.log("ESTUDIANTES:", payload?.estudiantes);
 
-    if (!data.ok) {
-        const error = new Error(
-            data.msg ||
-            data.error ||
-            "notas_planilla_save_failed"
+    try {
+
+        const res = await fetch(GS_WEBAPP_URL, {
+            method: "POST",
+            body: JSON.stringify(payload)
+        });
+
+        console.log("HTTP STATUS:", res.status);
+
+        const texto = await res.text();
+
+        console.log("RESPUESTA RAW:", texto);
+
+        let data;
+
+        try {
+            data = JSON.parse(texto);
+        } catch (parseError) {
+
+            console.error(
+                "❌ RESPUESTA NO ES JSON:",
+                parseError
+            );
+
+            throw new Error(
+                "Respuesta inválida del servidor."
+            );
+        }
+
+        console.log("RESPUESTA JSON:", data);
+
+        if (!data.ok) {
+
+            const error = new Error(
+                data.msg ||
+                data.error ||
+                "notas_planilla_save_failed"
+            );
+
+            error.status = res.status;
+            error.data = data;
+
+            console.error(
+                "❌ SUPABASE RECHAZÓ EL GUARDADO:",
+                {
+                    status: res.status,
+                    data
+                }
+            );
+
+            throw error;
+        }
+
+        console.log(
+            "✅ SUPABASE CONFIRMÓ:",
+            {
+                planilla_id: data.planilla_id,
+                save_version: data.save_version,
+                total_estudiantes:
+                    data.total_estudiantes
+            }
         );
 
-        error.status = res.status;
-        error.data = data;
+        console.groupEnd();
+
+        return data;
+
+    } catch (error) {
+
+        console.error(
+            "❌ ERROR EN ENVÍO:",
+            error
+        );
+
+        console.groupEnd();
 
         throw error;
     }
-
-    return data;
 }
 
 async function notasSyncPendientes_({ silent = true } = {}) {
@@ -20990,35 +21063,40 @@ if (
                     });
                 }
 
-            } catch (e) {
+  } catch (e) {
 
-                // ====================================================
-                // EL ELEMENTO NO SE BORRA
-                // ====================================================
-                // Si falla, permanece en la cola para poder intentar
-                // nuevamente.
-                // ====================================================
+    console.error(
+        "❌ ERROR SINCRONIZANDO PLANILLA PENDIENTE",
+        {
+            error: e,
+            mensaje: e?.message,
+            status: e?.status,
+            data: e?.data,
+            itemId: item?.id,
+            payload: item?.payload
+        }
+    );
 
-                await notasIdbPut_(
-                    NOTAS_IDB_QUEUE,
-                    {
-                        ...item,
+    await notasIdbPut_(
+        NOTAS_IDB_QUEUE,
+        {
+            ...item,
 
-                        attempts:
-                            Number(
-                                item.attempts || 0
-                            ) + 1,
+            attempts:
+                Number(
+                    item.attempts || 0
+                ) + 1,
 
-                        lastError:
-                            String(
-                                e?.message || e
-                            ),
+            lastError:
+                String(
+                    e?.message || e
+                ),
 
-                        lastAttempt:
-                            Date.now()
-                    }
-                );
-            }
+            lastAttempt:
+                Date.now()
+        }
+    );
+}
         }
 
     } finally {
