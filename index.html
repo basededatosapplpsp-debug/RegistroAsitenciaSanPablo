@@ -21632,6 +21632,49 @@ async function notasAbrirPlanillaActual_(opts = {}) {
         email
     );
 
+
+    // ============================================================
+// PROTECCIÓN CONTRA RECARGA DE UNA PLANILLA CON CAMBIOS PENDIENTES
+// ============================================================
+
+let planillaTieneCambiosPendientes = false;
+
+try {
+
+    const pendiente =
+        await notasIdbGet_(
+            NOTAS_IDB_QUEUE,
+            cacheKey
+        );
+
+    if (
+        pendiente?.payload &&
+        typeof pendiente.payload === "object"
+    ) {
+
+        planillaTieneCambiosPendientes = true;
+
+        console.log(
+            "🟡 PLANILLA CON CAMBIOS LOCALES PENDIENTES:",
+            {
+                cacheKey,
+                save_version:
+                    pendiente.payload.save_version,
+                curso,
+                asignatura,
+                periodo
+            }
+        );
+    }
+
+} catch (e) {
+
+    console.warn(
+        "No se pudo comprobar la cola pendiente:",
+        e
+    );
+}
+
     // ============================================================
     // INDICA SI ESTA PLANILLA YA FUE CARGADA DESDE CACHE
     // ============================================================
@@ -21649,7 +21692,7 @@ async function notasAbrirPlanillaActual_(opts = {}) {
     // la solicitud vigente.
     // ============================================================
 
-    if (useCache) {
+if (useCache && !planillaTieneCambiosPendientes) {
 
         const cached =
             notasPlanillaCacheRead_(cacheKey);
