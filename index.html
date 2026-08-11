@@ -21958,14 +21958,25 @@ async function notasAbrirPlanillaActual_(opts = {}) {
 
 
 
-                    // ============================================================
+// ============================================================
 // RESTAURAR VERSIÓN REAL DE ESTA PLANILLA
 // ============================================================
 
 __notasPlanillaSaveVersion =
-    Number.isFinite(Number(data.save_version))
-        ? Number(data.save_version)
+    Number.isFinite(Number(data.planilla?.save_version))
+        ? Number(data.planilla.save_version)
         : 0;
+
+console.log(
+    "🔢 VERSIÓN CARGADA DESDE SUPABASE:",
+    {
+        planilla_id: data.planilla?.id,
+        save_version: __notasPlanillaSaveVersion,
+        curso,
+        asignatura,
+        periodo
+    }
+);
             // ====================================================
             // ESTA ES LA PLANILLA REAL DEL SERVIDOR
             // ====================================================
@@ -21977,16 +21988,19 @@ __notasPlanillaSaveVersion =
             // GUARDAR COPIA LOCAL
             // ====================================================
 
-            notasPlanillaCacheWrite_(
-                cacheKey,
-                {
-                    columnas:
-                        __notasColumnas,
+  notasPlanillaCacheWrite_(
+    cacheKey,
+    {
+        columnas:
+            __notasColumnas,
 
-                    estudiantes:
-                        __notasEstudiantes
-                }
-            );
+        estudiantes:
+            __notasEstudiantes,
+
+        save_version:
+            __notasPlanillaSaveVersion
+    }
+);
 
             notasRenderColumnas_();
             notasRenderGrid_();
