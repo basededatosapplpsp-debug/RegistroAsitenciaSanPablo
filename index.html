@@ -20633,7 +20633,6 @@ function notasPayloadCacheKey_(payload){
     payload.email
   );
 }
-
 async function notasGuardarLocalSeguro_(payload, { pending = true } = {}) {
     if (!payload) return null;
 
@@ -20658,24 +20657,79 @@ async function notasGuardarLocalSeguro_(payload, { pending = true } = {}) {
         }
     };
 
-    // Mantiene tu cache actual
-    notasPlanillaCacheWrite_(cacheKey, localValue);
+    // ============================================================
+    // CACHE LOCAL
+    // ============================================================
 
-    // Copia fuerte en IndexedDB
-    await notasIdbPut_(NOTAS_IDB_PLANILLAS, {
-        id: cacheKey,
-        ts: now,
-        value: localValue
-    });
+    notasPlanillaCacheWrite_(
+        cacheKey,
+        localValue
+    );
 
-    // Cola de sincronización
-    if (pending) {
-        await notasIdbPut_(NOTAS_IDB_QUEUE, {
+    // ============================================================
+    // INDEXEDDB — COPIA LOCAL
+    // ============================================================
+
+    await notasIdbPut_(
+        NOTAS_IDB_PLANILLAS,
+        {
             id: cacheKey,
             ts: now,
-            attempts: 0,
-            payload
-        });
+            value: localValue
+        }
+    );
+
+    // ============================================================
+    // COLA DE SINCRONIZACIÓN
+    // ============================================================
+
+    if (pending) {
+
+        // --------------------------------------------------------
+        // IMPORTANTE:
+        // Siempre reemplazamos la entrada anterior de ESTA
+        // planilla por el payload más reciente.
+        //
+        // Así nunca quedan varias versiones pendientes de la
+        // misma planilla esperando ser enviadas.
+        // --------------------------------------------------------
+
+        await notasIdbPut_(
+            NOTAS_IDB_QUEUE,
+            {
+                id: cacheKey,
+                ts: now,
+                attempts: 0,
+                payload: {
+                    ...payload,
+                    save_version: saveVersion
+                }
+            }
+        );
+
+        console.log(
+            "🟡 COLA NOTAS ACTUALIZADA:",
+            {
+                cacheKey,
+                save_version: saveVersion,
+                curso: payload.curso,
+                asignatura: payload.asignatura,
+                periodo: payload.periodo
+            }
+        );
+
+    } else {
+
+        console.log(
+            "🟢 PLANILLA MARCADA COMO SINCRONIZADA:",
+            {
+                cacheKey,
+                save_version: saveVersion,
+                curso: payload.curso,
+                asignatura: payload.asignatura,
+                periodo: payload.periodo
+            }
+        );
     }
 
     try {
