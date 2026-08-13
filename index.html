@@ -26475,8 +26475,32 @@ async function gsDisciplineList(month) {
 /************ CURSOS + ESTUDIANTES (AUTOCOMPLETE) ************/
 /************ CACHE CURSOS/ESTUDIANTES OFFLINE PRO ************/
 const LS_COURSES_CACHE = "courses_cache_v1";
-const LS_STUDENTS_CACHE_PREFIX = "course_students_cache_v1:"; // + course
+const LS_STUDENTS_CACHE_PREFIX = "course_students_cache_v1:"; // + email + course
 const CACHE_TTL_MS = 365 * 24 * 60 * 60 * 1000; // 1 año: soporte offline real
+
+// ============================================================
+// AISLAMIENTO POR DOCENTE (estudiantes por curso)
+// ============================================================
+// Cada docente debe ver/editar/eliminar únicamente su propia copia
+// del listado de estudiantes de un curso, no la de otros profes que
+// dictan otras asignaturas en el mismo curso. Este email se envía
+// al backend en cada petición de estudiantes y también se usa para
+// separar la caché local por docente (por si varios profes usan el
+// mismo dispositivo/navegador).
+// ============================================================
+function studentsDocenteEmail_() {
+  try {
+    const p = typeof loadProfile === "function" ? loadProfile() : null;
+    return String(p?.email || "").trim().toLowerCase();
+  } catch {
+    return "";
+  }
+}
+
+function studentsCacheKey_(course) {
+  const email = studentsDocenteEmail_() || "sin-email";
+  return LS_STUDENTS_CACHE_PREFIX + email + "::" + String(course || "").trim();
+}
 
 function cacheSet_(key, value) {
   try {
@@ -26539,7 +26563,7 @@ async function gsCourseStudentsCached(course) {
   const c = String(course || "").trim();
   if (!c) return [];
 
-  const key = LS_STUDENTS_CACHE_PREFIX + c;
+  const key = studentsCacheKey_(c);
   const cached = cacheGetAny_(key);
 
   if (!navigator.onLine) {
@@ -26586,7 +26610,7 @@ async function prewarmCoursesAndStudents_() {
         const students = await gsCourseStudents(c);
 
         if (Array.isArray(students) && students.length) {
-          cacheSet_(LS_STUDENTS_CACHE_PREFIX + c, students);
+          cacheSet_(studentsCacheKey_(c), students);
           console.log("✅ Estudiantes cacheados:", c, students.length);
         } else {
           console.warn("⚠️ Curso sin estudiantes:", c);
@@ -26619,7 +26643,12 @@ async function gsCoursesList() {
 async function gsCourseStudents(course) {
   const res = await fetch(GS_WEBAPP_URL, {
     method: "POST",
-    body: JSON.stringify({ action: "course_students", course, key: GS_API_KEY })
+    body: JSON.stringify({
+      action: "course_students",
+      course,
+      docente_email: studentsDocenteEmail_(),
+      key: GS_API_KEY
+    })
   });
   let data = null;
   try { data = await res.json(); } catch { throw new Error("Respuesta inválida del servidor"); }
@@ -26637,6 +26666,7 @@ async function gsAdminStudentSave(payload = {}) {
     body: JSON.stringify({
       action: "admin_student_save",
       key: GS_API_KEY,
+      docente_email: studentsDocenteEmail_(),
       ...payload
     })
   });
@@ -26661,7 +26691,7 @@ function clearStudentsCache_(course) {
   const cursoClean = String(course || "").trim();
 
   try {
-    localStorage.removeItem(LS_STUDENTS_CACHE_PREFIX + cursoClean);
+    localStorage.removeItem(studentsCacheKey_(cursoClean));
   } catch {}
 
   // ============================================================
