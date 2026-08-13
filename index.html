@@ -19998,9 +19998,81 @@ function notasRenderGrid_(){
     });
   });
 
+  // ============================================================
+  // ✅ EDITAR/BORRAR ACTIVIDAD O TAREA: MANTENER PRESIONADO (LONG PRESS)
+  // ============================================================
+  // Antes se abría con doble clic. Ahora se abre manteniendo
+  // presionado el encabezado de la columna (funciona igual con mouse
+  // y con touch gracias a Pointer Events). La función que se llama
+  // (notasEditarColumna_) y su lógica interna no cambian: solo
+  // cambia el "gatillo" que la dispara.
+  // ============================================================
   notasGridEl.querySelectorAll("[data-nota-col-edit]").forEach(el => {
-    el.addEventListener("dblclick", () => { notasEditarColumna_(Number(el.dataset.notaColEdit)); });
+    const COL_LONG_PRESS_MS = 550;
+    const COL_LONG_PRESS_MOVE_TOLERANCE = 12;
+
+    let colLongPressTimer = null;
+    let colLongPressStartX = 0;
+    let colLongPressStartY = 0;
+    let colLongPressFired = false;
+
+    const colLimpiarLongPress_ = () => {
+      if (colLongPressTimer) {
+        clearTimeout(colLongPressTimer);
+        colLongPressTimer = null;
+      }
+    };
+
+    const colAbrirEditarDesdeElemento_ = () => {
+      notasEditarColumna_(Number(el.dataset.notaColEdit));
+    };
+
+    // Evita el menú contextual / selección de texto del navegador
+    // al mantener presionado, sobre todo en móvil.
+    el.style.touchAction = "manipulation";
+    el.style.webkitUserSelect = "none";
+    el.style.userSelect = "none";
+
+    el.addEventListener("pointerdown", (e) => {
+      if (typeof e.button === "number" && e.button !== 0) return; // solo botón principal / touch
+      colLongPressFired = false;
+      colLongPressStartX = e.clientX;
+      colLongPressStartY = e.clientY;
+      colLimpiarLongPress_();
+      colLongPressTimer = setTimeout(() => {
+        colLongPressFired = true;
+        colAbrirEditarDesdeElemento_();
+      }, COL_LONG_PRESS_MS);
+    });
+
+    el.addEventListener("pointermove", (e) => {
+      if (!colLongPressTimer) return;
+      const dx = Math.abs(e.clientX - colLongPressStartX);
+      const dy = Math.abs(e.clientY - colLongPressStartY);
+      if (dx > COL_LONG_PRESS_MOVE_TOLERANCE || dy > COL_LONG_PRESS_MOVE_TOLERANCE) {
+        colLimpiarLongPress_();
+      }
+    });
+
+    ["pointerup", "pointercancel", "pointerleave"].forEach(evt => {
+      el.addEventListener(evt, colLimpiarLongPress_);
+    });
+
+    el.addEventListener("contextmenu", (e) => {
+      e.preventDefault();
+    });
+
+    el.addEventListener("click", (e) => {
+      // Si el editor ya se abrió por mantener presionado, evita que
+      // el clic al soltar dispare alguna otra acción.
+      if (colLongPressFired) {
+        e.preventDefault();
+        e.stopPropagation();
+        colLongPressFired = false;
+      }
+    });
   });
+
 
   // ============================================================
   // ✅ ABRIR GESTOR DE ESTUDIANTE: MANTENER PRESIONADO (LONG PRESS)
