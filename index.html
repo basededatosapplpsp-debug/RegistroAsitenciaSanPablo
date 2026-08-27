@@ -19145,7 +19145,7 @@ function notasParseNota_(v){
   const n = Number(s);
   if (!Number.isFinite(n)) return null;
   if (n < 0 || n > 5) return null;
-  return Math.round(n * 10) / 10;
+  return Math.floor(n * 10 + 1e-9) / 10;
 }
 
 
@@ -19189,13 +19189,13 @@ function notasAjustarProcedimental_(promedioBase, student){
   const total = Number(promedioBase) + ajuste;
 
   // Mantener la escala de notas de la planilla entre 0.0 y 5.0.
-  return Math.round(Math.min(5, Math.max(0, total)) * 10) / 10;
+  return Math.floor(Math.min(5, Math.max(0, total)) * 10 + 1e-9) / 10;
 }
 
 function notasAvg_(arr){
   const nums = arr.filter(n => n !== null);
   if (!nums.length) return null;
-  return Math.round((nums.reduce((s, n) => s + n, 0) / nums.length) * 10) / 10;
+  return Math.floor((nums.reduce((s, n) => s + n, 0) / nums.length) * 10 + 1e-9) / 10;
 }
 
 function notasCalcStudent_(student){
@@ -19248,7 +19248,7 @@ const notaLimite = nivelCursoActual === "PRIMARIA" ? 3.3 : 3.5;
 
   const definitiva =
     procTotal !== null && cogTotal !== null && actitudinal !== null
-      ? Math.round(((procTotal * 0.4) + (cogTotal * 0.4) + (actitudinal * 0.2)) * 10) / 10
+      ? Math.floor(((procTotal * 0.4) + (cogTotal * 0.4) + (actitudinal * 0.2)) * 10 + 1e-9) / 10
       : "—";
 
   let estado = "OK";
@@ -19467,7 +19467,7 @@ function notasPromedioComponente_(student, componente){
   if (!vals.length) return "—";
 
   const avg = vals.reduce((a, b) => a + b, 0) / vals.length;
-  const base = Math.round(avg * 10) / 10;
+  const base = Math.floor(avg * 10 + 1e-9) / 10;
 
   return comp === "procedimental"
     ? notasAjustarProcedimental_(base, student)
