@@ -10295,8 +10295,12 @@ function lateStartPolling_(){
 
     const p = loadProfile();
     const admin = isAdminMode();
+
     if (!p && !admin) return;
 
+    // =====================================================
+    // SOLO CONSULTAR SI LLEGADAS TARDE ESTÁ ABIERTO
+    // =====================================================
     const modalVisible =
       lateArrivalModal &&
       lateArrivalModal.style.display !== "none" &&
@@ -10323,7 +10327,7 @@ function lateStartPolling_(){
     } finally {
       __latePollingBusy = false;
     }
-  }, 4000);
+  }, 60000);
 }
 let __behaviorKind = "";
 
@@ -28840,10 +28844,27 @@ function piercStartPolling_() {
   __piercPollTimer = setInterval(async () => {
     const p = loadProfile();
     const admin = isAdminMode();
+
     if (!p && !admin) return;
 
+    // =====================================================
+    // SOLO CONSULTAR SI PIERCING ESTÁ ABIERTO
+    // =====================================================
+    const reportOpen =
+      piercingModal &&
+      !piercingModal.hidden;
+
+    const viewerOpen =
+      piercingViewerModal &&
+      !piercingViewerModal.hidden;
+
+    // Si el módulo está cerrado, NO hacemos ninguna petición
+    if (!reportOpen && !viewerOpen) {
+      return;
+    }
+
     const month =
-      piercingViewerModal && !piercingViewerModal.hidden
+      viewerOpen
         ? piercViewerMonthKey_()
         : piercMonthKey_();
 
@@ -28856,7 +28877,7 @@ function piercStartPolling_() {
     } catch {
       // silencioso
     }
-  }, 4000);
+  }, 60000);
 }
 
 function openPiercingModal() {
@@ -30084,10 +30105,27 @@ function uniStartPolling_() {
   __uniPollTimer = setInterval(async () => {
     const p = loadProfile();
     const admin = isAdminMode();
+
     if (!p && !admin) return;
 
+    // =====================================================
+    // SOLO CONSULTAR SI UNIFORME ESTÁ ABIERTO
+    // =====================================================
+    const reportOpen =
+      uniformModal &&
+      !uniformModal.hidden;
+
+    const viewerOpen =
+      uniformViewerModal &&
+      !uniformViewerModal.hidden;
+
+    // Si el módulo está cerrado, NO hacemos ninguna petición
+    if (!reportOpen && !viewerOpen) {
+      return;
+    }
+
     const month =
-      uniformViewerModal && !uniformViewerModal.hidden
+      viewerOpen
         ? uniViewerMonthKey_()
         : uniMonthKey_();
 
@@ -30100,8 +30138,9 @@ function uniStartPolling_() {
     } catch {
       // silencioso
     }
-  }, 4000);
+  }, 60000);
 }
+
 
 // ======= GEO =======
 function toRad(x){ return x * Math.PI / 180; }
