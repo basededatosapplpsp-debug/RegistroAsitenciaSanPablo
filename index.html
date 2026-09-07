@@ -30334,7 +30334,7 @@ function startDeviceAuthWatcher_() {
   __deviceAuthWatcherTimer = setInterval(() => {
     validateCurrentDeviceSession_({ silent: true });
     syncTeacherPermissionsSoft_();
-  }, 5000); // cada 5 segundos
+  }, 60000); // cada 60 segundos
 }
 
 function stopDeviceAuthWatcher_() {
