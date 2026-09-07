@@ -10323,7 +10323,7 @@ function lateStartPolling_(){
     } finally {
       __latePollingBusy = false;
     }
-  }, 60000);
+  }, 4000);
 }
 let __behaviorKind = "";
 
@@ -27930,7 +27930,7 @@ function discStartPolling_() {
     } catch {
       // silencioso
     }
-  }, 60000);
+  }, 4000);
 }
 
 
@@ -28856,7 +28856,7 @@ function piercStartPolling_() {
     } catch {
       // silencioso
     }
-  }, 60000);
+  }, 4000);
 }
 
 function openPiercingModal() {
@@ -30100,7 +30100,7 @@ function uniStartPolling_() {
     } catch {
       // silencioso
     }
-  }, 60000);
+  }, 4000);
 }
 
 // ======= GEO =======
@@ -30334,7 +30334,7 @@ function startDeviceAuthWatcher_() {
   __deviceAuthWatcherTimer = setInterval(() => {
     validateCurrentDeviceSession_({ silent: true });
     syncTeacherPermissionsSoft_();
-  }, 60000); // cada 60 segundos
+  }, 5000); // cada 5 segundos
 }
 
 function stopDeviceAuthWatcher_() {
@@ -32897,7 +32897,7 @@ setInterval(async () => {
 
   } catch(e){}
 
-}, 60000);
+}, 15000);
 
 
 
