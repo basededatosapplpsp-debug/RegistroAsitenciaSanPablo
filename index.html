@@ -10323,7 +10323,7 @@ function lateStartPolling_(){
     } finally {
       __latePollingBusy = false;
     }
-  }, 4000);
+  }, 60000);
 }
 let __behaviorKind = "";
 
@@ -27908,7 +27908,7 @@ function behaviorRefreshOpenUI_(kind) {
 }
 
 /* ======= Poll para sincronizar entre celulares ======= */
-function discStartPolling_() {
+function discStartPolling_() { 
   if (__discPollTimer) return;
 
   __discPollTimer = setInterval(async () => {
@@ -27930,7 +27930,7 @@ function discStartPolling_() {
     } catch {
       // silencioso
     }
-  }, 4000);
+  }, 60000);
 }
 
 
@@ -28856,7 +28856,7 @@ function piercStartPolling_() {
     } catch {
       // silencioso
     }
-  }, 4000);
+  }, 60000);
 }
 
 function openPiercingModal() {
@@ -30100,7 +30100,7 @@ function uniStartPolling_() {
     } catch {
       // silencioso
     }
-  }, 4000);
+  }, 60000);
 }
 
 // ======= GEO =======
@@ -32897,7 +32897,7 @@ setInterval(async () => {
 
   } catch(e){}
 
-}, 15000);
+}, 60000);
 
 
 
