@@ -27911,17 +27911,33 @@ function behaviorRefreshOpenUI_(kind) {
   }
 }
 
-/* ======= Poll para sincronizar entre celulares ======= */
-function discStartPolling_() { 
+function discStartPolling_() {
   if (__discPollTimer) return;
 
   __discPollTimer = setInterval(async () => {
     const p = loadProfile();
     const admin = isAdminMode();
+
     if (!p && !admin) return;
 
+    // =====================================================
+    // SOLO CONSULTAR SI DISCIPLINA ESTÁ ABIERTA
+    // =====================================================
+    const reportOpen =
+      disciplineModal &&
+      !disciplineModal.hidden;
+
+    const viewerOpen =
+      disciplineViewerModal &&
+      !disciplineViewerModal.hidden;
+
+    // Si el módulo está cerrado, NO hacemos ninguna petición
+    if (!reportOpen && !viewerOpen) {
+      return;
+    }
+
     const month =
-      disciplineViewerModal && !disciplineViewerModal.hidden
+      viewerOpen
         ? discViewerMonthKey_()
         : discMonthKey_();
 
@@ -27934,7 +27950,7 @@ function discStartPolling_() {
     } catch {
       // silencioso
     }
-  }, 4000);
+  }, 60000);
 }
 
 
@@ -30373,9 +30389,8 @@ function startDeviceAuthWatcher_() {
   __deviceAuthWatcherTimer = setInterval(() => {
     validateCurrentDeviceSession_({ silent: true });
     syncTeacherPermissionsSoft_();
-  }, 5000); // cada 5 segundos
+  }, 60000); // cada 60 segundos
 }
-
 function stopDeviceAuthWatcher_() {
   if (!__deviceAuthWatcherTimer) return;
   clearInterval(__deviceAuthWatcherTimer);
@@ -32899,44 +32914,61 @@ window.addEventListener("error", (e) => {
 
 
 document.addEventListener("DOMContentLoaded", () => {
-  // precarga en segundo plano (no rompe si aún no hay login)
-  prewarmCoursesAndStudents_();
+  // La precarga se realizará únicamente cuando sea necesaria.
 });
 
+// 🔄 Actualización automática de Faltas
+// Solo consulta cuando el modal de Faltas está abierto
+function faltasStartPolling_() {
 
-// 🔄 actualización automática cada 25 segundos
-setInterval(async () => {
+  if (window.__faltasPollTimer) return;
 
-  try {
+  window.__faltasPollTimer = setInterval(async () => {
 
-    const month =
-      (typeof discMonthKey_ === "function")
-        ? discMonthKey_()
-        : "";
-
-    const items = await gsFaltasList({ month });
-
-    if (!items) return;
-
-    // detectar si hay nuevos registros
-    const newest = items[0]?.updatedAt;
-
-    if (__faltasLastUpdate && newest !== __faltasLastUpdate) {
-
-      __faltasCache = items;
-      __faltasCacheTime = Date.now();
-
-      if (typeof __faltaTipo !== "undefined") {
-        faltasLoadList_(__faltaTipo);
-      }
-
+    // =====================================================
+    // SOLO CONSULTAR SI FALTAS ESTÁ ABIERTO
+    // =====================================================
+    if (!faltasModal || faltasModal.hidden) {
+      return;
     }
 
-    __faltasLastUpdate = newest;
+    try {
 
-  } catch(e){}
+      const month =
+        (typeof discMonthKey_ === "function")
+          ? discMonthKey_()
+          : "";
 
-}, 15000);
+      const items = await gsFaltasList({ month });
+
+      if (!items) return;
+
+      // detectar si hay nuevos registros
+      const newest = items[0]?.updatedAt;
+
+      if (__faltasLastUpdate && newest !== __faltasLastUpdate) {
+
+        __faltasCache = items;
+        __faltasCacheTime = Date.now();
+
+        if (typeof __faltaTipo !== "undefined") {
+          await faltasLoadList_(__faltaTipo);
+        }
+
+      }
+
+      __faltasLastUpdate = newest;
+
+    } catch (e) {
+      // silencioso
+    }
+
+  }, 60000); // cada 60 segundos
+}
+
+
+// Iniciar polling de Faltas
+faltasStartPolling_();
 
 
 
