@@ -24216,6 +24216,7 @@ function applySessionUI(profile) {
 
 
 let __attendanceResumeSyncTimer = null;
+let __attendanceLastResumeSyncAt = 0;
 
 function syncAttendanceOnResume_() {
   if (isAdminMode()) return;
@@ -24223,12 +24224,29 @@ function syncAttendanceOnResume_() {
   const p = loadProfile();
   if (!p || !p.name) return;
 
+  // Evitar nuevas consultas demasiado seguidas
+  const now = Date.now();
+
+  if (
+    __attendanceLastResumeSyncAt &&
+    (now - __attendanceLastResumeSyncAt) < 60000
+  ) {
+    return;
+  }
+
   if (__attendanceResumeSyncTimer) {
     clearTimeout(__attendanceResumeSyncTimer);
   }
 
   __attendanceResumeSyncTimer = setTimeout(() => {
-    refreshFromSheet({ silent: true, useCache: false }).catch(() => {});
+
+    __attendanceLastResumeSyncAt = Date.now();
+
+    refreshFromSheet({
+      silent: true,
+      useCache: false
+    }).catch(() => {});
+
   }, 250);
 }
 
