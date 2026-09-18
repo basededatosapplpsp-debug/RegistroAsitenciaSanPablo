@@ -30405,15 +30405,33 @@ function startDeviceAuthWatcher_() {
   if (__deviceAuthWatcherTimer) return;
 
   __deviceAuthWatcherTimer = setInterval(() => {
+    // =====================================================
+    // AHORRO DE CUOTA: no consultar si la pestaña está en
+    // segundo plano (nadie la está usando en ese momento).
+    // Al volver a estar visible, el próximo ciclo sí consulta.
+    // =====================================================
+    if (document.hidden) return;
+
     validateCurrentDeviceSession_({ silent: true });
     syncTeacherPermissionsSoft_();
-  }, 60000); // cada 60 segundos
+  }, 300000); // cada 5 minutos (antes: 60 segundos)
 }
 function stopDeviceAuthWatcher_() {
   if (!__deviceAuthWatcherTimer) return;
   clearInterval(__deviceAuthWatcherTimer);
   __deviceAuthWatcherTimer = null;
 }
+
+// Al volver a la pestaña (después de estar en segundo plano),
+// verificamos de inmediato en vez de esperar hasta el próximo
+// ciclo de 5 minutos. Así mantenemos la seguridad sin gastar
+// cuota mientras nadie mira la pantalla.
+document.addEventListener("visibilitychange", () => {
+  if (!document.hidden && __deviceAuthWatcherTimer) {
+    validateCurrentDeviceSession_({ silent: true });
+    syncTeacherPermissionsSoft_();
+  }
+});
 
 async function gsClearCurrentMonth() {
   const d = new Date();
