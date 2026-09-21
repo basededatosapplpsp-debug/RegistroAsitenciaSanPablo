@@ -23121,15 +23121,9 @@ btnNotasStudentsBack?.addEventListener("click", async () => {
 
 
 
-window.addEventListener("load", () => {
-  setTimeout(() => {
-    prewarmCoursesAndStudents_();
-  }, 1500);
-});
 
-window.addEventListener("online", () => {
-  prewarmCoursesAndStudents_();
-});
+
+
 
 
 
@@ -26710,13 +26704,19 @@ async function gsCourseStudentsCached(course) {
 
 // ✅ Precarga TODOS los cursos + estudiantes para trabajar offline
 let __prewarmCoursesRunning = false;
+const PREWARM_MIN_INTERVAL_MS = 30 * 60 * 1000; // no repetir antes de 30 min
 
 async function prewarmCoursesAndStudents_() {
   if (__prewarmCoursesRunning) return;
   if (!navigator.onLine) return;
 
-  __prewarmCoursesRunning = true;
+  // ✅ AHORRO DE CUOTA: si ya se precargó hace menos de 30 min, no repetir
+  try {
+    const last = Number(sessionStorage.getItem("prewarmLastRun_v1") || 0);
+    if (last && (Date.now() - last) < PREWARM_MIN_INTERVAL_MS) return;
+  } catch (e) {}
 
+  __prewarmCoursesRunning = true;
   try {
     console.log("🔥 Preload offline completo: cursos + todos los estudiantes…");
 
@@ -26744,6 +26744,8 @@ async function prewarmCoursesAndStudents_() {
       }
     }
 
+        try { sessionStorage.setItem("prewarmLastRun_v1", String(Date.now())); } catch (e) {}
+        
     console.log("✅ Preload offline completo terminado.");
   } catch (e) {
     console.warn("⚠️ Preload offline completo falló:", e);
@@ -33785,4 +33787,3 @@ async function cambiarEstadoImagenRegistro_(estado){
 
 </body>
 </html>
-
