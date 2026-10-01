@@ -7539,6 +7539,397 @@ body[data-theme="light"] #parqueResult .parque-badge{
 }
 
 
+   /* =====================================================================
+   PLANILLA DE NOTAS · ESTILO EXCEL PRO (PC + CELULAR)
+   ---------------------------------------------------------------------
+   SOLO CSS. No toca JavaScript, ni IDs, ni data-atributos.
+   Pegar al FINA
+   Usa #notasGrid en los selectores para ganar especificidad sobre
+   las reglas anteriores sin tener que borrarlas.
+   ===================================================================== */
+
+#notasStudentsModal{
+  --xl-grid: color-mix(in srgb, var(--text) 14%, transparent);
+  --xl-head: color-mix(in srgb, var(--card2) 72%, var(--bg));
+  --xl-accent: #21a366;
+  --xl-sel: color-mix(in srgb, #21a366 14%, var(--card));
+  --xl-total: color-mix(in srgb, var(--primary) 11%, var(--card));
+  --xl-hover: color-mix(in srgb, var(--primary) 7%, var(--card));
+}
+
+/* F / f = falla → en rojo (PC y celular) */
+#notasStudentsModal #notasGrid [data-nota-input][value="F" i]{
+  color:#ef4444 !important;
+  -webkit-text-fill-color:#ef4444 !important;
+}
+
+/* =========================== PC (tabla) =========================== */
+@media (min-width: 900px){
+
+  #notasStudentsModal .notas-grid-scroll{
+    padding: 12px 16px 16px !important;
+    background: var(--bg) !important;
+  }
+
+  #notasStudentsModal #notasGrid.notas-grid.table-mode{
+    counter-reset: xlrow;
+    border-collapse: separate !important;
+    border-spacing: 0 !important;
+    border-top: 1px solid var(--xl-grid);
+    border-left: 1px solid var(--xl-grid);
+    font-family: "Segoe UI", Calibri, system-ui, -apple-system, sans-serif;
+    font-variant-numeric: tabular-nums;
+    font-size: 13px;
+    box-shadow: 0 8px 22px rgba(0,0,0,.18);
+  }
+
+  /* Celdas: cuadrícula fina tipo hoja de cálculo */
+  #notasStudentsModal #notasGrid.notas-grid.table-mode .notas-cell{
+    height: 34px;
+    padding: 0 8px !important;
+    vertical-align: middle !important;
+    border-top: 0 !important;
+    border-left: 0 !important;
+    border-bottom: 1px solid var(--xl-grid) !important;
+    border-right: 1px solid var(--xl-grid) !important;
+  }
+
+  /* Encabezado fijo */
+  #notasStudentsModal #notasGrid.notas-grid.table-mode .notas-header-row .notas-cell{
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 30 !important;
+    height: auto;
+    padding: 8px 6px !important;
+    background: var(--xl-head) !important;
+    color: var(--muted) !important;
+    -webkit-text-fill-color: var(--muted) !important;
+    font-size: 11.5px;
+    font-weight: 800;
+    letter-spacing: .2px;
+    line-height: 1.15;
+    text-align: center;
+    box-shadow: none !important;
+    border-bottom: 2px solid color-mix(in srgb, var(--xl-accent) 75%, transparent) !important;
+  }
+
+  #notasStudentsModal #notasGrid.notas-grid.table-mode .notas-header-row .notas-col-title{
+    cursor: pointer;
+  }
+  #notasStudentsModal #notasGrid.notas-grid.table-mode .notas-header-row .notas-col-title:hover{
+    color: var(--xl-accent) !important;
+    -webkit-text-fill-color: var(--xl-accent) !important;
+  }
+
+  /* Columna de estudiante fija a la izquierda + numeración de filas */
+  #notasStudentsModal #notasGrid.notas-grid.table-mode .notas-student-name{
+    position: sticky !important;
+    left: 0 !important;
+    z-index: 20 !important;
+    text-align: left !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    font-weight: 600;
+    box-shadow: 1px 0 0 var(--xl-grid);
+  }
+
+  #notasStudentsModal #notasGrid.notas-grid.table-mode .notas-header-row .notas-student-name{
+    z-index: 40 !important;
+  }
+
+  #notasStudentsModal #notasGrid.notas-grid.table-mode .notas-student-name::before{
+    display: inline-block;
+    width: 22px;
+    margin-right: 10px;
+    text-align: right;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--muted);
+    -webkit-text-fill-color: var(--muted);
+  }
+
+  #notasStudentsModal #notasGrid.notas-grid.table-mode .notas-header-row .notas-student-name::before{
+    content: "#";
+  }
+
+  #notasStudentsModal #notasGrid.notas-grid.table-mode .notas-student-card:not(.notas-header-row) .notas-student-name::before{
+    counter-increment: xlrow;
+    content: counter(xlrow);
+  }
+
+  /* Celdas de digitación: el input ocupa toda la celda */
+  #notasStudentsModal #notasGrid.notas-grid.table-mode .notas-inputs > .notas-cell{
+    padding: 0 !important;
+  }
+
+  #notasStudentsModal #notasGrid.notas-grid.table-mode [data-nota-input]{
+    width: 100% !important;
+    max-width: none !important;
+    height: 34px !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 4px !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    outline: none !important;
+    text-align: center !important;
+    font-family: inherit;
+    font-size: 13.5px !important;
+    font-weight: 700;
+    -moz-appearance: textfield;
+  }
+
+  #notasStudentsModal #notasGrid.notas-grid.table-mode [data-nota-input]::-webkit-outer-spin-button,
+  #notasStudentsModal #notasGrid.notas-grid.table-mode [data-nota-input]::-webkit-inner-spin-button{
+    -webkit-appearance: none;
+    margin: 0;
+  }
+
+  #notasStudentsModal #notasGrid.notas-grid.table-mode [data-nota-input]::placeholder{
+    color: transparent !important;
+  }
+
+  /* Celda activa: borde verde tipo Excel */
+  #notasStudentsModal #notasGrid.notas-grid.table-mode [data-nota-input]:focus{
+    background: var(--xl-sel) !important;
+    box-shadow: inset 0 0 0 2px var(--xl-accent) !important;
+  }
+
+  /* Hover y fila activa */
+  #notasStudentsModal #notasGrid.notas-grid.table-mode .notas-student-card:not(.notas-header-row):hover .notas-cell{
+    background: var(--xl-hover) !important;
+  }
+
+  #notasStudentsModal #notasGrid.notas-grid.table-mode .notas-student-card:not(.notas-header-row):focus-within .notas-cell{
+    background: color-mix(in srgb, var(--xl-accent) 7%, var(--card)) !important;
+  }
+
+  /* Columnas de totales */
+  #notasStudentsModal #notasGrid.notas-grid.table-mode .notas-student-card:not(.notas-header-row) .notas-cell.notas-total-cell{
+    background: var(--xl-total) !important;
+    text-align: center !important;
+    font-weight: 800;
+  }
+
+  #notasStudentsModal #notasGrid.notas-grid.table-mode .notas-header-row .notas-cell.notas-total-cell{
+    background: color-mix(in srgb, var(--primary) 16%, var(--xl-head)) !important;
+  }
+
+  /* Definitiva (corrige el display:flex que desalineaba la celda) */
+  #notasStudentsModal #notasGrid.notas-grid.table-mode .notas-cell.notas-definitiva-cell{
+    display: table-cell !important;
+    text-align: center !important;
+  }
+
+  #notasStudentsModal #notasGrid.notas-grid.table-mode .notas-definitiva-badge{
+    min-width: 46px !important;
+    padding: 4px 10px !important;
+    border-radius: 6px !important;
+    font-size: 13.5px !important;
+    box-shadow: none !important;
+  }
+
+  /* Estado compacto */
+  #notasStudentsModal #notasGrid.notas-grid.table-mode .notas-cell.notas-estado-cell{
+    padding: 3px 6px !important;
+  }
+
+  #notasStudentsModal #notasGrid.notas-grid.table-mode .notas-estado-combo{
+    min-width: 0 !important;
+    width: 100%;
+    padding: 4px 8px !important;
+    border-radius: 6px !important;
+    box-shadow: none !important;
+  }
+
+  /* Indicador de estado al inicio de la fila */
+  #notasStudentsModal #notasGrid.notas-grid.table-mode .notas-row-bajo .notas-student-name{
+    box-shadow: inset 3px 0 0 #ef4444, 1px 0 0 var(--xl-grid) !important;
+  }
+  #notasStudentsModal #notasGrid.notas-grid.table-mode .notas-row-debe .notas-student-name{
+    box-shadow: inset 3px 0 0 #eab308, 1px 0 0 var(--xl-grid) !important;
+  }
+  #notasStudentsModal #notasGrid.notas-grid.table-mode .notas-row-riesgo .notas-student-name{
+    box-shadow: inset 3px 0 0 #f59e0b, 1px 0 0 var(--xl-grid) !important;
+  }
+}
+
+/* ========================= CELULAR (tarjetas) ========================= */
+@media (max-width: 899px){
+
+  #notasStudentsModal #notasGrid{
+    counter-reset: xlrow;
+    gap: 8px !important;
+    font-variant-numeric: tabular-nums;
+  }
+
+  #notasStudentsModal #notasGrid .notas-student-card{
+    padding: 0 !important;
+    border: 1px solid var(--xl-grid) !important;
+    border-radius: 12px !important;
+    box-shadow: 0 2px 8px rgba(0,0,0,.12) !important;
+  }
+
+  #notasStudentsModal #notasGrid .notas-student-card.is-open{
+    padding-bottom: 12px !important;
+    border-color: color-mix(in srgb, var(--xl-accent) 55%, var(--xl-grid)) !important;
+  }
+
+  /* Barra de estado a la izquierda */
+  #notasStudentsModal #notasGrid .notas-student-card.notas-row-bajo{
+    box-shadow: inset 4px 0 0 #ef4444, 0 2px 8px rgba(0,0,0,.12) !important;
+  }
+  #notasStudentsModal #notasGrid .notas-student-card.notas-row-debe{
+    box-shadow: inset 4px 0 0 #eab308, 0 2px 8px rgba(0,0,0,.12) !important;
+  }
+  #notasStudentsModal #notasGrid .notas-student-card.notas-row-riesgo{
+    box-shadow: inset 4px 0 0 #f59e0b, 0 2px 8px rgba(0,0,0,.12) !important;
+  }
+
+  /* Encabezado de cada estudiante con número de fila */
+  #notasStudentsModal #notasGrid .notas-student-toggle{
+    min-height: 54px;
+    padding: 10px 12px !important;
+  }
+
+  #notasStudentsModal #notasGrid .notas-student-toggle .notas-student-name{
+    font-size: 14.5px;
+    font-weight: 800;
+    line-height: 1.25;
+  }
+
+  #notasStudentsModal #notasGrid .notas-student-toggle .notas-student-name::before{
+    counter-increment: xlrow;
+    content: counter(xlrow);
+    display: inline-block;
+    min-width: 24px;
+    height: 22px;
+    line-height: 22px;
+    margin-right: 8px;
+    padding: 0 4px;
+    border-radius: 6px;
+    text-align: center;
+    vertical-align: 1px;
+    font-size: 11px;
+    font-weight: 800;
+    background: var(--xl-head);
+    border: 1px solid var(--xl-grid);
+    color: var(--muted);
+    -webkit-text-fill-color: var(--muted);
+  }
+
+  /* Mini hoja: etiqueta | celda */
+  #notasStudentsModal #notasGrid .notas-student-card.is-open .notas-inputs{
+    margin: 0 12px 10px !important;
+    gap: 0 !important;
+    border: 1px solid var(--xl-grid);
+    border-radius: 10px;
+    overflow: hidden;
+    background: var(--card);
+  }
+
+  #notasStudentsModal #notasGrid .notas-input-row{
+    grid-template-columns: minmax(0, 1fr) 92px !important;
+    gap: 0 !important;
+    align-items: stretch !important;
+    min-height: 44px;
+    padding: 0 !important;
+    border: 0 !important;
+    border-bottom: 1px solid var(--xl-grid) !important;
+  }
+
+  #notasStudentsModal #notasGrid .notas-input-row:last-child{
+    border-bottom: 0 !important;
+  }
+
+  #notasStudentsModal #notasGrid .notas-input-row label{
+    display: block;
+    padding: 0 12px;
+    line-height: 44px;
+    font-size: 14px !important;
+    color: var(--text) !important;
+    -webkit-text-fill-color: var(--text) !important;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  #notasStudentsModal #notasGrid .notas-input-row [data-nota-input]{
+    width: 100% !important;
+    height: 100% !important;
+    min-height: 44px !important;
+    margin: 0 !important;
+    padding: 0 6px !important;
+    border: 0 !important;
+    border-left: 1px solid var(--xl-grid) !important;
+    border-radius: 0 !important;
+    background: color-mix(in srgb, var(--card2) 70%, var(--bg)) !important;
+    box-shadow: none !important;
+    outline: none !important;
+    text-align: center !important;
+    font-size: 16px !important;
+    font-weight: 800;
+    -moz-appearance: textfield;
+  }
+
+  #notasStudentsModal #notasGrid .notas-input-row [data-nota-input]::-webkit-outer-spin-button,
+  #notasStudentsModal #notasGrid .notas-input-row [data-nota-input]::-webkit-inner-spin-button{
+    -webkit-appearance: none;
+    margin: 0;
+  }
+
+  #notasStudentsModal #notasGrid .notas-input-row [data-nota-input]:focus{
+    background: var(--xl-sel) !important;
+    box-shadow: inset 0 0 0 2px var(--xl-accent) !important;
+  }
+
+  /* Puntos ± con su spinner dentro de la celda */
+  #notasStudentsModal #notasGrid .notas-puntos-spinner{
+    padding: 4px;
+    border-left: 1px solid var(--xl-grid);
+    background: color-mix(in srgb, var(--card2) 70%, var(--bg));
+  }
+
+  #notasStudentsModal #notasGrid .notas-puntos-spinner > [data-nota-input]{
+    min-height: 36px !important;
+    border-left: 0 !important;
+    border-radius: 6px !important;
+    background: var(--card) !important;
+  }
+
+  /* Filas de total */
+  #notasStudentsModal #notasGrid .notas-input-row.notas-total-row{
+    background: var(--xl-total);
+  }
+
+  #notasStudentsModal #notasGrid .notas-total-row label{
+    font-weight: 800;
+  }
+
+  #notasStudentsModal #notasGrid .notas-total-row strong{
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    padding: 0 !important;
+    border: 0 !important;
+    border-left: 1px solid var(--xl-grid) !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    font-size: 16px;
+    font-weight: 900;
+  }
+
+  #notasStudentsModal #notasGrid .notas-student-card.is-open .notas-summary,
+  #notasStudentsModal #notasGrid .notas-student-card.is-open .notas-detail-mini,
+  #notasStudentsModal #notasGrid .notas-student-card.is-open [data-nota-share]{
+    margin-left: 12px !important;
+    margin-right: 12px !important;
+  }
+}
+
 </style>
 </head>
 
