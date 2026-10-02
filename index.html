@@ -13,7 +13,7 @@
   <link rel="icon" sizes="16x16" href="favicon-16.png" />
   <link rel="apple-touch-icon" href="apple-touch-icon.png" />
 
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@700;800;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <title>Asistencia Docentes</title>
  <style>
 :root{
@@ -8171,6 +8171,350 @@ body[data-theme="light"] #parqueResult .parque-badge{
   #qrModal .modal-card > div:has(> #qrVideo)::after{
     animation: none !important;
   }
+}
+/* =====================================================================
+   PANTALLA PRINCIPAL · APARIENCIA MODERNA / PRO
+   Solo estilos. No cambia IDs, JavaScript ni el funcionamiento.
+   Respeta los temas de color (usa las variables de cada tema).
+   ===================================================================== */
+body{
+  font-family: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  letter-spacing: .1px;
+}
+
+/* ---------- Encabezado ---------- */
+.header{
+  border-bottom: 1px solid color-mix(in srgb, var(--primary) 22%, var(--line)) !important;
+  box-shadow: 0 10px 30px -18px rgba(0,0,0,.6);
+}
+
+.header h1{
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 19px;
+  font-weight: 800;
+  letter-spacing: .2px;
+}
+
+.header h1::before{
+  content: "\f4ff";
+  font-family: "Font Awesome 6 Free";
+  font-weight: 900;
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  flex: 0 0 34px;
+  border-radius: 11px;
+  font-size: 15px;
+  color: #fff;
+  -webkit-text-fill-color: #fff;
+  background: linear-gradient(135deg, var(--primary), var(--secondary));
+  box-shadow: 0 6px 16px color-mix(in srgb, var(--primary) 40%, transparent);
+}
+
+.header .sub{
+  margin-top: 3px;
+  padding-left: 44px;
+  font-size: 12px;
+}
+
+/* Avatar con anillo de color */
+.menu-btn{
+  width: 46px !important;
+  height: 46px !important;
+  border: 2px solid transparent !important;
+  background:
+    linear-gradient(var(--card), var(--card)) padding-box,
+    linear-gradient(135deg, var(--primary), var(--secondary)) border-box !important;
+  box-shadow: 0 6px 18px color-mix(in srgb, var(--primary) 30%, transparent) !important;
+  font-size: 14px;
+  letter-spacing: .8px;
+}
+
+/* ---------- Tarjetas de la pantalla principal ---------- */
+.container > .card{
+  border-radius: 22px !important;
+  border: 1px solid color-mix(in srgb, var(--primary) 16%, var(--line)) !important;
+  background:
+    linear-gradient(180deg,
+      color-mix(in srgb, var(--card) 96%, white 4%),
+      color-mix(in srgb, var(--card) 92%, transparent)) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.05),
+    0 14px 34px -16px rgba(0,0,0,.55) !important;
+}
+
+.container > .card h2{
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 17px;
+  font-weight: 800;
+  letter-spacing: .2px;
+}
+
+.container > .card:first-child h2::before{
+  content: "";
+  width: 4px;
+  height: 18px;
+  border-radius: 4px;
+  background: linear-gradient(180deg, var(--primary), var(--secondary));
+}
+
+.container > .card .label{
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .6px;
+  text-transform: uppercase;
+}
+
+/* Nombre del docente (bloqueado) */
+#teacherName.is-locked{
+  border-radius: 16px !important;
+  font-size: 21px !important;
+  letter-spacing: .2px;
+  background:
+    radial-gradient(120% 140% at 0% 0%, color-mix(in srgb, var(--secondary) 26%, transparent), transparent 60%),
+    linear-gradient(180deg,
+      color-mix(in srgb, var(--primary) 26%, transparent),
+      color-mix(in srgb, var(--primary) 12%, transparent)) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.08),
+    0 8px 24px -10px color-mix(in srgb, var(--primary) 60%, transparent) !important;
+}
+
+/* Botón Entrada / Salida: solo forma y profundidad (los colores no cambian) */
+.single-action-wrap .action-pill{
+  min-height: 58px !important;
+  border-radius: 18px !important;
+  font-size: 19px !important;
+  letter-spacing: .8px !important;
+}
+
+/* ---------- Caja de estado ---------- */
+#status.status{
+  position: relative;
+  gap: 12px;
+  margin-top: 16px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-style: solid;
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--card2, var(--card)) 70%, transparent);
+  overflow: hidden;
+}
+
+#status.status::before{
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: #22c55e;
+}
+
+#status.status:has(.dot.warn)::before{ background: #f59e0b; }
+#status.status:has(.dot.bad)::before{ background: #ef4444; }
+
+#status .dot{
+  flex: 0 0 auto;
+  animation: appDotPulse 2s ease-in-out infinite;
+}
+
+#statusTitle{
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: .2px;
+}
+
+#statusMsg{
+  margin-top: 2px;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+/* Verificación de ubicación */
+#locationVerifyDetails{
+  margin-top: 14px;
+  padding: 10px 14px;
+  border-radius: 14px;
+  border: 1px solid var(--line);
+  background: color-mix(in srgb, var(--card2, var(--card)) 45%, transparent);
+}
+
+#locationVerifyDetails summary{
+  font-size: 13px;
+  font-weight: 700;
+  list-style: none;
+}
+
+#locationVerifyDetails summary::-webkit-details-marker{ display: none; }
+
+#locationVerifyDetails summary::before{
+  content: "\f3c5";
+  font-family: "Font Awesome 6 Free";
+  font-weight: 900;
+  margin-right: 8px;
+  color: var(--secondary);
+}
+
+#locationVerifyDetails summary::after{
+  content: "\f078";
+  font-family: "Font Awesome 6 Free";
+  font-weight: 900;
+  float: right;
+  font-size: 11px;
+  opacity: .7;
+  transition: transform .2s ease;
+}
+
+#locationVerifyDetails[open] summary::after{ transform: rotate(180deg); }
+
+#locationVerifyDetails .kv{
+  font-size: 12.5px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- Tarjeta "Registros" ---------- */
+#btnToggleRecords{
+  padding: 18px !important;
+}
+
+#btnToggleRecords .card-button-text{
+  display: grid;
+  grid-template-columns: 38px 1fr;
+  column-gap: 12px;
+  align-items: center;
+}
+
+#btnToggleRecords .card-button-text::before{
+  content: "\f1da";
+  font-family: "Font Awesome 6 Free";
+  font-weight: 900;
+  grid-row: 1 / span 2;
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  font-size: 15px;
+  color: var(--secondary);
+  background: color-mix(in srgb, var(--secondary) 16%, transparent);
+  border: 1px solid color-mix(in srgb, var(--secondary) 28%, transparent);
+}
+
+#btnToggleRecords .card-title{ margin-bottom: 2px; }
+
+#btnToggleRecords .chevron{
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  font-size: 22px;
+  background: color-mix(in srgb, var(--text) 6%, transparent);
+}
+
+/* ---------- Resumen + lista de registros ---------- */
+.summary-export-actions{
+  border-color: var(--line) !important;
+  background: color-mix(in srgb, var(--card2, var(--card)) 55%, transparent) !important;
+}
+
+#recordsList{ gap: 10px; }
+
+#recordsList .record-card{
+  position: relative;
+  padding: 14px 14px 14px 18px !important;
+  border-radius: 16px !important;
+  overflow: hidden;
+  box-shadow: 0 6px 16px -10px rgba(0,0,0,.5) !important;
+}
+
+#recordsList .record-card::before{
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: color-mix(in srgb, var(--text) 25%, transparent);
+}
+
+#recordsList .record-card.ontime::before{ background: #22c55e; }
+#recordsList .record-card.late::before{ background: #ef4444; }
+#recordsList .record-card.soft::before{ background: #f59e0b; }
+#recordsList .record-card.extra::before{ background: #60a5fa; }
+
+#recordsList .record-card .teacher{
+  font-size: 15px;
+  font-weight: 800;
+}
+
+#recordsList .record-card .meta{
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+  font-variant-numeric: tabular-nums;
+}
+
+#recordsList .record-card .meta::before{
+  content: "\f017";
+  font-family: "Font Awesome 6 Free";
+  font-weight: 400;
+  opacity: .75;
+}
+
+#recordsList .record-card .badge{
+  font-size: 11px;
+  letter-spacing: .3px;
+}
+
+/* ---------- Menú del avatar ---------- */
+.menu-panel{
+  border-radius: 18px !important;
+  padding: 8px !important;
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  box-shadow: 0 20px 50px -12px rgba(0,0,0,.6) !important;
+  animation: appMenuIn .18s ease-out;
+}
+
+.menu-panel .menu-item{
+  border-radius: 12px !important;
+  font-weight: 700;
+  transition: background .15s ease, border-color .15s ease;
+}
+
+/* ---------- Pie de página ---------- */
+.footer{
+  border-top: 1px solid color-mix(in srgb, var(--primary) 18%, var(--line)) !important;
+  box-shadow: 0 -10px 30px -20px rgba(0,0,0,.6);
+}
+
+.footer .footer-text{
+  font-size: 11.5px;
+  letter-spacing: .3px;
+}
+
+@keyframes appDotPulse{
+  0%, 100% { transform: scale(1); }
+  50%      { transform: scale(1.15); }
+}
+
+@keyframes appMenuIn{
+  from { opacity: 0; transform: translateY(-6px) scale(.98); }
+  to   { opacity: 1; transform: none; }
+}
+
+@media (prefers-reduced-motion: reduce){
+  #status .dot,
+  .menu-panel{ animation: none !important; }
 }
 </style>
 </head>
