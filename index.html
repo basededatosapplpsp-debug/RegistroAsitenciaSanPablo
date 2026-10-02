@@ -7543,7 +7543,7 @@ body[data-theme="light"] #parqueResult .parque-badge{
    PLANILLA DE NOTAS · ESTILO EXCEL PRO (PC + CELULAR)
    ---------------------------------------------------------------------
    SOLO CSS. No toca JavaScript, ni IDs, ni data-atributos.
-   Pegar al FINA
+   Pegar al FINAL
    Usa #notasGrid en los selectores para ganar especificidad sobre
    las reglas anteriores sin tener que borrarlas.
    ===================================================================== */
@@ -7679,13 +7679,6 @@ body[data-theme="light"] #parqueResult .parque-badge{
     font-family: inherit;
     font-size: 13.5px !important;
     font-weight: 700;
-    -moz-appearance: textfield;
-  }
-
-  #notasStudentsModal #notasGrid.notas-grid.table-mode [data-nota-input]::-webkit-outer-spin-button,
-  #notasStudentsModal #notasGrid.notas-grid.table-mode [data-nota-input]::-webkit-inner-spin-button{
-    -webkit-appearance: none;
-    margin: 0;
   }
 
   #notasStudentsModal #notasGrid.notas-grid.table-mode [data-nota-input]::placeholder{
@@ -7755,6 +7748,28 @@ body[data-theme="light"] #parqueResult .parque-badge{
   #notasStudentsModal #notasGrid.notas-grid.table-mode .notas-row-riesgo .notas-student-name{
     box-shadow: inset 3px 0 0 #f59e0b, 1px 0 0 var(--xl-grid) !important;
   }
+
+  /* Fila completa resaltada con el color del estado */
+  #notasStudentsModal #notasGrid.notas-grid.table-mode .notas-student-card.notas-row-bajo .notas-cell{
+    background: color-mix(in srgb, #ef4444 14%, var(--card)) !important;
+  }
+  #notasStudentsModal #notasGrid.notas-grid.table-mode .notas-student-card.notas-row-debe .notas-cell{
+    background: color-mix(in srgb, #eab308 14%, var(--card)) !important;
+  }
+  #notasStudentsModal #notasGrid.notas-grid.table-mode .notas-student-card.notas-row-riesgo .notas-cell{
+    background: color-mix(in srgb, #f59e0b 14%, var(--card)) !important;
+  }
+
+  /* Totales en filas con estado: mismo color, un poco más fuerte */
+  #notasStudentsModal #notasGrid.notas-grid.table-mode .notas-student-card.notas-row-bajo:not(.notas-header-row) .notas-cell.notas-total-cell{
+    background: color-mix(in srgb, #ef4444 22%, var(--card)) !important;
+  }
+  #notasStudentsModal #notasGrid.notas-grid.table-mode .notas-student-card.notas-row-debe:not(.notas-header-row) .notas-cell.notas-total-cell{
+    background: color-mix(in srgb, #eab308 22%, var(--card)) !important;
+  }
+  #notasStudentsModal #notasGrid.notas-grid.table-mode .notas-student-card.notas-row-riesgo:not(.notas-header-row) .notas-cell.notas-total-cell{
+    background: color-mix(in srgb, #f59e0b 22%, var(--card)) !important;
+  }
 }
 
 /* ========================= CELULAR (tarjetas) ========================= */
@@ -7787,6 +7802,20 @@ body[data-theme="light"] #parqueResult .parque-badge{
   }
   #notasStudentsModal #notasGrid .notas-student-card.notas-row-riesgo{
     box-shadow: inset 4px 0 0 #f59e0b, 0 2px 8px rgba(0,0,0,.12) !important;
+  }
+
+  /* Tarjeta completa resaltada con el color del estado */
+  #notasStudentsModal #notasGrid .notas-student-card.notas-row-bajo{
+    background: color-mix(in srgb, #ef4444 12%, var(--card)) !important;
+    border-color: color-mix(in srgb, #ef4444 45%, var(--xl-grid)) !important;
+  }
+  #notasStudentsModal #notasGrid .notas-student-card.notas-row-debe{
+    background: color-mix(in srgb, #eab308 12%, var(--card)) !important;
+    border-color: color-mix(in srgb, #eab308 45%, var(--xl-grid)) !important;
+  }
+  #notasStudentsModal #notasGrid .notas-student-card.notas-row-riesgo{
+    background: color-mix(in srgb, #f59e0b 12%, var(--card)) !important;
+    border-color: color-mix(in srgb, #f59e0b 45%, var(--xl-grid)) !important;
   }
 
   /* Encabezado de cada estudiante con número de fila */
@@ -7872,13 +7901,6 @@ body[data-theme="light"] #parqueResult .parque-badge{
     text-align: center !important;
     font-size: 16px !important;
     font-weight: 800;
-    -moz-appearance: textfield;
-  }
-
-  #notasStudentsModal #notasGrid .notas-input-row [data-nota-input]::-webkit-outer-spin-button,
-  #notasStudentsModal #notasGrid .notas-input-row [data-nota-input]::-webkit-inner-spin-button{
-    -webkit-appearance: none;
-    margin: 0;
   }
 
   #notasStudentsModal #notasGrid .notas-input-row [data-nota-input]:focus{
@@ -7929,7 +7951,6 @@ body[data-theme="light"] #parqueResult .parque-badge{
     margin-right: 12px !important;
   }
 }
-
 </style>
 </head>
 
