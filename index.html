@@ -8551,7 +8551,7 @@ body:not(.is-admin) #registerCardTitle{
   width: min(100%, 320px) !important;
   min-height: 64px !important;
   gap: 14px;
-  padding: 10px 22px 10px 12px !important;
+  padding: 10px 22px !important;
   border-radius: 20px !important;
   border: 1.5px solid transparent !important;
   font-size: 18px !important;
@@ -8575,16 +8575,16 @@ body:not(.is-admin) #registerCardTitle{
     linear-gradient(120deg, #34d399, #22d3ee, #10b981) border-box !important;
 }
 
-/* SALIDA: violeta / fucsia */
+/* SALIDA: rojo */
 .single-action-wrap:not(.done) #btnSalida:not(:disabled):not(.is-inactive){
-  --btn-a: #a78bfa;
-  --btn-b: #e879f9;
-  color: #f5f3ff !important;
-  -webkit-text-fill-color: #f5f3ff !important;
+  --btn-a: #f87171;
+  --btn-b: #ef4444;
+  color: #fff1f2 !important;
+  -webkit-text-fill-color: #fff1f2 !important;
   background:
-    radial-gradient(120% 160% at 0% 0%, rgba(167,139,250,.24), transparent 55%),
-    linear-gradient(180deg, #1c1236, #120b24) padding-box,
-    linear-gradient(120deg, #a78bfa, #e879f9, #8b5cf6) border-box !important;
+    radial-gradient(120% 160% at 0% 0%, rgba(248,113,113,.24), transparent 55%),
+    linear-gradient(180deg, #2a0c10, #19070a) padding-box,
+    linear-gradient(120deg, #f87171, #ef4444, #dc2626) border-box !important;
 }
 
 .single-action-wrap:not(.done) #btnEntrada:not(:disabled),
@@ -8595,30 +8595,12 @@ body:not(.is-admin) #registerCardTitle{
     inset 0 1px 0 rgba(255,255,255,.10) !important;
 }
 
-/* Ícono dentro de un chip a la izquierda */
+/* Sin ícono: solo el texto */
 .single-action-wrap:not(.done) #btnEntrada:not(:disabled)::before,
 .single-action-wrap:not(.done) #btnSalida:not(:disabled):not(.is-inactive)::before{
-  position: relative !important;
-  inset: auto !important;
-  z-index: 2;
-  display: grid;
-  place-items: center;
-  width: 42px;
-  height: 42px;
-  flex: 0 0 42px;
-  border-radius: 13px;
-  font-family: "Font Awesome 6 Free";
-  font-weight: 900;
-  font-size: 17px;
-  letter-spacing: 0;
-  color: #04121a;
-  -webkit-text-fill-color: #04121a;
-  background: linear-gradient(135deg, var(--btn-a), var(--btn-b)) !important;
-  box-shadow: 0 0 18px color-mix(in srgb, var(--btn-a) 60%, transparent);
+  content: none !important;
+  display: none !important;
 }
-
-.single-action-wrap:not(.done) #btnEntrada:not(:disabled)::before{ content: "\f2f6"; }
-.single-action-wrap:not(.done) #btnSalida:not(:disabled):not(.is-inactive)::before{ content: "\f2f5"; }
 
 /* Brillo que cruza el botón */
 .single-action-wrap:not(.done) #btnEntrada:not(:disabled)::after,
