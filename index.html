@@ -7566,8 +7566,15 @@ body[data-theme="light"] #parqueResult .parque-badge{
 @media (min-width: 900px){
 
   #notasStudentsModal .notas-grid-scroll{
-    padding: 12px 16px 16px !important;
+    /* Sin espacio arriba: el encabezado queda pegado a la barra de herramientas
+       y ninguna fila se asoma por encima de los títulos al hacer scroll */
+    padding: 0 16px 16px !important;
     background: var(--bg) !important;
+  }
+
+  #notasStudentsModal #notasGrid.notas-grid.table-mode{
+    margin-top: 0 !important;
+    border-top: 0 !important;
   }
 
   #notasStudentsModal #notasGrid.notas-grid.table-mode{
@@ -7608,7 +7615,7 @@ body[data-theme="light"] #parqueResult .parque-badge{
     letter-spacing: .2px;
     line-height: 1.15;
     text-align: center;
-    box-shadow: none !important;
+    box-shadow: 0 6px 10px -6px rgba(0,0,0,.45) !important;
     border-bottom: 2px solid color-mix(in srgb, var(--xl-accent) 75%, transparent) !important;
   }
 
