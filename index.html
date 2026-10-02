@@ -7542,7 +7542,7 @@ body[data-theme="light"] #parqueResult .parque-badge{
    PLANILLA DE NOTAS · ESTILO EXCEL PRO (PC + CELULAR)
    ---------------------------------------------------------------------
    SOLO CSS. No toca JavaScript, ni IDs, ni data-atributos.
-   Pegar al FINAL del
+   Va al final de la hoja de estilos de la app.
    Usa #notasGrid en los selectores para ganar especificidad sobre
    las reglas anteriores sin tener que borrarlas.
    ===================================================================== */
@@ -7691,9 +7691,6 @@ body[data-theme="light"] #parqueResult .parque-badge{
     background: var(--xl-hover) !important;
   }
 
-  #notasStudentsModal #notasGrid.notas-grid.table-mode .notas-student-card:not(.notas-header-row):focus-within .notas-cell{
-    background: color-mix(in srgb, var(--xl-accent) 7%, var(--card)) !important;
-  }
 
   /* Columnas de totales */
   #notasStudentsModal #notasGrid.notas-grid.table-mode .notas-student-card:not(.notas-header-row) .notas-cell.notas-total-cell{
@@ -7733,50 +7730,28 @@ body[data-theme="light"] #parqueResult .parque-badge{
     box-shadow: none !important;
   }
 
-  /* Indicador de estado al inicio de la fila */
-  #notasStudentsModal #notasGrid.notas-grid.table-mode .notas-row-bajo .notas-student-name{
-    box-shadow: inset 3px 0 0 #ef4444, 1px 0 0 var(--xl-grid) !important;
-  }
-  #notasStudentsModal #notasGrid.notas-grid.table-mode .notas-row-debe .notas-student-name{
-    box-shadow: inset 3px 0 0 #eab308, 1px 0 0 var(--xl-grid) !important;
-  }
-  #notasStudentsModal #notasGrid.notas-grid.table-mode .notas-row-riesgo .notas-student-name{
-    box-shadow: inset 3px 0 0 #f59e0b, 1px 0 0 var(--xl-grid) !important;
+  /* ===== COLOR SEGÚN EL DESEMPEÑO (Excelente, Bueno, Aceptable, Insuficiente) =====
+     Se toma del mismo badge de la columna Estado. */
+  #notasStudentsModal #notasGrid.notas-grid.table-mode .notas-student-card:not(.notas-header-row){ --xl-est: #94a3b8; }
+  #notasStudentsModal #notasGrid.notas-grid.table-mode .notas-student-card:has(.notas-badge-excelente){ --xl-est: #22c55e; }
+  #notasStudentsModal #notasGrid.notas-grid.table-mode .notas-student-card:has(.notas-badge-bueno){ --xl-est: #3b82f6; }
+  #notasStudentsModal #notasGrid.notas-grid.table-mode .notas-student-card:has(.notas-badge-aceptable){ --xl-est: #f59e0b; }
+  #notasStudentsModal #notasGrid.notas-grid.table-mode .notas-student-card:has(.notas-badge-insuficiente){ --xl-est: #ef4444; }
+
+  /* Barrita de color al inicio del nombre */
+  #notasStudentsModal #notasGrid.notas-grid.table-mode .notas-student-card:not(.notas-header-row) .notas-student-name{
+    box-shadow: inset 3px 0 0 var(--xl-est), 1px 0 0 var(--xl-grid) !important;
   }
 
-  /* Ocultar de verdad los textos guía (Evaluación, Quiz, ±…) en las celdas vacías */
-  #notasStudentsModal #notasGrid.notas-grid.table-mode [data-nota-input]::placeholder{
-    color: transparent !important;
-    -webkit-text-fill-color: transparent !important;
-  }
-
-  /* FILA SELECCIONADA: se pinta con el color del estado del estudiante.
-     Las demás filas quedan neutras, como una hoja de Excel. */
+  /* FILA SELECCIONADA: toda la fila toma el color de su desempeño */
   #notasStudentsModal #notasGrid.notas-grid.table-mode .notas-student-card:not(.notas-header-row):focus-within .notas-cell{
-    background: color-mix(in srgb, #22c55e 16%, var(--card)) !important;
+    background: color-mix(in srgb, var(--xl-est) 20%, var(--card)) !important;
   }
-  #notasStudentsModal #notasGrid.notas-grid.table-mode .notas-student-card.notas-row-bajo:focus-within .notas-cell{
-    background: color-mix(in srgb, #ef4444 18%, var(--card)) !important;
-  }
-  #notasStudentsModal #notasGrid.notas-grid.table-mode .notas-student-card.notas-row-debe:focus-within .notas-cell{
-    background: color-mix(in srgb, #eab308 18%, var(--card)) !important;
-  }
-  #notasStudentsModal #notasGrid.notas-grid.table-mode .notas-student-card.notas-row-riesgo:focus-within .notas-cell{
-    background: color-mix(in srgb, #f59e0b 18%, var(--card)) !important;
-  }
-
-  /* Totales de la fila seleccionada: mismo color, un poco más fuerte */
   #notasStudentsModal #notasGrid.notas-grid.table-mode .notas-student-card:not(.notas-header-row):focus-within .notas-cell.notas-total-cell{
-    background: color-mix(in srgb, #22c55e 26%, var(--card)) !important;
+    background: color-mix(in srgb, var(--xl-est) 30%, var(--card)) !important;
   }
-  #notasStudentsModal #notasGrid.notas-grid.table-mode .notas-student-card.notas-row-bajo:not(.notas-header-row):focus-within .notas-cell.notas-total-cell{
-    background: color-mix(in srgb, #ef4444 28%, var(--card)) !important;
-  }
-  #notasStudentsModal #notasGrid.notas-grid.table-mode .notas-student-card.notas-row-debe:not(.notas-header-row):focus-within .notas-cell.notas-total-cell{
-    background: color-mix(in srgb, #eab308 28%, var(--card)) !important;
-  }
-  #notasStudentsModal #notasGrid.notas-grid.table-mode .notas-student-card.notas-row-riesgo:not(.notas-header-row):focus-within .notas-cell.notas-total-cell{
-    background: color-mix(in srgb, #f59e0b 28%, var(--card)) !important;
+  #notasStudentsModal #notasGrid.notas-grid.table-mode .notas-student-card:not(.notas-header-row):focus-within .notas-student-name{
+    box-shadow: inset 5px 0 0 var(--xl-est), 1px 0 0 var(--xl-grid) !important;
   }
 }
 
@@ -7801,32 +7776,22 @@ body[data-theme="light"] #parqueResult .parque-badge{
     border-color: color-mix(in srgb, var(--xl-accent) 55%, var(--xl-grid)) !important;
   }
 
-  /* Barra de estado a la izquierda */
-  #notasStudentsModal #notasGrid .notas-student-card.notas-row-bajo{
-    box-shadow: inset 4px 0 0 #ef4444, 0 2px 8px rgba(0,0,0,.12) !important;
-  }
-  #notasStudentsModal #notasGrid .notas-student-card.notas-row-debe{
-    box-shadow: inset 4px 0 0 #eab308, 0 2px 8px rgba(0,0,0,.12) !important;
-  }
-  #notasStudentsModal #notasGrid .notas-student-card.notas-row-riesgo{
-    box-shadow: inset 4px 0 0 #f59e0b, 0 2px 8px rgba(0,0,0,.12) !important;
+  /* ===== COLOR SEGÚN EL DESEMPEÑO (Excelente, Bueno, Aceptable, Insuficiente) ===== */
+  #notasStudentsModal #notasGrid .notas-student-card{ --xl-est: #94a3b8; }
+  #notasStudentsModal #notasGrid .notas-student-card:has(.notas-badge-excelente){ --xl-est: #22c55e; }
+  #notasStudentsModal #notasGrid .notas-student-card:has(.notas-badge-bueno){ --xl-est: #3b82f6; }
+  #notasStudentsModal #notasGrid .notas-student-card:has(.notas-badge-aceptable){ --xl-est: #f59e0b; }
+  #notasStudentsModal #notasGrid .notas-student-card:has(.notas-badge-insuficiente){ --xl-est: #ef4444; }
+
+  /* Barra lateral con el color del desempeño */
+  #notasStudentsModal #notasGrid .notas-student-card{
+    box-shadow: inset 4px 0 0 var(--xl-est), 0 2px 8px rgba(0,0,0,.12) !important;
   }
 
-  /* TARJETA ABIERTA (seleccionada): se pinta con el color del estado */
+  /* TARJETA ABIERTA (seleccionada): toma el color de su desempeño */
   #notasStudentsModal #notasGrid .notas-student-card.is-open{
-    background: color-mix(in srgb, #22c55e 12%, var(--card)) !important;
-  }
-  #notasStudentsModal #notasGrid .notas-student-card.is-open.notas-row-bajo{
-    background: color-mix(in srgb, #ef4444 14%, var(--card)) !important;
-    border-color: color-mix(in srgb, #ef4444 55%, var(--xl-grid)) !important;
-  }
-  #notasStudentsModal #notasGrid .notas-student-card.is-open.notas-row-debe{
-    background: color-mix(in srgb, #eab308 14%, var(--card)) !important;
-    border-color: color-mix(in srgb, #eab308 55%, var(--xl-grid)) !important;
-  }
-  #notasStudentsModal #notasGrid .notas-student-card.is-open.notas-row-riesgo{
-    background: color-mix(in srgb, #f59e0b 14%, var(--card)) !important;
-    border-color: color-mix(in srgb, #f59e0b 55%, var(--xl-grid)) !important;
+    background: color-mix(in srgb, var(--xl-est) 14%, var(--card)) !important;
+    border-color: color-mix(in srgb, var(--xl-est) 60%, var(--xl-grid)) !important;
   }
 
   /* Encabezado de cada estudiante con número de fila */
