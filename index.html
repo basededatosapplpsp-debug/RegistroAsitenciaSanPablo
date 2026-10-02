@@ -7538,12 +7538,11 @@ body[data-theme="light"] #parqueResult .parque-badge{
   row-gap: 12px !important;
 }
 
-
-   /* =====================================================================
+/* =====================================================================
    PLANILLA DE NOTAS · ESTILO EXCEL PRO (PC + CELULAR)
    ---------------------------------------------------------------------
    SOLO CSS. No toca JavaScript, ni IDs, ni data-atributos.
-   Pegar al FINAL
+   Pegar al FINAL del
    Usa #notasGrid en los selectores para ganar especificidad sobre
    las reglas anteriores sin tener que borrarlas.
    ===================================================================== */
@@ -7749,26 +7748,39 @@ body[data-theme="light"] #parqueResult .parque-badge{
     box-shadow: inset 3px 0 0 #f59e0b, 1px 0 0 var(--xl-grid) !important;
   }
 
-  /* Fila completa resaltada con el color del estado */
-  #notasStudentsModal #notasGrid.notas-grid.table-mode .notas-student-card.notas-row-bajo .notas-cell{
-    background: color-mix(in srgb, #ef4444 14%, var(--card)) !important;
-  }
-  #notasStudentsModal #notasGrid.notas-grid.table-mode .notas-student-card.notas-row-debe .notas-cell{
-    background: color-mix(in srgb, #eab308 14%, var(--card)) !important;
-  }
-  #notasStudentsModal #notasGrid.notas-grid.table-mode .notas-student-card.notas-row-riesgo .notas-cell{
-    background: color-mix(in srgb, #f59e0b 14%, var(--card)) !important;
+  /* Ocultar de verdad los textos guía (Evaluación, Quiz, ±…) en las celdas vacías */
+  #notasStudentsModal #notasGrid.notas-grid.table-mode [data-nota-input]::placeholder{
+    color: transparent !important;
+    -webkit-text-fill-color: transparent !important;
   }
 
-  /* Totales en filas con estado: mismo color, un poco más fuerte */
-  #notasStudentsModal #notasGrid.notas-grid.table-mode .notas-student-card.notas-row-bajo:not(.notas-header-row) .notas-cell.notas-total-cell{
-    background: color-mix(in srgb, #ef4444 22%, var(--card)) !important;
+  /* FILA SELECCIONADA: se pinta con el color del estado del estudiante.
+     Las demás filas quedan neutras, como una hoja de Excel. */
+  #notasStudentsModal #notasGrid.notas-grid.table-mode .notas-student-card:not(.notas-header-row):focus-within .notas-cell{
+    background: color-mix(in srgb, #22c55e 16%, var(--card)) !important;
   }
-  #notasStudentsModal #notasGrid.notas-grid.table-mode .notas-student-card.notas-row-debe:not(.notas-header-row) .notas-cell.notas-total-cell{
-    background: color-mix(in srgb, #eab308 22%, var(--card)) !important;
+  #notasStudentsModal #notasGrid.notas-grid.table-mode .notas-student-card.notas-row-bajo:focus-within .notas-cell{
+    background: color-mix(in srgb, #ef4444 18%, var(--card)) !important;
   }
-  #notasStudentsModal #notasGrid.notas-grid.table-mode .notas-student-card.notas-row-riesgo:not(.notas-header-row) .notas-cell.notas-total-cell{
-    background: color-mix(in srgb, #f59e0b 22%, var(--card)) !important;
+  #notasStudentsModal #notasGrid.notas-grid.table-mode .notas-student-card.notas-row-debe:focus-within .notas-cell{
+    background: color-mix(in srgb, #eab308 18%, var(--card)) !important;
+  }
+  #notasStudentsModal #notasGrid.notas-grid.table-mode .notas-student-card.notas-row-riesgo:focus-within .notas-cell{
+    background: color-mix(in srgb, #f59e0b 18%, var(--card)) !important;
+  }
+
+  /* Totales de la fila seleccionada: mismo color, un poco más fuerte */
+  #notasStudentsModal #notasGrid.notas-grid.table-mode .notas-student-card:not(.notas-header-row):focus-within .notas-cell.notas-total-cell{
+    background: color-mix(in srgb, #22c55e 26%, var(--card)) !important;
+  }
+  #notasStudentsModal #notasGrid.notas-grid.table-mode .notas-student-card.notas-row-bajo:not(.notas-header-row):focus-within .notas-cell.notas-total-cell{
+    background: color-mix(in srgb, #ef4444 28%, var(--card)) !important;
+  }
+  #notasStudentsModal #notasGrid.notas-grid.table-mode .notas-student-card.notas-row-debe:not(.notas-header-row):focus-within .notas-cell.notas-total-cell{
+    background: color-mix(in srgb, #eab308 28%, var(--card)) !important;
+  }
+  #notasStudentsModal #notasGrid.notas-grid.table-mode .notas-student-card.notas-row-riesgo:not(.notas-header-row):focus-within .notas-cell.notas-total-cell{
+    background: color-mix(in srgb, #f59e0b 28%, var(--card)) !important;
   }
 }
 
@@ -7804,18 +7816,21 @@ body[data-theme="light"] #parqueResult .parque-badge{
     box-shadow: inset 4px 0 0 #f59e0b, 0 2px 8px rgba(0,0,0,.12) !important;
   }
 
-  /* Tarjeta completa resaltada con el color del estado */
-  #notasStudentsModal #notasGrid .notas-student-card.notas-row-bajo{
-    background: color-mix(in srgb, #ef4444 12%, var(--card)) !important;
-    border-color: color-mix(in srgb, #ef4444 45%, var(--xl-grid)) !important;
+  /* TARJETA ABIERTA (seleccionada): se pinta con el color del estado */
+  #notasStudentsModal #notasGrid .notas-student-card.is-open{
+    background: color-mix(in srgb, #22c55e 12%, var(--card)) !important;
   }
-  #notasStudentsModal #notasGrid .notas-student-card.notas-row-debe{
-    background: color-mix(in srgb, #eab308 12%, var(--card)) !important;
-    border-color: color-mix(in srgb, #eab308 45%, var(--xl-grid)) !important;
+  #notasStudentsModal #notasGrid .notas-student-card.is-open.notas-row-bajo{
+    background: color-mix(in srgb, #ef4444 14%, var(--card)) !important;
+    border-color: color-mix(in srgb, #ef4444 55%, var(--xl-grid)) !important;
   }
-  #notasStudentsModal #notasGrid .notas-student-card.notas-row-riesgo{
-    background: color-mix(in srgb, #f59e0b 12%, var(--card)) !important;
-    border-color: color-mix(in srgb, #f59e0b 45%, var(--xl-grid)) !important;
+  #notasStudentsModal #notasGrid .notas-student-card.is-open.notas-row-debe{
+    background: color-mix(in srgb, #eab308 14%, var(--card)) !important;
+    border-color: color-mix(in srgb, #eab308 55%, var(--xl-grid)) !important;
+  }
+  #notasStudentsModal #notasGrid .notas-student-card.is-open.notas-row-riesgo{
+    background: color-mix(in srgb, #f59e0b 14%, var(--card)) !important;
+    border-color: color-mix(in srgb, #f59e0b 55%, var(--xl-grid)) !important;
   }
 
   /* Encabezado de cada estudiante con número de fila */
